@@ -12,9 +12,9 @@ Delay staging block that holds off an enable until a programmable number of refe
 
 ## Interface
 
-| Parameter      | Type | Default | Description                                                                                                                         |
-| -------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `DELAY_CYCLES` | int  | 10      | Number of `real_time_clk_i` cycles to wait before allowing `enable_o`. Counter width is $\lceil\log_2(\text{DELAY\_CYCLES})\rceil$. |
+| Parameter      | Type | Default | Description                                                                                                   |
+| -------------- | ---- | ------- | ------------------------------------------------------------------------------------------------------------- |
+| `DELAY_CYCLES` | int  | 10      | Number of `real_time_clk_i` cycles to wait before allowing `enable_o`. Counter width is $clog2(DELAY_CYCLES). |
 
 | Port              | Dir    | Clock           | Description                                                                     |
 | ----------------- | ------ | --------------- | ------------------------------------------------------------------------------- |
