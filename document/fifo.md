@@ -1,6 +1,6 @@
 # Handshake FIFO
 ---
-**  Author's Name:**  Dhruba Jyoti Barua
+**  Author's Name: **  Dhruba Jyoti Barua
 ---
 
 
@@ -82,7 +82,7 @@ module fifo #(
     // Indicates that the receiver is ready to accept data on the output bus
     input  logic                  data_o_ready_i
 );
-
+```
 
 ## Architecture
 
