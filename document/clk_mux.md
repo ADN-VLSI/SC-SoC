@@ -29,7 +29,6 @@ This type of clock multiplexer is commonly used in:
 - Multi-clock SoC subsystems  
 - Clock source selection logic  
 
-<img src="./clk_mux_des.svg">
 
 ---
 
