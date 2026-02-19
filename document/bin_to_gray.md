@@ -19,5 +19,5 @@ The bin_to_gray module converts a binary input (bin_i) into its corresponding Gr
 # Ports 
 |Name|Direction|Type|Dimension|Description|
 |-|-|-|-|-|
-|bin_i|input|logic [DATA_WIDTH-1:0] || Binary input. A 8bit value to be converted intoGray code.|
-|gray_o|outout|logic [DATA_WIDTH-1:0] ||Gray code output.The 8 bit Gray representation of the binary input.|
+|bin_i|input|logic [DATA_WIDTH-1:0] || Binary input. A 8 bit value to be converted into Gray code.|
+|gray_o|output|logic [DATA_WIDTH-1:0] ||Gray code output.The 8 bit Gray representation of the binary input.|
