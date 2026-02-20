@@ -1,5 +1,5 @@
 //==============================================================================
-// Author:      Adnan Sami Anirban
+// Author:      Adnan Sami Anirban (adnananirban259@gmal.com)
 // Date:        2026-02-20
 // Module:      clk_mux
 // Standard:    SystemVerilog / Industry RTL
