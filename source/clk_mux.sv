@@ -1,5 +1,5 @@
 //==============================================================================
-// Author:      Gemini AI
+// Author:      Adnan Sami Anirban
 // Date:        2026-02-20
 // Module:      clk_mux
 // Standard:    SystemVerilog / Industry RTL
