@@ -1,88 +1,64 @@
 //==============================================================================
-// Author:      Adnan Sami Anirban (adnananirban259@gmal.com)
-// Date:        2026-02-20
+// Author:      Adnan Sami Anirban(adnananirban259@gamil.com)
+// Date:        2026-02-22
 // Module:      clk_mux
-// Standard:    SystemVerilog / Industry RTL
-// Description: Glitch-free Clock Multiplexer using only Positive-Edge D-FFs.
-//              Uses cross-coupled feedback to prevent clock contention.
+// Description: Robust, Glitch-Free Clock Multiplexer using a single-module
+//              RTL approach. Implements 2-stage Posedge D-FF synchronization
+//              with cross-coupled feedback to ensure safe clock switching.
 //==============================================================================
 
-/**
- * Sub-module: clk_sync_gate
- * Implements a 2-stage positive-edge synchronizer with feedback-based enabling.
- */
-module clk_sync_gate (
-    input  logic clk_i,        // Clock source
-    input  logic arst_ni,      // Asynchronous reset, active low
-    input  logic sel_req_i,    // Request for this specific clock
-    input  logic other_off_ni, // Feedback: High if the other clock is OFF
-    output logic en_o          // Final enable signal for the clock gate
+module clk_mux (
+    input  logic arst_ni, // Asynchronous reset, active low
+    input  logic sel_i,   // Select signal: 0 selects clk0_i, 1 selects clk1_i
+    input  logic clk0_i,  // Primary clock input
+    input  logic clk1_i,  // Secondary clock input
+    output logic clk_o    // Glitch-free multiplexed output clock
 );
 
-    logic q_sync_stage1;
-    logic q_sync_stage2;
+    // Internal signals for Path 0 (Top row of the architecture diagram)
+    logic q0_ff1;
+    logic en0; // Final synchronized enable for Path 0
 
-    // 2-Stage Positive-Edge Synchronizer
-    // Stage 1: Captures the select request and the "other clock is off" status.
-    // Stage 2: Final synchronized enable signal.
-    always_ff @(posedge clk_i or negedge arst_ni) begin
+    // Internal signals for Path 1 (Bottom row of the architecture diagram)
+    logic q1_ff1;
+    logic en1; // Final synchronized enable for Path 1
+
+
+    //--------------------------------------------------------------------------
+    // Path 0 Synchronization Logic (clk0_i domain)
+    //--------------------------------------------------------------------------
+    // This implements the first AND gate and the two D-FFs for Path 0.
+    // The feedback (!en1) ensures clk0 only starts after clk1 is disabled.
+    always_ff @(posedge clk0_i or negedge arst_ni) begin
         if (!arst_ni) begin
-            q_sync_stage1 <= 1'b0;
-            q_sync_stage2 <= 1'b0;
+            q0_ff1 <= 1'b0;
+            en0    <= 1'b0;
         end else begin
-            q_sync_stage1 <= sel_req_i && other_off_ni;
-            q_sync_stage2 <= q_sync_stage1;
+            q0_ff1 <= (!sel_i) && (!en1); // Handshake + Select capture
+            en0    <= q0_ff1;            // Second stage D-FF
         end
     end
 
-    // Output is taken from the second posedge FF
-    assign en_o = q_sync_stage2;
-
-endmodule
-
-//==============================================================================
-
-/**
- * Top Module: clk_mux
- * Multiplexes two clocks using the synchronized gate modules.
- */
-module clk_mux (
-    input  logic arst_ni, // Asynchronous reset, active low
-    input  logic sel_i,   // 0: Select clk0_i, 1: Select clk1_i
-    input  logic clk0_i,  // First clock input
-    input  logic clk1_i,  // Second clock input
-    output logic clk_o    // Multiplexed output clock
-);
-
-    // Internal enable signals for cross-coupling feedback
-    logic en0, en1;
+    //--------------------------------------------------------------------------
+    // Path 1 Synchronization Logic (clk1_i domain)
+    //--------------------------------------------------------------------------
+    // This implements the first AND gate and the two D-FFs for Path 1.
+    // The feedback (!en0) ensures clk1 only starts after clk0 is disabled.
+    always_ff @(posedge clk1_i or negedge arst_ni) begin
+        if (!arst_ni) begin
+            q1_ff1 <= 1'b0;
+            en1    <= 1'b0;
+        end else begin
+            q1_ff1 <= (sel_i) && (!en0);  // Handshake + Select capture
+            en1    <= q1_ff1;            // Second stage D-FF
+        end
+    end
 
     //--------------------------------------------------------------------------
-    // Path 0 Synchronization (Active when sel_i is 0)
+    // Final Output Gating and Combination
     //--------------------------------------------------------------------------
-    clk_sync_gate path0_inst (
-        .clk_i        (clk0_i),
-        .arst_ni      (arst_ni),
-        .sel_req_i    (!sel_i), // Request clk0 when sel is 0
-        .other_off_ni (!en1),   // Only enable if Path 1 is confirmed OFF
-        .en_o         (en0)
-    );
-
-    //--------------------------------------------------------------------------
-    // Path 1 Synchronization (Active when sel_i is 1)
-    //--------------------------------------------------------------------------
-    clk_sync_gate path1_inst (
-        .clk_i        (clk1_i),
-        .arst_ni      (arst_ni),
-        .sel_req_i    (sel_i),  // Request clk1 when sel is 1
-        .other_off_ni (!en0),   // Only enable if Path 0 is confirmed OFF
-        .en_o         (en1)
-    );
-
-    //--------------------------------------------------------------------------
-    // Final Gating Stage
-    //--------------------------------------------------------------------------
-    // Logic ensures that only one enable (en0 or en1) is high at any time.
+    // This stage maps to the final AND gates and the OR gate in the diagram.
+    // It creates the "Glitch-Free" output by masking the source clocks.
     assign clk_o = (clk0_i & en0) | (clk1_i & en1);
 
 endmodule
