@@ -2,18 +2,25 @@
 #Author: Md. Samir Hasan(shamirhasan2.0@gmail.com)
 
 #TOP_IO
+
 <img src="./memtop.svg">
 
-# Description
-The generic memory module is a parameterized System verilog memory module.It uses demultiplexer, flipflip(storage), multiplexer to control the memory.
+#Description
+
 <img src="./memory.svg">
+The generic memory module is a parameterized System verilog memory module.It uses demultiplexer, flipflip(storage), multiplexer to control the memory.
+
+
 #Parameter
+
+
 |Name|Type|Dimention|Default Value|Description|
 |-|-|-|-|-|
-|ADDR_WIDTH|int||16|Address width in bits|
-|DATA_WIDTH|int|32||Data width in bits|
+|ADDR_WIDTH|int| |16|Address width in bits|
+|DATA_WIDTH|int| |32||Data width in bits|
 
 #Port
+
 |Name|Direction|Type|Width|Description|
 |-|-|-|-|-|
 |clk_i|input|logic|1|clock input|
