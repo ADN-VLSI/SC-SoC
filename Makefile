@@ -7,6 +7,8 @@ ROOT_DIR := $(CURDIR)
 SRC_LIST := $(shell find $(ROOT_DIR)/source -type f -name "*.sv")
 TB_LIST  := $(shell find $(ROOT_DIR)/testbench -type f -name "*.sv")
 
+EWHL := | grep -iE "Error:|Warning:|" --color=auto
+
 build:
 	@echo "Creating build directory..."
 	@mkdir build
@@ -21,6 +23,6 @@ clean:
 all:
 	@make -s clean
 	@make -s build
-	@cd build && xvlog -sv $(SRC_LIST) $(TB_LIST)
-	@cd build && xelab $(TOP) -s $(TOP)_sim
-	@cd build && xsim $(TOP)_sim -runall
+	@cd build && xvlog -sv $(SRC_LIST) $(TB_LIST) $(EWHL)
+	@cd build && xelab $(TOP) -s $(TOP)_sim $(EWHL)
+	@cd build && xsim $(TOP)_sim -runall $(EWHL)
