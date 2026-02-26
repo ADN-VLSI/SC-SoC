@@ -54,16 +54,16 @@ The plan utilizes a hybrid approach:
 Verify that the DUT correctly converts the minimum Gray code value (all zeros).
 
 **Stimulus:**  
-- Gray code input: `00000000` (all zeros).
+- Gray code input: `8'h00` (all zeros).
 
 **Procedure:**  
-1. Apply `gray_i = 0` to the DUT.  
+1. Apply `gray_i = 8'h00` to the DUT.  
 2. Wait for combinational logic to settle (`#10`).  
 3. Compare DUT output (`bin_o`) with reference model output (Golden Model).  
 4. Repeat for 10 iterations.
 
 **Expected Result:**  
-- DUT output should be `00000000`.  
+- DUT output should be `8'h00`.  
 - Pass/fail counted in scoreboard.
 
 ---
@@ -74,16 +74,16 @@ Verify that the DUT correctly converts the minimum Gray code value (all zeros).
 Verify that the DUT correctly converts the maximum Gray code value (all ones).
 
 **Stimulus:**  
-- Gray code input: `11111111` (all ones).
+- Gray code input: `8'hFF` (all ones).
 
 **Procedure:**  
-1. Apply `gray_i = 8'b11111111` to the DUT.  
+1. Apply `gray_i = 8'hFF` to the DUT.  
 2. Wait for combinational logic to settle (`#10`).  
 3. Compare DUT output (`bin_o`) with reference model output.  
 4. Repeat for 10 iterations.
 
 **Expected Result:**  
-- DUT output should be `10000000` (binary equivalent).  
+- DUT output should be `8'hAA`.  
 - Pass/fail counted in scoreboard.
 
 ---
@@ -94,16 +94,16 @@ Verify that the DUT correctly converts the maximum Gray code value (all ones).
 Verify correct conversion for a checkerboard Gray code pattern.
 
 **Stimulus:**  
-- Gray code input: alternating pattern `10101010…`  
+- Gray code input: alternating pattern `8'hAA`  
 
 **Procedure:**  
-1. Apply `gray_i = {(WIDTH/2){2'b10}}` to the DUT.  
+1. Apply `gray_i = {4{2'b10}}` to the DUT.  
 2. Wait for combinational logic to settle (`#10`).  
 3. Compare DUT output (`bin_o`) with reference model output.  
 4. Repeat for 10 iterations.
 
 **Expected Result:**  
-- DUT output should match the reference model for the checkerboard pattern.  
+- DUT output should be `8'hCC`.  
 - Pass/fail counted in scoreboard.
 
 ---
@@ -120,7 +120,7 @@ Verify that the DUT correctly converts random Gray code sequences and that the s
 1. Apply random Gray code input to the DUT (`gray_i`).  
 2. Wait for combinational logic to settle (`#10`).  
 3. Compare DUT output (`bin_o`) with reference model output.  
-4. Repeat for 970 iterations.
+4. Repeat for 1000 iterations (In our case, it iterates 1,000 times, but it can be iterated by initializing `test_random` with any value.).
 
 **Error Injection:**  
 - Controlled by the flag: `ENABLE_ERROR_INJECTION`  
@@ -149,10 +149,10 @@ bit ENABLE_ERROR_INJECTION = 1; // set to 0 to disable error injection
 | test_min_boundary       | Directed Boundary | 10         | No             | N/A                        | Verify minimum Gray code input (all 0s)  |
 | test_max_boundary       | Directed Boundary | 10         | No             | N/A                        | Verify maximum Gray code input (all 1s)  |
 | test_check_board        | Pattern           | 10         | No             | N/A                        | Verify checkerboard pattern (1010...)     |
-| test_random_sequence    | Random            | 970        | Yes            | `ENABLE_ERROR_INJECTION` = 1 | Verify random Gray codes + scoreboard check |
+| test_random_sequence    | Random            | 1000       | Yes            | `ENABLE_ERROR_INJECTION` = 1 | Verify random Gray codes + scoreboard check |
 
 ---
 
-**Total Iterations:** 1000  
+**Total Iterations:** 1030  
 **Scoreboard:** Pass/Fail counted for all iterations  
 **Error Injection Enabled:** Only in `test_random_sequence` (iterations 50 and 100)  
