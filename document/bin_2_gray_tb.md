@@ -22,7 +22,7 @@ The testbench interfaces with the DUT through the following signals:
 ### Flow Diagram
 
 <center>
-<img src="./bin_2_gray_testbench.svg">
+<img src="./bin_2_gray_tb.svg">
 </center>
 
 
