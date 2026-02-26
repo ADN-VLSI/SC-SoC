@@ -13,6 +13,7 @@ module gray_2_bin_tb;
     int test_count = 0;
     int pass_count = 0;
     int fail_count = 0;
+    int test_random = 1000; // How many time iterates 
 
     // Enable / Disable error injection
     bit ENABLE_ERROR_INJECTION = 0;
@@ -93,7 +94,7 @@ module gray_2_bin_tb;
     // ---------------- Test 4 ----------------
     task test_random_sequence();
         $display("\n--- Running Test Case 4: test_random_sequence (Random Patterns) ---");
-        for (int i = 0; i < 970; i++) begin
+        for (int i = 0; i < test_random; i++) begin
             gray_i = $urandom_range(0, (1<<WIDTH)-1);
             #10;
 
@@ -143,6 +144,11 @@ module gray_2_bin_tb;
         print_summary();
 
         $finish;
+    end
+
+    initial begin
+        $dumpfile("gray_2_bin.vcd");
+        $dumpvars;
     end
 
 endmodule
