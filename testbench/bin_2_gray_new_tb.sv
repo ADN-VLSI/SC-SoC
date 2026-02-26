@@ -21,7 +21,7 @@
 //
 //    Date        : February 26, 2026
 //
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 module bin_2_gray_tb #(
@@ -46,7 +46,8 @@ module bin_2_gray_tb #(
     logic [WIDTH-1:0] gray_val;
     gray_val[WIDTH-1] = binary_val[WIDTH-1];
     for (int i = WIDTH-2; i >= 0; i--) begin
-      gray_val[i] = binary_val[i] ^ binary_val[i+1];
+
+        gray_val[i] = binary_val[i] ^ binary_val[i+1];
     end
     return gray_val;
   endfunction
@@ -65,7 +66,7 @@ module bin_2_gray_tb #(
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   initial begin
-    $display("\n");
+	$display("\n");
     $display("================================================================================");
     $display("           Binary to Gray Code Converter Testbench");
     $display("           WIDTH = %0d bits", WIDTH);
@@ -78,14 +79,14 @@ module bin_2_gray_tb #(
 
     // Test all possible binary values from 0 to 2^WIDTH-1
     for (int i = 0; i < (1 << WIDTH); i++) begin
-      bin_stimulus = i;
+        bin_stimulus = i;
 
-      // Wait one time unit for combinational logic to settle
-      #1;
+		// Wait one time unit for combinational logic to settle
+		#1;
 
-      // Verify the Gray code output
-      verify_gray_output(i);
-      test_count++;
+		// Verify the Gray code output
+		verify_gray_output(i);
+		test_count++;
     end
 
     // Display final test results
@@ -99,9 +100,9 @@ module bin_2_gray_tb #(
     $display("================================================================================\n");
 
     if (fail_count == 0) begin
-      $display("✓ All tests PASSED successfully!");
+        $display("✓ All tests PASSED successfully!");
     end else begin
-      $display("✗ Some tests FAILED successfully!");
+        $display("✗ Some tests FAILED successfully!");
     end
     $display("\n");
 
@@ -113,15 +114,15 @@ module bin_2_gray_tb #(
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   task verify_gray_output(int binary_input);
-    logic [WIDTH-1:0] expected_gray;
+        logic [WIDTH-1:0] expected_gray;
     expected_gray = binary_to_gray(binary_input);
 
     if (gray_response == expected_gray) begin
-      pass_count++;
+		pass_count++;
       $display("[PASS] Binary: %0d (0x%h) → Gray: %0d (0x%h)", binary_input, binary_input,
                gray_response, gray_response);
     end else begin
-      fail_count++;
+		fail_count++;
       $display("[FAIL] Binary: %0d (0x%h) → Gray: %0d (0x%h) | Expected: %0d (0x%h)",
                binary_input, binary_input, gray_response, gray_response, expected_gray,
                expected_gray);
@@ -129,3 +130,4 @@ module bin_2_gray_tb #(
   endtask
 
 endmodule
+
