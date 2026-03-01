@@ -20,23 +20,21 @@ module gray_2_bin #(
     parameter int WIDTH = 8
 ) (
     // Gray code input
-    input  logic [WIDTH-1:0] gray_i,
+    input logic [WIDTH-1:0] gray_i,
 
     // Binary output
     output logic [WIDTH-1:0] bin_o
 );
 
-    always_comb begin
-        // MSB remains the same
-        bin_o[WIDTH-1] = gray_i[WIDTH-1];
+  // MSB remains the same
+  always_comb bin_o[WIDTH-1] = gray_i[WIDTH-1];
 
-        // Each lower bit is XOR of previous binary bit and current gray bit
-        for (int i = WIDTH-2; i >= 0; i--) begin
-            bin_o[i] = bin_o[i+1] ^ gray_i[i];
-        end
-    end
+  // Each lower bit is XOR of previous binary bit and current gray bit
+  for (genvar i = 0; i < (WIDTH - 1); i++) begin
+    always_comb bin_o[i] = bin_o[i+1] ^ gray_i[i];
+  end
 
 endmodule
 
-                                                                               
-                     
+
+
