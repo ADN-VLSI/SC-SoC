@@ -1,8 +1,6 @@
 # Handshake FIFO
----
-**  Author's Name: **  Dhruba Jyoti Barua
----
 
+**Author's Name:** Dhruba Jyoti Barua
 
 ## Overview
 
@@ -24,8 +22,8 @@ The FIFO uses the standard **valid–ready handshake protocol** to safely transf
 - Synthesizable design
 
 ---
-![Handshake FIFO Block Diagram](fifo.drawio.svg)
----
+
+## ![Handshake FIFO Block Diagram](fifo.drawio.svg)
 
 ## Why is FIFO Needed
 
@@ -94,8 +92,7 @@ FIFO_DEPTH = 2**FIFO_SIZE
 
 Example:
 
--`FIFO_SIZE = 4`
--`FIFO_DEPTH = 16`
+-`FIFO_SIZE = 4` -`FIFO_DEPTH = 16`
 
 ---
 
@@ -115,21 +112,19 @@ Example:
 
 ### Parameters
 
-| Parameter     | Description                        |
-|--------------|------------------------------------|
-| DATA_WIDTH   | Width of the data bus              |
-| FIFO_SIZE    | log2 of FIFO depth                 |
-
+| Parameter  | Description           |
+| ---------- | --------------------- |
+| DATA_WIDTH | Width of the data bus |
+| FIFO_SIZE  | log2 of FIFO depth    |
 
 ---
 
 ### Clock & Reset
 
-| Signal     | Direction | Description                     |
-|------------|-----------|---------------------------------|
-| clk_i      | Input     | System clock                    |
-| arst_ni    | Input     | Asynchronous active-low reset   |
-
+| Signal  | Direction | Description                   |
+| ------- | --------- | ----------------------------- |
+| clk_i   | Input     | System clock                  |
+| arst_ni | Input     | Asynchronous active-low reset |
 
 ---
 
@@ -145,11 +140,11 @@ Write occurs only when both signals are high.
 
 ### Read Side (FIFO → Consumer)
 
-| Signal              | Direction | Description                              |
-|---------------------|----------|------------------------------------------|
-| data_o              | Output   | Output data                              |
-| data_o_valid_o      | Output   | Indicates output data is valid           |
-| data_o_ready_i      | Input    | Consumer ready to accept output data     |
+| Signal         | Direction | Description                          |
+| -------------- | --------- | ------------------------------------ |
+| data_o         | Output    | Output data                          |
+| data_o_valid_o | Output    | Indicates output data is valid       |
+| data_o_ready_i | Input     | Consumer ready to accept output data |
 
 #### Read Handshake Condition
 
@@ -189,12 +184,11 @@ The FIFO starts in an **empty state**.
 
 ### Normal Operation
 
-
 The FIFO operates using the valid–ready handshake protocol.
 
 ---
 
-####  Write Operation
+#### Write Operation
 
 A write occurs when:
 
@@ -288,7 +282,7 @@ This allows high-performance pipeline operation.
 
 ---
 
-### Data Ordering Guarantee 
+### Data Ordering Guarantee
 
 The FIFO ensures strict ordering:
 
@@ -302,10 +296,10 @@ No reordering occurs.
 
 ### Backpressure Mechanism
 
-| Condition     | Effect on System |
-|--------------|-----------------|
-| FIFO Full    | Producer stalls |
-| FIFO Empty   | Consumer stalls |
+| Condition  | Effect on System |
+| ---------- | ---------------- |
+| FIFO Full  | Producer stalls  |
+| FIFO Empty | Consumer stalls  |
 
 This decouples producer and consumer speeds.
 
@@ -325,18 +319,18 @@ The FIFO guarantees:
 
 ### Throughput Characteristics
 
-| Scenario                        | Result |
-|---------------------------------|--------|
-| Continuous write only           | Fills FIFO |
-| Continuous read only            | Drains FIFO |
-| Continuous read & write         | Steady-state streaming |
-| Bursty traffic                  | Smooth buffering |
+| Scenario                | Result                 |
+| ----------------------- | ---------------------- |
+| Continuous write only   | Fills FIFO             |
+| Continuous read only    | Drains FIFO            |
+| Continuous read & write | Steady-state streaming |
+| Bursty traffic          | Smooth buffering       |
 
 Maximum sustained throughput: **1 word per clock cycle**
 
 ---
 
-### Summary 
+### Summary
 
 This FIFO behaves as a :
 
@@ -358,40 +352,47 @@ It is suitable for:
 ## Integration Checklist
 
 ### Clock & Reset
--  Single clock domain
--  Reset polarity correct (active-low)
--  Reset sequencing verified
+
+- Single clock domain
+- Reset polarity correct (active-low)
+- Reset sequencing verified
 
 ---
 
 ### Handshake Compliance
+
 Producer:
--  Holds `in_data` stable until accepted
--  Uses `in_valid && in_ready` as write condition
+
+- Holds `in_data` stable until accepted
+- Uses `in_valid && in_ready` as write condition
 
 Consumer:
--  Uses `out_valid && out_ready` as read condition
--  Does not sample data when `out_valid=0`
+
+- Uses `out_valid && out_ready` as read condition
+- Does not sample data when `out_valid=0`
 
 ---
 
 ### Configuration
--  `WIDTH` matches system bus
--  `DEPTH` sized for worst-case burst
--   Throughput requirement satisfied
+
+- `WIDTH` matches system bus
+- `DEPTH` sized for worst-case burst
+- Throughput requirement satisfied
 
 ---
 
 ### Safety
--   No overflow (writes blocked when full)
--   No underflow (reads blocked when empty)
--   Backpressure acceptable in system
+
+- No overflow (writes blocked when full)
+- No underflow (reads blocked when empty)
+- Backpressure acceptable in system
 
 ---
 
 # Test Ideas
 
 ### Reset Tests
+
 - After reset:
   - `out_valid = 0`
   - `in_ready = 1`
@@ -400,6 +401,7 @@ Consumer:
 ---
 
 ### Basic Functional Tests
+
 - Write 1 item → Read 1 item → Data matches.
 - Write multiple items → Read all → Order preserved.
 - Consumer stall (`out_ready=0`) → `out_data` stable.
@@ -416,7 +418,7 @@ Consumer:
 
 ---
 
-### Simultaneous Read & Write 
+### Simultaneous Read & Write
 
 - Keep `in_valid=1` and `out_ready=1`.
 - Expect sustained 1 transfer per cycle.
@@ -437,119 +439,27 @@ Consumer:
 ### Handshake Compliance
 
 Producer:
--  Holds `in_data` stable until accepted
--  Uses `in_valid && in_ready` as write condition
+
+- Holds `in_data` stable until accepted
+- Uses `in_valid && in_ready` as write condition
 
 Consumer:
--  Uses `out_valid && out_ready` as read condition
--  Does not sample data when `out_valid=0`
+
+- Uses `out_valid && out_ready` as read condition
+- Does not sample data when `out_valid=0`
 
 ---
 
 ### Configuration
+
 - `WIDTH` matches system bus
 - `DEPTH` sized for worst-case burst
--  Throughput requirement satisfied
+- Throughput requirement satisfied
 
 ---
 
 ### Safety
--  No overflow (writes blocked when full)
--  No underflow (reads blocked when empty)
--  Backpressure acceptable in system
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- No overflow (writes blocked when full)
+- No underflow (reads blocked when empty)
+- Backpressure acceptable in system
