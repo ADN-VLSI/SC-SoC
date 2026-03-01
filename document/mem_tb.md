@@ -103,9 +103,11 @@ retain previous value
 
 ## 4.1 DUT Architecture
 
+![DUT Architecture](mem_tb_dut_arch.drawio.svg)
 
 ## 4.2 Verification Architecture
 
+![verification Architecture](mem_tb_verification.drawio.svg)
 
 ---
 
@@ -289,126 +291,123 @@ Use case-inequality (`!==`) to detect X/Z mismatches.
 
 ---
 
-## TC1 – Initialization Safety
+## TC1 – Full Write
 
 ### Name
-`tc_init_sanity`
+`tc_full_write`
 
 ### Description
-Ensure no false mismatches due to uninitialized memory.
+Verify complete 32-bit write and correct readback.
 
 ### Test Steps
-1. Avoid early read comparisons.
-2. Perform baseline writes.
+Write:
+  addr = 0x3
+  wdata = 0xDEAD_BEEF
+  wstrb = 4'b1111
+
+Read:
+  addr = 0x3
 
 ### Expected Result
-No false failures.
+rdata_o = 0xDEAD_BEEF
 
 ---
 
-## TC2 – Full Word Write/Read
+## TC2 – Partial Write
 
 ### Name
-`tc_full_write_read`
+`tc_partial_write `
 
 ### Description
-Verify complete word update.
+Verify byte-enable write behavior
 
 ### Test Steps
-1. Write full word with `wstrb = all 1`.
-2. Read same address.
+1. Full Write
+
+addr = 0xB
+wdata = 0x1122_3344
+wstrb = 1111
+
+2. Partial Write
+
+addr = 0xB
+wdata = 0x0000_00AA
+wstrb = 0001
+
+3. Read back
+
+addr = 0xB
 
 ### Expected Result
-Exact match with written data.
+
+0x1122_33AA
 
 ---
 
-## TC3 – Single Byte Write
+## TC3 – No-Op Write(wrtrb = 0)
 
 ### Name
-`tc_single_byte_write`
+`tc_noop`
 
 ### Description
-Verify single-byte masking behavior.
+Ensure memory is unchanged when no write strobes active.
+
+Sequence.
 
 ### Test Steps
-1. Write baseline word.
-2. Modify one byte only.
-3. Read back.
+1. Write
+
+addr = 0x4
+wdata = 0xCAFE_BABE
+wstrb = 1111
+
+2. No-op write
+
+addr = 0x4
+wdata = 0xFFFF_FFFF
+wstrb = 0000
+
+3. Read
+
+addr = 0x4
+
 
 ### Expected Result
-Only selected byte changes.
+
+0xCAFE_BABE
 
 ---
 
-## TC4 – Mixed Byte Write
+## TC4 – Same Row Test (Word Alignment)
 
 ### Name
-`tc_mixed_strobes`
+`tc_same_row`
 
 ### Description
-Verify multiple masked byte updates.
+Verify addresses within same word return identical data.
 
 ### Test Steps
-1. Write baseline.
-2. Apply strobe pattern (e.g., `1010`).
-3. Read back.
+
+1. Write
+
+addr = 0x8
+wdata = 0xAAAA_BBBB
+wstrb = 1111
+
+2. Read
+
+addr = 0X9
+
+3. Read
+
+addr = 0XA
 
 ### Expected Result
-Only selected bytes updated.
+
+rdata_o = 0xAAAA_BBBB
 
 ---
 
-## TC5 – No-op Write
-
-### Name
-`tc_noop_write`
-
-### Description
-Verify that zero strobe does not modify memory.
-
-### Test Steps
-1. Write baseline.
-2. Apply write with `wstrb = 0`.
-3. Read back.
-
-### Expected Result
-Memory unchanged.
-
----
-
-## TC6 – Address Boundaries
-
-### Name
-`tc_addr_boundaries`
-
-### Description
-Verify correct behavior at address extremes.
-
-### Test Steps
-1. Write/read address `0`.
-2. Write/read address `DEPTH-1`.
-
-### Expected Result
-Correct data at both boundaries.
-
----
-
-## TC7 – Random Regression
-
-### Name
-`tc_random_regression`
-
-### Description
-Stress test memory with random operations.
-
-### Test Steps
-1. Run N random transactions.
-2. Apply scoreboard checks.
-
-### Expected Result
-No mismatches.
-Coverage targets achieved.
 
 ---
 
