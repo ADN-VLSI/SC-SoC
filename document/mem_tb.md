@@ -257,7 +257,8 @@ Ensure sufficient write operations before checking reads.
 
 Reference memory:
 
-```ref_mem[0 : DEPTH-1]
+``` 
+ref_mem[0 : DEPTH-1]
 
 ```
 Track initialization status per address.
