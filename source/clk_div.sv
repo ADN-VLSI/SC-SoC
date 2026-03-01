@@ -28,39 +28,46 @@ module clk_div #(
     output logic clk_o
 );
 
-logic [DIV_WIDTH-1:0] count;
-logic toggle;
-logic d_next;
+  logic [DIV_WIDTH-1:0] div;
+  logic [DIV_WIDTH-1:0] cnt;
+  logic [DIV_WIDTH-1:0] cnt_next;
+  logic                 clk_o_next;
+  logic                 clk_r_en;
 
-// Counter
-always_ff @(posedge clk_i or negedge arst_ni) begin
-    if (!arst_ni)
-        count <= 0;
-    else if (count == div_i - 1)
-        count <= 0;
-    else
-        count <= count + 1;
-end
+  always_comb begin : counter_logic
+    div = (div_i == 0) ? 1 : div_i;  // Handle zero division case
+    cnt_next = (cnt == div - 1) ? 0 : cnt + 1;  // Counter logic for division
+  end
 
-// Generate toggle pulse
-assign toggle = (count == div_i - 1);
+  always_comb begin : equals_0
+    clk_r_en = (cnt == 0);
+  end
 
-// Toggle output data
-always_ff @(posedge clk_i or negedge arst_ni) begin
-    if (!arst_ni)
-        d_next <= 0;
-    else if (toggle)
-        d_next <= ~d_next;
-end
+  always_comb clk_o_next = ~clk_o;
 
-// Dual edge output
-dual_edge_ff u_dual_edge (
-    .clk      (clk_i),
-    .enable   (toggle),
-    .d        (d_next),
-    .arst_ni  (arst_ni),
-    .q        (clk_o)
-);
+  dual_edge_reg #(
+      .WIDTH(DIV_WIDTH)
+  ) cnt_r (
+      .arst_ni(arst_ni),
+      .clk_i  (clk_i),
+      .en_i   (1'b1),
+      .data_i (cnt_next),
+      .data_o (cnt)
 
-    
+  );
+
+  dual_edge_reg #(
+      .WIDTH(1)
+  ) clk_r (
+      .arst_ni(arst_ni),
+      .clk_i  (clk_i),
+      .en_i   (clk_r_en),
+      .data_i (clk_o_next),
+      .data_o (clk_o)
+  );
+
 endmodule
+
+
+
+
