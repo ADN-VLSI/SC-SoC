@@ -61,7 +61,7 @@ module clk_mux (
   //--------------------------------------------------------------------------
   // This stage maps to the final AND gates and the OR gate in the diagram.
   // It creates the "Glitch-Free" output by masking the source clocks.
-  always_comb clk_o = (clk0_i & en0) | (clk1_i & en1);
+  assign clk_o = (clk0_i & en0) | (clk1_i & en1);
 
 endmodule
 
