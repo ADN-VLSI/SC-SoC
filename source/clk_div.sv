@@ -1,3 +1,18 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    Module      : Clock Divider
+//
+//    Description : This module divides the input clock frequency by a configurable factor.
+//                  The division factor is set by the div_i input. The module supports
+//                  asynchronous active-low reset and generates a divided clock output.
+//                  See details at document/clk_div.md
+//
+//    Author      : Motasim Faiyaz
+//
+//    Date        : February 19, 2026
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 module clk_div #(
     // width of the clock divider input
     parameter int DIV_WIDTH = 4
