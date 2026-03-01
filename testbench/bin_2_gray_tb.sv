@@ -113,14 +113,14 @@ module bin_2_gray_tb;
     $display("                         Test Summary");
     $display("================================================================================");
     $display("Total Test Cases : %0d", test_count);
-    $display("Passed          : %0d", pass_count);
-    $display("Failed          : %0d", fail_count);
+    $display("Passed           : %0d", pass_count);
+    $display("Failed           : %0d", fail_count);
     $display("================================================================================\n");
 
     if (fail_count == 0) begin
-      $display("✓ All tests PASSED successfully!");
+      $display("✓ All tests PASSED!");
     end else begin
-      $display("✗ Some tests FAILED successfully!");
+      $display("✗ Some tests FAILED!");
     end
     $display("\n");
 
