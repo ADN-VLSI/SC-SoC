@@ -1,16 +1,11 @@
-# Binary to Gray Code Converter - Testbench Documentation
-# Bin2Gray Test Plan
+# bin_2_gray Test Plan
 
 ## Target DUT
 
 Name: `bin_2_gray`  
-Source: `source/bin_2_gray.sv`  
-Interface (key signals):
-- `bin_i` : input [WIDTH-1:0] — binary value
-- `gray_o`: output [WIDTH-1:0] — Gray code equivalent
+Source: `source/bin_2_gray.sv`
 
-Parameter(s):
-- `WIDTH` (int, default 8) — bit width of the converter
+Refer [bin_2_gray.md](bin_2_gray.md) for detailed DUT description, parameters, and ports.
 
 ## Functional Description
 
@@ -20,9 +15,6 @@ The DUT converts a binary vector to its Gray-code equivalent using the rule:
 Gray[MSB] = Binary[MSB]
 Gray[i]   = Binary[i] XOR Binary[i+1]
 ```
-<center>
-<img src="./bin_2_gray_tb.svg">
-</center>
 
 The conversion is purely combinational and parameterized by `WIDTH`.
 
@@ -36,9 +28,18 @@ The conversion is purely combinational and parameterized by `WIDTH`.
 
 Simulator: XSim / ModelSim (commands given in Usage).  
 Files under testbench:
-- `testbench/bin_2_gray_new_tb.sv` — directed exhaustive testbench used for verification
+
+- `testbench/bin_2_gray_tb.sv` — directed exhaustive testbench used for verification
 
 ### Testbench Architecture
+
+The following figure illustrates the testbench architecture where an upcounter drives the binary input, the DUT converts it to Gray code, and a checker compares the output against expected values computed by a function.
+
+<center>
+<img src="./bin_2_gray_tb.svg">
+</center>
+
+#### Components
 
 - Stimulus generator: simple up-counter from `0` to `2^WIDTH-1` (`bin_stimulus`).
 - DUT instance: `bin_2_gray #(.WIDTH(WIDTH))`
@@ -49,24 +50,24 @@ Files under testbench:
 
 Primary approach: Directed exhaustive testing for small `WIDTH` (default 8 → 256 vectors). For larger widths use sampled/random + corner tests.
 
-- Stimulus Generation: deterministic up-counter covering [0 .. 2^WIDTH-1] for exhaustive checks.
+- Stimulus Generation: deterministic up-counter covering [0, 1, 2, 3, ... 2^WIDTH-1] for exhaustive checks.
 - Scoreboarding: immediate functional comparison in `verify_gray_output()` with expected value from `binary_to_gray()`.
 - Coverage (recommended): track which input vectors and transition patterns have been exercised (see Functional Coverage).
 
 ## Test Cases
 
-Each test case below is a directed test executed as part of the main loop in `bin_2_gray_new_tb.sv` or as a focused scenario.
+Each test case below is a directed test executed as part of the main loop in `bin_2_gray_tb.sv` or as a focused scenario.
 
 ### Foreach test case
 
 - Test Case Name: `Exhaustive_Basic`  
   Description: Verify all input vectors for small WIDTH (exhaustive).  
   Test Steps:
-  1. For each `i` in 0..(2^WIDTH-1): drive `bin_i = i` and wait 1 time unit.  
-  2. Read `gray_o`.  
-  3. Compute expected Gray using `binary_to_gray(i)`.  
+  1. For each `i` in 0..(2^WIDTH-1): drive `bin_i = i` and wait 1 time unit.
+  2. Read `gray_o`.
+  3. Compute expected Gray using `binary_to_gray(i)`.
   4. Compare and log PASS/FAIL.  
-  Expected Results: DUT output equals expected Gray for every vector.
+     Expected Results: DUT output equals expected Gray for every vector.
 
 - Test Case Name: `Edge_AllZeros`  
   Description: Single-vector test with all zeros.  
@@ -90,67 +91,49 @@ Each test case below is a directed test executed as part of the main loop in `bi
 
 ## Test Case Summary Table
 
-| Test Case        | Purpose                          | Execution Mode    | Expected Result |
-|------------------|----------------------------------|-------------------|-----------------|
-| Exhaustive_Basic | Exhaustive functional check      | Directed / loop   | All vectors PASS |
-| Edge_AllZeros    | Zero-vector edge case            | Directed single   | PASS            |
-| Edge_AllOnes     | All-ones edge case               | Directed single   | PASS            |
-| Transition_Adjacent | Bit-transition behavior test  | Directed sequence | PASS (1-bit changes) |
-| Random_Sample    | Scalable sampling for large WIDTH| Directed random    | PASS (samples)  |
+| Test Case           | Purpose                           | Execution Mode    | Expected Result      |
+| ------------------- | --------------------------------- | ----------------- | -------------------- |
+| Exhaustive_Basic    | Exhaustive functional check       | Directed / loop   | All vectors PASS     |
+| Edge_AllZeros       | Zero-vector edge case             | Directed single   | PASS                 |
+| Edge_AllOnes        | All-ones edge case                | Directed single   | PASS                 |
+| Transition_Adjacent | Bit-transition behavior test      | Directed sequence | PASS (1-bit changes) |
+| Random_Sample       | Scalable sampling for large WIDTH | Directed random   | PASS (samples)       |
 
 ## Functional Coverage
 
 Coverage goals (examples):
 
-- Input vector coverage: for small `WIDTH` aim for 100% (exhaustive).  
-- Bit-transition coverage: ensure all single-bit transitions between adjacent binary values are observed in Gray outputs.  
+- Input vector coverage: for small `WIDTH` aim for 100% (exhaustive).
+- Bit-transition coverage: ensure all single-bit transitions between adjacent binary values are observed in Gray outputs.
 - Edge coverage: zero and all-ones vectors exercised.
 
 Metric and measurement:
-- For `WIDTH <= 10` use exhaustively measured 2^WIDTH vectors and report percent covered.  
+
+- For `WIDTH <= 10` use exhaustively measured 2^WIDTH vectors and report percent covered.
 - For larger WIDTH, measure percent of sampled space and number of unique Gray outputs observed.
 
 ## Test Procedure / Run Instructions
 
-Build & run (XSim example):
-
 ```bash
-xvlog source/bin_2_gray.sv testbench/bin_2_gray_new_tb.sv
-xelab bin_2_gray_tb -debug all
-xsim bin_2_gray_tb -gui
-```
-
-Or run headless and record transcript:
-
-```bash
-xvlog source/bin_2_gray.sv testbench/bin_2_gray_new_tb.sv
-xelab bin_2_gray_tb
-xsim bin_2_gray_tb -tclbatch run.do -nolog
-```
-
-ModelSim/Questa example:
-
-```bash
-vlog source/bin_2_gray.sv testbench/bin_2_gray_new_tb.sv
-vsim -c bin_2_gray_tb -do "run -all; quit"
+make all TOP=bin_2_gray_tb
 ```
 
 ## Verification Points / Exit Criteria
 
-- DUT passes all directed exhaustive tests for the selected `WIDTH`.  
-- No mismatches found in `verify_gray_output()` (fail_count == 0).  
-- Transition checks confirm single-bit change between consecutive Gray outputs.  
+- DUT passes all directed exhaustive tests for the selected `WIDTH`.
+- No mismatches found in `verify_gray_output()` (fail_count == 0).
+- Transition checks confirm single-bit change between consecutive Gray outputs.
 - Test logs and summary generated, and regression run passes on CI for target WIDTH.
 
 ## Notes
 
-- The testbench `bin_2_gray_new_tb.sv` is intentionally simple and deterministic to make debugging straightforward.  
-- For integration into a larger regression framework, wrap the testbench in a harness that can accept run-time `WIDTH` overrides and produce machine-readable result artifacts (CSV/JSON).  
+- The testbench `bin_2_gray_tb.sv` is intentionally simple and deterministic to make debugging straightforward.
+- For integration into a larger regression framework, wrap the testbench in a harness that can accept run-time `WIDTH` overrides and produce machine-readable result artifacts (CSV/JSON).
 
 ## Appendix A — Small Binary→Gray Table (3-bit example)
 
 | Binary | Gray |
-|--------|------|
+| ------ | ---- |
 | 000    | 000  |
 | 001    | 001  |
 | 010    | 011  |
