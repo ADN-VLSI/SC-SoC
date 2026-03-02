@@ -1,3 +1,12 @@
+/////////////////////////////////////////////////////////////////////////////////////////
+// Module        : Memory (mem)
+// Update at     : 19 Feb,2026
+// Description   : A simple byte-addressable memory module with parameterizable address
+//                 and data widths.
+// Author        : Md Samir Hasan
+//
+////////////////////////////////////////////////////////////////////////////////////////
+
 module mem #(
     parameter int ADDR_WIDTH = 4,
     parameter int DATA_WIDTH = 32
@@ -13,7 +22,11 @@ module mem #(
   // ------------------------------------------------------------
   // Local parameters
   // ------------------------------------------------------------
+
+  // Number of bytes in each memory row
   localparam int NUM_ROW_BYTES = DATA_WIDTH / 8;
+
+  // Total depth of the memory (number of rows)
   localparam int DEPTH = 1 << (ADDR_WIDTH - $clog2(NUM_ROW_BYTES));
 
   // ------------------------------------------------------------
