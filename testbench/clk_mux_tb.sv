@@ -1,3 +1,18 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   Module      : clk_mux Testbench
+//   Last Update : March 2, 2026
+//
+//   Description : Verifies the clk_mux module by checking:
+//                   1. Output forced to safe state during reset.
+//                   2. Output follows first clock when selected.
+//                   3. Output follows second clock when selected.
+//                   4. Glitch-free transition between clock sources.
+//
+//   Author      : Shykul Islam Siam
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 module clk_mux_tb;
 
     // Signal Declaration - all inputs and outputs connected to DUT
