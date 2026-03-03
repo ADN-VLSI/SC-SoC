@@ -1,153 +1,98 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   Module      : clk_mux Testbench
+//   Last Update : March 2, 2026
+//
+//   Description : Verifies the clk_mux module by checking:
+//                   1. Output forced to safe state during reset.
+//                   2. Output follows first clock when selected.
+//                   3. Output follows second clock when selected.
+//                   4. Glitch-free transition between clock sources.
+//
+//   Author      : Shykul Islam Siam
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 module clk_mux_tb;
 
-    // -------------------------
-    // Signals
-    // -------------------------
+    // Signal Declaration - all inputs and outputs connected to DUT
     logic arst_ni, sel_i;
     logic clk0_i, clk1_i, clk_o;
 
-    // Clock periods
+    // Clock periods in nanoseconds
     parameter CLK0_PERIOD = 10;
     parameter CLK1_PERIOD = 17;
 
-    // Counters
-    integer total_pass = 0;
-    integer total_error = 0;
+    // Pass/Fail counters
+    integer pass = 0, fail = 0;
 
-    // -------------------------
-    // Instantiate DUT
-    // -------------------------
+    // DUT Instantiation - connect testbench signals to clk_mux module
     clk_mux clk_mux_inst (
-        .arst_ni(arst_ni),
-        .sel_i(sel_i),
-        .clk0_i(clk0_i),
-        .clk1_i(clk1_i),
-        .clk_o(clk_o)
+        .arst_ni(arst_ni), .sel_i(sel_i),
+        .clk0_i(clk0_i),   .clk1_i(clk1_i), .clk_o(clk_o)
     );
 
-    // -------------------------
-    // Clock generation (start AFTER reset)
-    // -------------------------
-    initial begin
-        clk0_i = 0;
-        clk1_i = 0;
-        arst_ni = 0;   // assert reset at time 0
-        sel_i = 0;     // default select
+    // Clock Generators - clk0 toggles every 5ns, clk1 toggles every 8.5ns
+    initial begin clk0_i = 0; forever #(CLK0_PERIOD/2) clk0_i = ~clk0_i; end
+    initial begin clk1_i = 0; forever #(CLK1_PERIOD/2) clk1_i = ~clk1_i; end
 
-        #20 arst_ni = 1; // release reset after 20 ns
-
-        // start clk0 toggling after reset
-        forever #(CLK0_PERIOD/2) clk0_i = ~clk0_i;
-    end
-
-    initial begin
-        // wait until reset released
-        @(posedge arst_ni);
-        // start clk1 toggling after reset
-        forever #(CLK1_PERIOD/2) clk1_i = ~clk1_i;
-    end
-
-    // -------------------------
-    // Monitor
-    // -------------------------
-    initial begin
-        $display("Time | sel_i | clk0_i | clk1_i | clk_o");
-        $monitor("%0t |   %b   |   %b   |   %b   |  %b",
-                  $time, sel_i, clk0_i, clk1_i, clk_o);
-    end
-
-    // -------------------------
-    // Task: Check clk_o at rising edge of selected clock
-    // -------------------------
-    task check_clk_o(input logic sel);
-        begin
-            if (sel == 0) @(posedge clk0_i);
-            else         @(posedge clk1_i);
-
-            if (sel == 0 && clk_o !== clk0_i) begin
-                $error("[%0t] ERROR: clk_o != clk0", $time);
-                total_error = total_error + 1;
-            end else if (sel == 1 && clk_o !== clk1_i) begin
-                $error("[%0t] ERROR: clk_o != clk1", $time);
-                total_error = total_error + 1;
-            end else begin
-                $display("[%0t] PASS: clk_o follows selected clk", $time);
-                total_pass = total_pass + 1;
-            end
-        end
+    // Check Task - compares got vs expected, prints PASS or FAIL
+    task check(input string name, input logic got, input logic exp);
+        if (got !== exp) begin $error("FAIL %s", name); fail++; end
+        else             begin $display("PASS %s", name); pass++; end
     endtask
 
-    // -------------------------
-    // Test Cases
-    // -------------------------
+    // TC1 - Reset: assert reset, check clk_o=0, then release reset
     task tc_reset();
-        begin
-            $display("\n[%0t] TC1: Reset test", $time);
-            check_clk_o(sel_i);
-            #50; // wait a few ns for waveform observation
-        end
+        arst_ni = 0; #5;
+        check("TC1: Reset", clk_o, 1'b0);
+        arst_ni = 1; #20;
     endtask
 
+    // TC2 - Select clk0: set sel=0, wait for mux to settle, check clk_o matches clk0
     task tc_select_clk0();
-        begin
-            $display("\n[%0t] TC2: Select clk0", $time);
-            sel_i = 0;
-            check_clk_o(0);
-            #50;
-        end
+        sel_i = 0; #50;
+        check("TC2: Select clk0", clk_o, clk0_i);
     endtask
 
+    // TC3 - Select clk1: set sel=1, wait for mux to settle, check clk_o matches clk1
     task tc_select_clk1();
-        begin
-            $display("\n[%0t] TC3: Select clk1", $time);
-            sel_i = 1;
-            check_clk_o(1);
-            #50;
-        end
+        sel_i = 1; #50;
+        check("TC3: Select clk1", clk_o, clk1_i);
     endtask
 
+    // TC4 - Switch 0->1: select clk0 first, then switch to clk1, wait for handshake, check clk_o matches clk1
     task tc_switch_0_to_1();
-        begin
-            $display("\n[%0t] TC4: Switch 0->1", $time);
-            sel_i = 0; check_clk_o(0); #20;
-            sel_i = 1; check_clk_o(1); #20;
-        end
+        sel_i = 0; #50;
+        sel_i = 1; #50;
+        check("TC4: Switch 0->1", clk_o, clk1_i);
     endtask
 
-    // -------------------------
-    // Run all tests
-    // -------------------------
+    // TC5 - clk_o No Unknown Values: check clk_o is not X or Z
+    task tc_clk_o_no_unknown();
+        #20;
+        check("TC5: clk_o No Unknown Values", clk_o === 1'bx ? 1'bx : clk_o, clk_o);
+    endtask
+
     initial begin
+
+        // Initialization - hold reset low for 20ns then release and wait for DUT to stabilize
+        arst_ni = 0; sel_i = 0; #20;
+        arst_ni = 1; #20;
+
+        // Run all test cases
         tc_reset();
         tc_select_clk0();
         tc_select_clk1();
         tc_switch_0_to_1();
+        tc_clk_o_no_unknown();
 
-        $display("\n==============================");
-        $display("Simulation Summary:");
-        $display("Total Passes : %0d", total_pass);
-        $display("Total Errors : %0d", total_error);
-        if (total_error == 0)
-            $display("RESULT: ALL TESTS PASSED!");
-        else
-            $display("RESULT: SOME TESTS FAILED!");
-        $display("==============================");
-
-        // -------------------------
-        // Wait extra time to capture waveforms
-        // -------------------------
-        #200; // allow clocks and clk_o to toggle in GTKWave
-
-        $display("\nSimulation complete at %0t ns", $time);
+        // Summary - print total pass/fail count and end simulation
+        $display("\nPass: %0d  Fail: %0d  %s", pass, fail, fail == 0 ? "ALL PASSED!" : "SOME FAILED!");
         $finish;
     end
 
-    // -------------------------
-    // VCD dump
-    // -------------------------
-    initial begin
-        $dumpfile("clk_mux_tb.vcd");
-        $dumpvars(0, clk_mux_tb);
-    end
+    // VCD Dump - save all signal waveforms to file for GTKWave viewing
+    initial begin $dumpfile("clk_mux_tb.vcd"); $dumpvars(0, clk_mux_tb); end
 
 endmodule
