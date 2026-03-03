@@ -4,52 +4,64 @@ module clk_div_tb;
   //           PARAMETER
   /////////////////////////////////////
 
-  localparam realtime TP        = 10ns;
-  parameter int       DIV_WIDTH = 4;
+  localparam realtime TP = 10ns;  // 100 MHz
+  parameter int DIV_WIDTH = 4;
 
   ////////////////////////////////////
   //           Signasls
   ////////////////////////////////////
 
   //  active low asynchronous reset
-  logic             arst_ni;
+  logic                 arst_ni;
 
   //  input clock
-  logic             clk_i;
+  logic                 clk_i;
 
   //  input clock divider
   logic [DIV_WIDTH-1:0] div_i;
 
   //  output clocks
-  logic            clk_o;
+  logic                 clk_o;
+
+  ////////////////////////////////////
+  //           Variables
+  ////////////////////////////////////
+
+  int                   test_passed;
+  int                   test_failed;
+
+  bit                   mota_clk_p;
+  bit                   mota_clk_n;
 
   ///////////////////////////////////////////
   //         INSTANTIATIONS
   ///////////////////////////////////////////
 
-  clk_div #(.DIV_WIDTH(4)) dut (
-            .arst_ni(arst_ni),
-            .clk_i(clk_i),
-            .div_i(div_i),
-            .clk_o(clk_o)
-          );
+  clk_div #(
+      .DIV_WIDTH(DIV_WIDTH)
+  ) dut (
+      .arst_ni(arst_ni),
+      .clk_i  (clk_i),
+      .div_i  (div_i),
+      .clk_o  (clk_o)
+  );
 
   ///////////////////////////////////////////
   //            Clock generation
   ///////////////////////////////////////////
 
-  always #(TP/2) clk_i <= ~clk_i;
+  always #(TP / 2) clk_i <= ~clk_i;
 
   ///////////////////////////////////////////
   //           Test 1: Reset Behaviour
   ///////////////////////////////////////////
 
   task automatic apply_reset();
-    arst_ni<=0;
-    clk_i<=0;
-    div_i<=0;
+    arst_ni <= '0;
+    clk_i   <= '0;
+    div_i   <= '0;
     repeat (5) @(posedge clk_i);
-    arst_ni<=1;
+    arst_ni <= '1;
     repeat (2) @(posedge clk_i);
   endtask
 
@@ -58,83 +70,53 @@ module clk_div_tb;
   ///////////////////////////////////////////
 
   task automatic async_reset();
-    arst_ni <= 0;
+    arst_ni <= '0;
     #1;
-    if (clk_o == 0)
-      $display("Reset clears output.");
-    else
-      $display("Reset Failed.");
-    arst_ni <= 1;
+    if (clk_o == 0) $display("Reset clears output.");
+    else $display("Reset Failed.");
+    arst_ni <= '1;
   endtask
 
+  task automatic check_division(input logic [DIV_WIDTH-1:0] div_val);
 
-  ///////////////////////////////////////////
-  //     Test 3: Check Division
-  ///////////////////////////////////////////
-/*
-  task automatic check_division(input logic [DIV_WIDTH-1:0]div_val);
-    time t1, t2, expected_period, measured_period;
-    $display("[%0t] Attempting with div_val:%0d", $realtime, div_val);
-    div_i=div_val;
-    repeat(5) @(posedge clk_i);
-    @(posedge clk_o);
-    t1=$time;
-    @(posedge clk_o);
-    t2=$time;
-    measured_period=t2-t1;
-    expected_period= TP*div_val;
-    if (measured_period==expected_period)
-      $display("Division Passed, Period: %0t",measured_period);
-    else
-    begin
-      $display("Division Failed");
-      $display("Measured Period: %0t",measured_period);
-      $display("Expected Period: %0t",expected_period);
+    realtime measured_timeperiod;
+    real x;
+
+    div_i <= (div_val == 0) ? 1 : div_val;
+
+    // let divider settle
+    repeat (2) @(posedge clk_o);
+
+    // Measure the time between 100 output clock edges to get an average period
+    measured_timeperiod = $realtime;
+    repeat (3) @(posedge clk_o);
+    measured_timeperiod = $realtime - measured_timeperiod;
+    measured_timeperiod = measured_timeperiod / 3;
+
+    x = (10ns * div_i) / measured_timeperiod;
+
+    if (x > 0.98 && x < 1.02) begin
+      $display("Division Passed for div_val=%0d, Measured Period: %0t\n [%0t]", div_val,
+               measured_timeperiod, $realtime);
+    end else begin
+      $display("Division Failed for div_val=%0d [%0t]", div_val, $realtime);
+      $display("Measured Period: %0t, Expected Period: %0t\n", measured_timeperiod, 10ns * div_i);
     end
+
   endtask
-*/
-task automatic check_division(input logic [DIV_WIDTH-1:0] div_val);
-
-  int count_i;
-  logic [DIV_WIDTH-1:0] effective_div;
-
-  effective_div = (div_val == 0) ? 1 : div_val;
-  div_i = div_val;
-
-  // let divider settle
-  repeat(5*effective_div) @(posedge clk_i);
-
-  // Count input clocks until the output should toggle
-  count_i = 0;
-  for(int i=0; i<effective_div; i++) begin
-    @(posedge clk_i);
-    count_i++;
-  end
-
-  // Now check the counter value of your divider (cnt) if possible
-  if(count_i == effective_div) begin
-    $display("Division PASSED: div=%0d, counted clk_i cycles=%0d", div_val, count_i);
-  end else begin
-    $error("Division FAILED: div=%0d, expected clk_i cycles=%0d, got=%0d",
-           div_val, effective_div, count_i);
-  end
-
-endtask
   ////////////////////////////////////////////
   //      Test 4: Reset During Operation
   ///////////////////////////////////////////
 
-  task automatic reset_during_op(input logic [DIV_WIDTH-1:0]div_val);
-    div_i=div_val;
+  task automatic reset_during_op(input logic [DIV_WIDTH-1:0] div_val);
+    div_i <= div_val;
     repeat (15) @(posedge clk_i);
-    arst_ni=0;
+    arst_ni <= '0;
     #1;
-    if(clk_o==0)
-      $display (" Reset Done");
-    else
-      $display (" Reset Failed");
-    repeat(2) @(posedge clk_i);
-    arst_ni=1;
+    if (clk_o == 0) $display(" Reset Done");
+    else $display(" Reset Failed");
+    repeat (2) @(posedge clk_i);
+    arst_ni <= '1;
     check_division(div_val);
   endtask
 
@@ -142,9 +124,8 @@ endtask
   //             PROCEDURALS
   ///////////////////////////////////////////
 
-  initial
-  begin
-    $timeformat(-9,2," ns",8);
+  initial begin
+    $timeformat(-9, 2, "ns", 8);
     $dumpfile("clk_div_tb.vcd");
     $dumpvars(0, clk_div_tb);
     apply_reset();
@@ -155,22 +136,21 @@ endtask
     $display("Zero Division");
     check_division(0);
     async_reset();
-    repeat(5) @(posedge clk_i);
+    repeat (5) @(posedge clk_i);
     $display("All Divisional Sweep");
-    for(int i=1;i<=15;i++)
-    begin
+    for (int i = 1; i <= 15; i++) begin
       check_division(i);
     end
     $display("Reset During Operation");
     reset_during_op(3);
     reset_during_op(2);
     $display("Test Completed");
+    if (test_failed == 0) begin
+      $display("\033[1;32mAll tests passed!\033[0m");
+    end else begin
+      $display("\033[1;31m%d tests failed.\033[0m", test_failed);
+    end
     $finish;
-  end
-
-  initial begin
-    #100us;
-    $fatal(1,"Fatal Timeout");
   end
 
 endmodule

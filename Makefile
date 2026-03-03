@@ -24,5 +24,5 @@ all:
 	@make -s clean
 	@make -s build
 	@cd build && xvlog -sv $(SRC_LIST) $(TB_LIST) $(EWHL)
-	@cd build && xelab $(TOP) -s $(TOP)_sim $(EWHL)
+	@cd build && xelab $(TOP) -s $(TOP)_sim --O0 -debug all $(EWHL)
 	@cd build && xsim $(TOP)_sim -runall $(EWHL)
