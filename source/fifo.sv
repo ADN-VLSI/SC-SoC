@@ -62,6 +62,7 @@ localparam int FIFO_DEPTH  = 2 ** FIFO_SIZE;
 // ---------------------------------------------------------------------------
 
     logic [DATA_WIDTH-1:0]   mem[0:FIFO_DEPTH-1]; 
+    logic [DATA_WIDTH-1:0]
     logic [FIFO_SIZE-1:0]    wr_ptr, rd_ptr;
     logic [FIFO_SIZE:0]      count;
 
@@ -72,31 +73,32 @@ localparam int FIFO_DEPTH  = 2 ** FIFO_SIZE;
 //  Status Logic
 // ---------------------------------------------------------------------------
 
-
-
     logic full, empty;
 
-    assign full  = (count == FIFO_DEPTH);
-    assign empty = (count == 0);
 
+// --------------------------------------------------------------------------
+//  Full/Empty Signals
+// --------------------------------------------------------------------------
 
+    always_comb begin
+        full  = (count == FIFO_DEPTH-1);
+        empty = (count == 0);
+    end
 
 // ---------------------------------------------------------------------------
 // Handshake-facing signals
 // ---------------------------------------------------------------------------
-
-    assign data_i_ready_o = (!full);
-    
-    assign data_o_valid_o = (!empty);
-
+    always_comb begin
+        data_i_ready_o =     (full) ? data_o_ready_i : '1;
+        data_o_valid_o =     (empty) ? data_i_valid_i : !empty;
+    end
 
 // ---------------------------------------------------------------------------
 //  Actual transfer
 // ---------------------------------------------------------------------------
-
-    assign write_do = data_i_valid_i && data_i_ready_o;
-
-    assign read_do =  data_o_valid_o && data_o_ready_i;
+    always_comb begin
+        write_do = (data_i_valid_i && data_i_ready_o);
+        read_do  = (data_o_valid_o && data_o_ready_i);
 
 
 // Data output (combinational read of current head)
@@ -130,7 +132,7 @@ localparam int FIFO_DEPTH  = 2 ** FIFO_SIZE;
              end
              // Read operation
             if(read_do) begin
-                data_o <= mem[rd_ptr];
+                data_o <= (empty) ? data_i : mem[rd_ptr];
                 // Advanced read pointer with wrap
                 if(rd_ptr == FIFO_DEPTH-1)begin
                     rd_ptr <= '0;
@@ -148,8 +150,6 @@ localparam int FIFO_DEPTH  = 2 ** FIFO_SIZE;
         end
     end
 
-
 endmodule
-
 
 
