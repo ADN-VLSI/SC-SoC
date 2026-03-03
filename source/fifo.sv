@@ -132,7 +132,7 @@ localparam int FIFO_DEPTH  = 2 ** FIFO_SIZE;
              end
              // Read operation
             if(read_do) begin
-                data_o <= mem[rd_ptr];
+                data_o <= (empty) ? data_i : mem[rd_ptr];
                 // Advanced read pointer with wrap
                 if(rd_ptr == FIFO_DEPTH-1)begin
                     rd_ptr <= '0;
@@ -151,6 +151,5 @@ localparam int FIFO_DEPTH  = 2 ** FIFO_SIZE;
     end
 
 endmodule
-
 
 
