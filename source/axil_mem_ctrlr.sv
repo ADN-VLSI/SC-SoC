@@ -21,8 +21,8 @@
 //   DATA_WIDTH - Width of the data bus (default: 32)
 
 module axil_mem_ctrlr #(
-    parameter ADDR_WIDTH = 32,
-    parameter DATA_WIDTH = 32
+    parameter int ADDR_WIDTH = 32,
+    parameter int DATA_WIDTH = 32
 ) (
 
     ////////////////////////////////////////////////////////////////////////////////////////////////

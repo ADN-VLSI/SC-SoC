@@ -1,5 +1,5 @@
 module dual_edge_reg #(
-    parameter WIDTH = 8
+    parameter int WIDTH = 8
 ) (
     input  logic             arst_ni,
     input  logic             clk_i,
