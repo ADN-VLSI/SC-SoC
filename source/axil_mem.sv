@@ -1,3 +1,16 @@
+// Module: axil_mem
+//
+// Description:
+//   AXI4-Lite slave memory peripheral. Each AXI-Lite channel (AW, W, B, AR, R)
+//   is decoupled from the internal logic via a small FIFO, providing registered
+//   outputs on every port and isolating the master from back-pressure. An
+//   axil_mem_ctrlr instance arbitrates read/write requests and drives a
+//   dual_port_mem instance that holds the actual data.
+//
+// Parameters:
+//   ADDR_WIDTH - Width of the AXI address bus (default: 32)
+//   DATA_WIDTH - Width of the AXI data bus; must be a multiple of 8 (default: 32)
+
 module axil_mem #(
     parameter ADDR_WIDTH = 32,
     parameter DATA_WIDTH = 32
@@ -92,10 +105,12 @@ module axil_mem #(
   // SUBMODULE INSTANTIATIONS
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
+  // AW channel FIFO: buffers incoming write-address beats ({addr, prot}).
+  // Depth-2 provides registered outputs and absorbs one cycle of back-pressure.
   fifo #(
       .FIFO_SIZE        (2),
-      .DATA_WIDTH       (ADDR_WIDTH + 3),
-      .ALLOW_FALLTHROUGH(0)
+      .DATA_WIDTH       (ADDR_WIDTH + 3), // addr + 3-bit prot
+      .ALLOW_FALLTHROUGH(0)              // registered (no combinational path)
   ) aw_fifo (
       .arst_ni         (arst_ni),
       .clk_i           (clk_i),
@@ -108,9 +123,11 @@ module axil_mem #(
       .count_o         ()
   );
 
+  // W channel FIFO: buffers incoming write-data beats ({data, strobe}).
+  // Strobe width is DATA_WIDTH/8 (one bit per byte lane).
   fifo #(
       .FIFO_SIZE        (2),
-      .DATA_WIDTH       (DATA_WIDTH + DATA_WIDTH / 8),
+      .DATA_WIDTH       (DATA_WIDTH + DATA_WIDTH / 8), // data + byte-enable strobes
       .ALLOW_FALLTHROUGH(0)
   ) w_fifo (
       .arst_ni         (arst_ni),
@@ -124,11 +141,11 @@ module axil_mem #(
       .count_o         ()
   );
 
-
-
+  // B channel FIFO: buffers outgoing write-response beats (2-bit resp).
+  // Decouples the controller from master back-pressure on the response channel.
   fifo #(
       .FIFO_SIZE        (2),
-      .DATA_WIDTH       (2),
+      .DATA_WIDTH       (2), // 2-bit BRESP
       .ALLOW_FALLTHROUGH(0)
   ) b_fifo (
       .arst_ni         (arst_ni),
@@ -142,11 +159,10 @@ module axil_mem #(
       .count_o         ()
   );
 
-
-
+  // AR channel FIFO: buffers incoming read-address beats ({addr, prot}).
   fifo #(
       .FIFO_SIZE        (2),
-      .DATA_WIDTH       (ADDR_WIDTH + 3),
+      .DATA_WIDTH       (ADDR_WIDTH + 3), // addr + 3-bit prot
       .ALLOW_FALLTHROUGH(0)
   ) ar_fifo (
       .arst_ni         (arst_ni),
@@ -160,10 +176,11 @@ module axil_mem #(
       .count_o         ()
   );
 
-
+  // R channel FIFO: buffers outgoing read-data beats ({data, resp}).
+  // Holds the response until the master is ready to accept it.
   fifo #(
       .FIFO_SIZE        (2),
-      .DATA_WIDTH       (DATA_WIDTH + 2),
+      .DATA_WIDTH       (DATA_WIDTH + 2), // data + 2-bit RRESP
       .ALLOW_FALLTHROUGH(0)
   ) r_fifo (
       .arst_ni         (arst_ni),
@@ -177,7 +194,8 @@ module axil_mem #(
       .count_o         ()
   );
 
-
+  // AXI-Lite memory controller: arbitrates between write and read requests,
+  // drives the dual-port memory interface, and generates AXI responses.
   axil_mem_ctrlr #(
       .ADDR_WIDTH(ADDR_WIDTH),
       .DATA_WIDTH(DATA_WIDTH)
@@ -210,6 +228,8 @@ module axil_mem #(
       .rdata_i   (mem_rdata)
   );
 
+  // Dual-port memory: separate write and read ports allow simultaneous
+  // access without structural hazards.
   dual_port_mem #(
       .ADDR_WIDTH(ADDR_WIDTH),
       .DATA_WIDTH(DATA_WIDTH)
@@ -222,7 +242,5 @@ module axil_mem #(
       .raddr_i(mem_raddr),
       .rdata_o(mem_rdata)
   );
-
-
 
 endmodule
