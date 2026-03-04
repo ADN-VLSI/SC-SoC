@@ -24,132 +24,119 @@
 // ============================================================================
 
 module fifo #(
-    // Width of the data bus
-    parameter int DATA_WIDTH = 8,
-    // Cealing of log2(FIFO_DEPTH)
-    parameter int FIFO_SIZE  = 4
-    // FIFO_DEPTH = 2 ** FIFO_SIZE
-    // FIFO_DEPTH is the number of entries that can be stored in the FIFO
+    parameter int FIFO_SIZE         = 4,  // address width for depth = 2^FIFO_SIZE
+    parameter int DATA_WIDTH        = 8,  // width of each data word
+    parameter bit ALLOW_FALLTHROUGH = 0   // enable fall-through (bypass) behavior
 ) (
-    // Asynchronous reset, active low
-    input logic arst_ni,
-    // Synchronous clock input
-    input logic clk_i,
+    input logic arst_ni,  // active-low asynchronous reset
+    input logic clk_i,    // clock
 
-    // Data input bus
-    input  logic [DATA_WIDTH-1:0] data_i,
-    // Indicates that the data on the input bus is valid
-    input  logic                  data_i_valid_i,
-    // Indicates that the FIFO is ready to accept data on the input bus
-    output logic                  data_i_ready_o,
+    // Input (write) interface
+    input  logic [DATA_WIDTH-1:0] data_in_i,        // input data
+    input  logic                  data_in_valid_i,  // input valid
+    output logic                  data_in_ready_o,  // input ready
 
-    // Data output bus
-    output logic [DATA_WIDTH-1:0] data_o,
-    // Indicates that the data on the output bus is valid
-    output logic                  data_o_valid_o,
-    // Indicates that the receiver is ready to accept data on the output bus
-    input  logic                  data_o_ready_i
+    // Output (read) interface
+    output logic [DATA_WIDTH-1:0] data_out_o,        // output data
+    output logic                  data_out_valid_o,  // output valid
+    input  logic                  data_out_ready_i,  // output ready
+
+    output logic [FIFO_SIZE:0] count_o  // number of items in FIFO (binary difference)
 );
 
-// ---------------------------------------------------------------------------
-//  Local parameters
-// ---------------------------------------------------------------------------
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // INTERNAL SIGNALS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-localparam int FIFO_DEPTH  = 2 ** FIFO_SIZE;
+  // Pointers: one extra MSB used to detect full/empty by comparing MSBs
+  logic [   FIFO_SIZE:0] wr_ptr;  // write pointer (increment on writes)
+  logic [   FIFO_SIZE:0] rd_ptr;  // read pointer (increment on reads)
 
-// ---------------------------------------------------------------------------
-//  Internal Signals
-// ---------------------------------------------------------------------------
+  // Memory output from the buffer
+  logic [DATA_WIDTH-1:0] mem_data_out;
 
-    logic [DATA_WIDTH-1:0]   mem[0:FIFO_DEPTH-1]; 
-    logic [DATA_WIDTH-1:0]
-    logic [FIFO_SIZE-1:0]    wr_ptr, rd_ptr;
-    logic [FIFO_SIZE:0]      count;
+  // Comparison flags used to compute full/empty conditions
+  logic                  msb_eq;  // MSB of pointers equal
+  logic                  nmsb_eq;  // lower bits of pointers equal
+  logic                  full;  // FIFO full indicator
+  logic                  empty;  // FIFO empty indicator
 
-    logic                write_do, read_do;
+  // Memory control signals
+  logic                  mem_we;  // memory write enable
+  logic                  mem_re;  // memory read enable
 
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // SUBMODULES INSTANTIATIONS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-// ---------------------------------------------------------------------------
-//  Status Logic
-// ---------------------------------------------------------------------------
+  // Dual-port memory instance used as the FIFO storage
+  dual_port_mem #(
+      .ADDR_WIDTH(FIFO_SIZE),
+      .DATA_WIDTH(DATA_WIDTH)
+  ) fifo_buffer_memory (
+      .clk_i  (clk_i),
+      .waddr_i(wr_ptr[FIFO_SIZE-1:0]),
+      .we_i   (mem_we),
+      .wdata_i(data_in_i),
+      .wstrb_i('1),
+      .raddr_i(rd_ptr[FIFO_SIZE-1:0]),
+      .rdata_o(mem_data_out)
+  );
 
-    logic full, empty;
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // COMBINATIONAL LOGICS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
 
+  // Pointer comparisons: MSB used to distinguish wrap-around
+  always_comb msb_eq = (wr_ptr[FIFO_SIZE] == rd_ptr[FIFO_SIZE]);
+  always_comb nmsb_eq = (wr_ptr[FIFO_SIZE-1:0] == rd_ptr[FIFO_SIZE-1:0]);
 
-// --------------------------------------------------------------------------
-//  Full/Empty Signals
-// --------------------------------------------------------------------------
+  // Full when MSBs equal but lower bits differ; empty when both equal
+  always_comb full = msb_eq && !nmsb_eq;
+  always_comb empty = msb_eq && nmsb_eq;
 
+  // Back-pressure: if full then input ready follows output ready (to allow pop-then-push)
+  always_comb data_in_ready_o = full ? data_out_ready_i : 1'b1;
+
+  // Memory control: write when input valid & ready; read when output consumed
+  always_comb mem_we = data_in_valid_i && data_in_ready_o;
+  always_comb mem_re = data_out_valid_o && data_out_ready_i;
+
+  // Element count is pointer difference (wr - rd)
+  always_comb count_o = wr_ptr - rd_ptr;
+
+  if (ALLOW_FALLTHROUGH) begin
     always_comb begin
-        full  = (count == FIFO_DEPTH-1);
-        empty = (count == 0);
+      // Fall-through mode: when FIFO empty, output directly reflects incoming data
+      data_out_o = empty ? data_in_i : mem_data_out;
+      data_out_valid_o = empty ? data_in_valid_i : 1'b1;
     end
-
-// ---------------------------------------------------------------------------
-// Handshake-facing signals
-// ---------------------------------------------------------------------------
+  end else begin
     always_comb begin
-        data_i_ready_o =     (full) ? data_o_ready_i : '1;
-        data_o_valid_o =     (empty) ? data_i_valid_i : !empty;
+      // Non fall-through: output is driven from memory; valid when not empty
+      data_out_o = mem_data_out;
+      data_out_valid_o = !empty;
     end
+  end
 
-// ---------------------------------------------------------------------------
-//  Actual transfer
-// ---------------------------------------------------------------------------
-    always_comb begin
-        write_do = (data_i_valid_i && data_i_ready_o);
-        read_do  = (data_o_valid_o && data_o_ready_i);
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // SEQUENTIAL LOGICS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-// Data output (combinational read of current head)
-// For FPGA BRAM you’d usually register this; for a basic FIFO this is fine.
-// assign out_data = mem[rd_ptr];
-
-
-
-// ---------------------------------------------------------------------------
-// Sequential logic
-// ---------------------------------------------------------------------------
-    always_ff@(posedge clk_i or negedge arst_ni) 
-    begin
-        if(!arst_ni) begin
-            wr_ptr <= '0;
-            rd_ptr <= '0;
-            count  <= '0;
-            data_o <= '0;
-         end
-         else begin
-             // Write operation
-             if(write_do)begin
-                 mem[wr_ptr] <= data_i;
-                 // Advanced write pointer with wrap
-                 if(wr_ptr == FIFO_DEPTH-1)begin
-                     wr_ptr <= '0;
-                 end
-                 else begin
-                     wr_ptr <= wr_ptr + 1;
-                 end
-             end
-             // Read operation
-            if(read_do) begin
-                data_o <= (empty) ? data_i : mem[rd_ptr];
-                // Advanced read pointer with wrap
-                if(rd_ptr == FIFO_DEPTH-1)begin
-                    rd_ptr <= '0;
-                end
-                else begin
-                    rd_ptr <= rd_ptr + 1;
-                end
-            end
-            // Count Update (handles simulatneous read & write)
-            unique case ({write_do,read_do})
-                2'b10:   count <= count + 1;  // write only
-                2'b01:   count <= count - 1;  // read only
-                default: count <= count;      // both or neither; so unchanged
-            endcase
-        end
+  always_ff @(posedge clk_i or negedge arst_ni) begin
+    if (~arst_ni) begin
+      wr_ptr <= '0;
+    end else begin
+      if (mem_we) wr_ptr <= wr_ptr + 1;
     end
+  end
+
+  always_ff @(posedge clk_i or negedge arst_ni) begin
+    if (~arst_ni) begin
+      rd_ptr <= '0;
+    end else begin
+      if (mem_re) rd_ptr <= rd_ptr + 1;
+    end
+  end
 
 endmodule
-
-
