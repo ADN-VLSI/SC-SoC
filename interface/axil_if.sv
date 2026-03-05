@@ -1,3 +1,5 @@
+`include "axi4l/typedef.svh"
+
 interface axil_if #(
     parameter int ADDR_WIDTH = 32,
     parameter int DATA_WIDTH = 32
@@ -8,76 +10,61 @@ interface axil_if #(
 );
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
+  // TYPEDEFS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  `AXI4L_ALL(axi4l, ADDR_WIDTH, DATA_WIDTH)
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
   // SIGNALS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  // Write address channel
-  logic [  ADDR_WIDTH-1:0] aw_addr_i;
-  logic [             2:0] aw_prot_i;
-  logic                    aw_valid_i;
-  logic                    aw_ready_o;
-
-  // Write data channel
-  logic [  DATA_WIDTH-1:0] w_data_i;
-  logic [DATA_WIDTH/8-1:0] w_strb_i;
-  logic                    w_valid_i;
-  logic                    w_ready_o;
-
-  // Write response channel
-  logic [             1:0] b_resp_o;
-  logic                    b_valid_o;
-  logic                    b_ready_i;
-
-  // Read address channel
-  logic [  ADDR_WIDTH-1:0] ar_addr_i;
-  logic [             2:0] ar_prot_i;
-  logic                    ar_valid_i;
-  logic                    ar_ready_o;
-
-  // Read data channel
-  logic [  DATA_WIDTH-1:0] r_data_o;
-  logic [             1:0] r_resp_o;
-  logic                    r_valid_o;
-  logic                    r_ready_i;
+  axi4l_req_t axi4l_req;
+  axi4l_rsp_t axi4l_rsp;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // METHODS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  semaphore send_aw_sem = new(1);
-  task automatic send_aw(input [ADDR_WIDTH-1:0] addr, input [2:0] prot);
-    send_aw_sem.get(1);
-    // TODO FIX EDGE ALIGN ISSUE
-    @(posedge clk_i);
-    aw_addr_i  <= addr;
-    aw_prot_i  <= prot;
-    aw_valid_i <= 1'b1;
-    do @(posedge clk_i);
-    while (!aw_ready_o);
-    aw_valid_i <= 1'b0;
-    send_aw_sem.put(1);
-  endtask
+  `define AXIL_METHODS(__CHAN__, __TX__, __RX__)                                                   \
+    semaphore send_``__CHAN__``_sem = new(1);                                                      \
+    task automatic send_``__CHAN__``(input axi4l_``__CHAN__``_chan_t ``__CHAN__``);                \
+      send_``__CHAN__``_sem.get(1);                                                                \
+      // TODO FIX EDGE ALIGN ISSUE                                                                 \
+      @(posedge clk_i);                                                                            \
+      axi4l_``__TX__``.``__CHAN__``       <= ``__CHAN__``;                                         \
+      axi4l_``__TX__``.``__CHAN__``_valid <= 1'b1;                                                 \
+      do @(posedge clk_i);                                                                         \
+      while (!axi4l_``__RX__``.``__CHAN__``_ready);                                                \
+      axi4l_``__TX__``.``__CHAN__``_valid <= 1'b0;                                                 \
+      send_``__CHAN__``_sem.put(1);                                                                \
+    endtask                                                                                        \
+                                                                                                   \
+    semaphore recv_``__CHAN__``_sem = new(1);                                                      \
+    task automatic recv_``__CHAN__``(output axi4l_``__CHAN__``_chan_t ``__CHAN__``);               \
+      recv_``__CHAN__``_sem.get(1);                                                                \
+      // TODO FIX EDGE ALIGN ISSUE                                                                 \
+      @(posedge clk_i);                                                                            \
+      axi4l_``__RX__``.``__CHAN__``_ready <= 1'b1;                                                 \
+      do @(posedge clk_i);                                                                         \
+      while (!axi4l_``__TX__``.``__CHAN__``_valid);                                                \
+      ``__CHAN__``       = axi4l_``__TX__``.``__CHAN__``;                                          \
+      axi4l_``__RX__``.``__CHAN__``_ready <= 1'b0;                                                 \
+      send_``__CHAN__``_sem.put(1);                                                                \
+    endtask                                                                                        \
+                                                                                                   \
+    task automatic look_``__CHAN__``(output axi4l_``__CHAN__``_chan_t ``__CHAN__``);               \
+      do @(posedge clk_i);                                                                         \
+      while (!(axi4l_``__TX__``.``__CHAN__``_valid & axi4l_``__TX__``.``__CHAN__``_ready));        \
+      ``__CHAN__``       = axi4l_``__TX__``.``__CHAN__``;                                          \
+    endtask                                                                                        \
 
-  semaphore recv_aw_sem = new(1);
-  task automatic recv_aw(output [ADDR_WIDTH-1:0] addr, output [2:0] prot);
-    recv_aw_sem.get(1);
-    // TODO FIX EDGE ALIGN ISSUE
-    @(posedge clk_i);
-    aw_ready_o <= 1'b1;
-    do @(posedge clk_i);
-    while (!aw_valid_i);
-    addr       = aw_addr_i;
-    prot       = aw_prot_i;
-    aw_ready_o <= 1'b0;
-    send_aw_sem.put(1);
-  endtask
 
-  task automatic look_aw(output [ADDR_WIDTH-1:0] addr, output [2:0] prot);
-    do @(posedge clk_i);
-    while (!(aw_valid_i & aw_ready_o));
-    addr       = aw_addr_i;
-    prot       = aw_prot_i;
-  endtask
+  `AXIL_METHODS(aw, req, rsp)
+  `AXIL_METHODS(w, req, rsp)
+  `AXIL_METHODS(b, rsp, req)
+  `AXIL_METHODS(ar, req, rsp)
+  `AXIL_METHODS(r, rsp, req)
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // ASSERTIONS
@@ -90,19 +77,20 @@ interface axil_if #(
       |=> $stable(``__SIGNAL__``))                                                    \
     else                                                                              \
       $error(`"A valid ``__SIGNAL__`` changed while ``__READY__`` was deasserted`");  \
+                                                                                      \
     assert property (@(posedge clk_i)                                                 \
       disable iff (!arst_ni)                                                          \
       ($past(``__VALID__``) && !``__VALID__``)                                        \
-      |=> $past(``__READY__``, 2)                                                     \
+      |=> $past(``__READY__``, 2))                                                    \
     else                                                                              \
       $error(`"The ``__VALID__`` deasserted without ``__READY__`` `");                \
 
 
-  `VALID_READY_PROPERTY_CHECK(aw_valid_i, aw_ready_o, aw_addr_i)
-  `VALID_READY_PROPERTY_CHECK(w_valid_i, w_ready_o, w_data_i)
-  `VALID_READY_PROPERTY_CHECK(b_valid_o, b_ready_i, b_resp_o)
-  `VALID_READY_PROPERTY_CHECK(ar_valid_i, ar_ready_o, ar_addr_i)
-  `VALID_READY_PROPERTY_CHECK(r_valid_o, r_ready_i, r_data_o)
+  `VALID_READY_PROPERTY_CHECK(axi4l_req.aw_valid, axi4l_rsp.aw_ready, axi4l_req.aw)
+  `VALID_READY_PROPERTY_CHECK(axi4l_req.w_valid, axi4l_rsp.w_ready, axi4l_req.w)
+  `VALID_READY_PROPERTY_CHECK(axi4l_rsp.b_valid, axi4l_req.b_ready, axi4l_rsp.b)
+  `VALID_READY_PROPERTY_CHECK(axi4l_req.ar_valid, axi4l_rsp.ar_ready, axi4l_req.ar)
+  `VALID_READY_PROPERTY_CHECK(axi4l_rsp.r_valid, axi4l_req.r_ready, axi4l_rsp.r)
 
   `undef VALID_READY_PROPERTY_CHECK
 
