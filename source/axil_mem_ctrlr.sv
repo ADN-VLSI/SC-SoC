@@ -26,7 +26,7 @@ module axil_mem_ctrlr #(
     parameter type axi4l_req_t = defaults_pkg::axi4l_req_t,
     parameter type axi4l_rsp_t = defaults_pkg::axi4l_rsp_t,
     parameter int  ADDR_WIDTH  = 32,
-    parameter int  DATA_WIDTH  = 32
+    parameter int  DATA_WIDTH  = 64
 ) (
 
     ////////////////////////////////////////////////////////////////////////////////////////////////

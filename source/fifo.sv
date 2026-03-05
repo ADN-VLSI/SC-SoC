@@ -69,19 +69,15 @@ module fifo #(
   // SUBMODULES INSTANTIATIONS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  // Dual-port memory instance used as the FIFO storage
-  dual_port_mem #(
-      .ADDR_WIDTH(FIFO_SIZE),
-      .DATA_WIDTH(DATA_WIDTH)
-  ) fifo_buffer_memory (
-      .clk_i  (clk_i),
-      .waddr_i(wr_ptr[FIFO_SIZE-1:0]),
-      .we_i   (mem_we),
-      .wdata_i(data_in_i),
-      .wstrb_i('1),
-      .raddr_i(rd_ptr[FIFO_SIZE-1:0]),
-      .rdata_o(mem_data_out)
-  );
+  logic [DATA_WIDTH-1:0] fifo_mem                                       [2**FIFO_SIZE];
+
+  always_comb mem_data_out = fifo_mem[rd_ptr[FIFO_SIZE-1:0]];
+
+  always_ff @(posedge clk_i) begin
+    if (mem_we) begin
+      fifo_mem[wr_ptr[FIFO_SIZE-1:0]] <= data_in_i;
+    end
+  end
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // COMBINATIONAL LOGICS
