@@ -2,6 +2,14 @@ export SHELL=/bin/bash
 
 TOP := hello
 
+GUI := 0
+
+ifeq ($(GUI), 0)
+	SIM_ARGS := -runall
+else
+	SIM_ARGS := -gui
+endif
+
 ROOT_DIR := $(CURDIR)
 
 FILE_LIST := -i $(CURDIR)/include
@@ -28,4 +36,4 @@ all:
 	@make -s build
 	@cd build && xvlog -sv $(FILE_LIST) $(EWHL)
 	@cd build && xelab $(TOP) -s $(TOP)_sim --O0 -debug all $(EWHL)
-	@cd build && xsim $(TOP)_sim -runall $(EWHL)
+	@cd build && xsim $(TOP)_sim $(SIM_ARGS) $(EWHL)

@@ -1,13 +1,22 @@
-`include "axi4l/typedef.svh"
+`include "package/defaults_pkg.sv"
 
-interface axil_if #(
-    parameter int ADDR_WIDTH = 32,
-    parameter int DATA_WIDTH = 64
+interface axi4l_if #(
+    parameter type req_t = defaults_pkg::axi4l_req_t,
+    parameter type rsp_t = defaults_pkg::axi4l_rsp_t
 ) (
     // GLOBAL SIGNALS
     input logic arst_ni,
     input logic clk_i
 );
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // LOCAL PARAMETERS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  req_t dummy;
+
+  localparam int ADDR_WIDTH = $bits(dummy.aw.addr);
+  localparam int DATA_WIDTH = $bits(dummy.w.data);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // TYPEDEFS
@@ -23,15 +32,34 @@ interface axil_if #(
   axi4l_rsp_t axi4l_rsp;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
+  // VARIABLES
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  bit is_edge_aligned;
+
+  always @(posedge clk_i) begin
+    is_edge_aligned = '1;
+    #1;
+    is_edge_aligned = '0;
+  end
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
   // METHODS
   //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  task automatic req_reset();
+    axi4l_req <= '0;
+  endtask
+  
+  task automatic rsp_reset();
+    axi4l_rsp <= '0;
+  endtask
 
   `define AXIL_METHODS(__CHAN__, __TX__, __RX__)                                                   \
     semaphore send_``__CHAN__``_sem = new(1);                                                      \
     task automatic send_``__CHAN__``(input axi4l_``__CHAN__``_chan_t ``__CHAN__``);                \
       send_``__CHAN__``_sem.get(1);                                                                \
-      // TODO FIX EDGE ALIGN ISSUE                                                                 \
-      @(posedge clk_i);                                                                            \
+      wait (is_edge_aligned);                                                                      \
       axi4l_``__TX__``.``__CHAN__``       <= ``__CHAN__``;                                         \
       axi4l_``__TX__``.``__CHAN__``_valid <= 1'b1;                                                 \
       do @(posedge clk_i);                                                                         \
@@ -43,19 +71,18 @@ interface axil_if #(
     semaphore recv_``__CHAN__``_sem = new(1);                                                      \
     task automatic recv_``__CHAN__``(output axi4l_``__CHAN__``_chan_t ``__CHAN__``);               \
       recv_``__CHAN__``_sem.get(1);                                                                \
-      // TODO FIX EDGE ALIGN ISSUE                                                                 \
-      @(posedge clk_i);                                                                            \
+      wait (is_edge_aligned);                                                                      \
       axi4l_``__RX__``.``__CHAN__``_ready <= 1'b1;                                                 \
       do @(posedge clk_i);                                                                         \
       while (!axi4l_``__TX__``.``__CHAN__``_valid);                                                \
       ``__CHAN__``       = axi4l_``__TX__``.``__CHAN__``;                                          \
       axi4l_``__RX__``.``__CHAN__``_ready <= 1'b0;                                                 \
-      send_``__CHAN__``_sem.put(1);                                                                \
+      recv_``__CHAN__``_sem.put(1);                                                                \
     endtask                                                                                        \
                                                                                                    \
     task automatic look_``__CHAN__``(output axi4l_``__CHAN__``_chan_t ``__CHAN__``);               \
       do @(posedge clk_i);                                                                         \
-      while (!(axi4l_``__TX__``.``__CHAN__``_valid & axi4l_``__TX__``.``__CHAN__``_ready));        \
+      while (!(axi4l_``__TX__``.``__CHAN__``_valid & axi4l_``__RX__``.``__CHAN__``_ready));        \
       ``__CHAN__``       = axi4l_``__TX__``.``__CHAN__``;                                          \
     endtask                                                                                        \
 
