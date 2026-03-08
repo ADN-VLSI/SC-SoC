@@ -150,6 +150,8 @@ module axil_mem #(
   // AXI-Lite memory controller: arbitrates between write and read requests,
   // drives the dual-port memory interface, and generates AXI responses.
   axil_mem_ctrlr #(
+      .axi4l_req_t(axi4l_req_t),
+      .axi4l_rsp_t(axi4l_rsp_t),
       .ADDR_WIDTH(ADDR_WIDTH),
       .DATA_WIDTH(DATA_WIDTH)
   ) ctrlr_inst (

@@ -29,8 +29,8 @@ interface axi4l_if #(
   // SIGNALS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  axi4l_req_t axi4l_req;
-  axi4l_rsp_t axi4l_rsp;
+  axi4l_req_t req;
+  axi4l_rsp_t rsp;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // VARIABLES
@@ -49,28 +49,28 @@ interface axi4l_if #(
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   task automatic req_reset();
-    axi4l_req <= '0;
+    req <= '0;
   endtask
   
   task automatic rsp_reset();
-    axi4l_rsp <= '0;
+    rsp <= '0;
   endtask
 
-  `VALID_READY_METHODS(aw, arst_ni, clk_i, axi4l_aw_chan_t, axi4l_req.aw, axi4l_req.aw_valid, axi4l_rsp.aw_ready, is_edge_aligned)
-  `VALID_READY_METHODS(w,  arst_ni, clk_i, axi4l_w_chan_t,  axi4l_req.w,  axi4l_req.w_valid,  axi4l_rsp.w_ready,  is_edge_aligned)
-  `VALID_READY_METHODS(b,  arst_ni, clk_i, axi4l_b_chan_t,  axi4l_rsp.b,  axi4l_rsp.b_valid,  axi4l_req.b_ready,  is_edge_aligned)
-  `VALID_READY_METHODS(ar, arst_ni, clk_i, axi4l_ar_chan_t, axi4l_req.ar, axi4l_req.ar_valid, axi4l_rsp.ar_ready, is_edge_aligned)
-  `VALID_READY_METHODS(r,  arst_ni, clk_i, axi4l_r_chan_t,  axi4l_rsp.r,  axi4l_rsp.r_valid,  axi4l_req.r_ready,  is_edge_aligned)
+  `VALID_READY_METHODS(aw, arst_ni, clk_i, axi4l_aw_chan_t, req.aw, req.aw_valid, rsp.aw_ready, is_edge_aligned)
+  `VALID_READY_METHODS(w,  arst_ni, clk_i, axi4l_w_chan_t,  req.w,  req.w_valid,  rsp.w_ready,  is_edge_aligned)
+  `VALID_READY_METHODS(b,  arst_ni, clk_i, axi4l_b_chan_t,  rsp.b,  rsp.b_valid,  req.b_ready,  is_edge_aligned)
+  `VALID_READY_METHODS(ar, arst_ni, clk_i, axi4l_ar_chan_t, req.ar, req.ar_valid, rsp.ar_ready, is_edge_aligned)
+  `VALID_READY_METHODS(r,  arst_ni, clk_i, axi4l_r_chan_t,  rsp.r,  rsp.r_valid,  req.r_ready,  is_edge_aligned)
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // ASSERTIONS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_req.aw, axi4l_req.aw_valid, axi4l_rsp.aw_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_req.w,  axi4l_req.w_valid,  axi4l_rsp.w_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_rsp.b,  axi4l_rsp.b_valid,  axi4l_req.b_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_req.ar, axi4l_req.ar_valid, axi4l_rsp.ar_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_rsp.r,  axi4l_rsp.r_valid,  axi4l_req.r_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.aw, req.aw_valid, rsp.aw_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.w,  req.w_valid,  rsp.w_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, rsp.b,  rsp.b_valid,  req.b_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.ar, req.ar_valid, rsp.ar_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, rsp.r,  rsp.r_valid,  req.r_ready)
 
   `undef VALID_READY_PROPERTY_CHECK
 
