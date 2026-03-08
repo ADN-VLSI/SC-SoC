@@ -1,4 +1,5 @@
 `include "package/defaults_pkg.sv"
+`include "vip/valid_ready.svh"
 
 interface axi4l_if #(
     parameter type req_t = defaults_pkg::axi4l_req_t,
@@ -97,27 +98,11 @@ interface axi4l_if #(
   // ASSERTIONS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `define VALID_READY_PROPERTY_CHECK(__VALID__, __READY__,__SIGNAL__)                 \
-    assert property (@(posedge clk_i)                                                 \
-      disable iff (!arst_ni)                                                          \
-      (``__VALID__`` & !``__READY__``)                                                \
-      |=> $stable(``__SIGNAL__``))                                                    \
-    else                                                                              \
-      $error(`"A valid ``__SIGNAL__`` changed while ``__READY__`` was deasserted`");  \
-                                                                                      \
-    assert property (@(posedge clk_i)                                                 \
-      disable iff (!arst_ni)                                                          \
-      ($past(``__VALID__``) && !``__VALID__``)                                        \
-      |=> $past(``__READY__``, 2))                                                    \
-    else                                                                              \
-      $error(`"The ``__VALID__`` deasserted without ``__READY__`` `");                \
-
-
-  `VALID_READY_PROPERTY_CHECK(axi4l_req.aw_valid, axi4l_rsp.aw_ready, axi4l_req.aw)
-  `VALID_READY_PROPERTY_CHECK(axi4l_req.w_valid, axi4l_rsp.w_ready, axi4l_req.w)
-  `VALID_READY_PROPERTY_CHECK(axi4l_rsp.b_valid, axi4l_req.b_ready, axi4l_rsp.b)
-  `VALID_READY_PROPERTY_CHECK(axi4l_req.ar_valid, axi4l_rsp.ar_ready, axi4l_req.ar)
-  `VALID_READY_PROPERTY_CHECK(axi4l_rsp.r_valid, axi4l_req.r_ready, axi4l_rsp.r)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_req.aw, axi4l_req.aw_valid, axi4l_rsp.aw_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_req.w,  axi4l_req.w_valid,  axi4l_rsp.w_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_rsp.b,  axi4l_rsp.b_valid,  axi4l_req.b_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_req.ar, axi4l_req.ar_valid, axi4l_rsp.ar_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, axi4l_rsp.r,  axi4l_rsp.r_valid,  axi4l_req.r_ready)
 
   `undef VALID_READY_PROPERTY_CHECK
 
