@@ -54,69 +54,51 @@ module axil_mem_tb;
   // METHODS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  task automatic write_32(input bit [15:0] addr, input bit [31:0] data);
-    bit [1:0] resp;
+  task automatic write(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
+    bit [31:0] wdata;
+    bit [ 3:0] wstrb;
+    bit [ 1:0] resp;
+    wdata = data << ((addr % 4) * 8);
+    wstrb = strb << (addr % 4);
     fork
       intf.send_aw({addr, 3'h0});
-      intf.send_w({data, 4'b1111});
+      intf.send_w({wdata, wstrb});
       intf.recv_b(resp);
     join
+  endtask
+
+  task automatic read(input bit [15:0] addr, output bit [31:0] data);
+    bit [31:0] rdata;
+    bit [ 1:0] resp;
+    fork
+      intf.send_ar({addr, 3'h0});
+      intf.recv_r({rdata, resp});
+    join
+    data = rdata >> ((addr % 4) * 8);
+  endtask
+
+  task automatic write_32(input bit [15:0] addr, input bit [31:0] data);
+    write(addr, data, 4'b1111);
   endtask
 
   task automatic write_16(input bit [15:0] addr, input bit [15:0] data);
-    bit [ 1:0] resp;
-    bit [31:0] wdata;
-    bit [ 3:0] wstrb;
-    wstrb = 4'b11 << (addr % 4);
-    wdata = data;
-    wdata = wdata << ((addr % 4) * 8);
-    fork
-      intf.send_aw({addr, 3'h0});
-      intf.send_w({wdata, wstrb});
-      intf.recv_b(resp);
-    join
+    write(addr, data, 4'b0011);
   endtask
 
   task automatic write_8(input bit [15:0] addr, input bit [7:0] data);
-    bit [ 1:0] resp;
-    bit [31:0] wdata;
-    bit [ 3:0] wstrb;
-    wstrb = 4'b1 << (addr % 4);
-    wdata = data;
-    wdata = wdata << ((addr % 4) * 8);
-    fork
-      intf.send_aw({addr, 3'h0});
-      intf.send_w({wdata, wstrb});
-      intf.recv_b(resp);
-    join
+    write(addr, data, 4'b0001);
   endtask
 
   task automatic read_32(input bit [15:0] addr, output bit [31:0] data);
-    bit [1:0] resp;
-    fork
-      intf.send_ar({addr, 3'h0});
-      intf.recv_r({data, resp});
-    join
+    read(addr, data);
   endtask
 
   task automatic read_16(input bit [15:0] addr, output bit [15:0] data);
-    bit [ 1:0] resp;
-    bit [31:0] rdata;
-    fork
-      intf.send_ar({addr, 3'h0});
-      intf.recv_r({rdata, resp});
-    join
-    data = rdata >> ((addr % 4) * 8);
+    read(addr, data);
   endtask
 
   task automatic read_8(input bit [15:0] addr, output bit [7:0] data);
-    bit [ 1:0] resp;
-    bit [31:0] rdata;
-    fork
-      intf.send_ar({addr, 3'h0});
-      intf.recv_r({rdata, resp});
-    join
-    data = rdata >> ((addr % 4) * 8);
+    read(addr, data);
   endtask
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
