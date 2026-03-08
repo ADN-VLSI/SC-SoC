@@ -7,9 +7,10 @@ module axi4l_vip_pkg_tb;
 
   import axi4l_vip_pkg::axi4l_cfg;
   import axi4l_vip_pkg::axi4l_seq_item;
+  import axi4l_vip_pkg::axi4l_rsp_item;
 
   axi4l_cfg cfg;
-  axi4l_seq_item item;
+  axi4l_rsp_item item;
 
   initial begin
     cfg = new();

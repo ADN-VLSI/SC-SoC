@@ -3,10 +3,6 @@
 
 package axi4l_vip_pkg;
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////
-  // GLOBAL METHODS
-  //////////////////////////////////////////////////////////////////////////////////////////////////
-
   function automatic void print(input string msg = "", input int fmt = 0, input int clr = 0);
     $display("\n\033[%0d;3%0dm%s\033[0m\n", fmt, clr, msg);
   endfunction
@@ -14,6 +10,8 @@ package axi4l_vip_pkg;
   `include "vip/axi4l/cfg.sv"
   
   `include "vip/axi4l/seq_item.sv"
+  
+  `include "vip/axi4l/rsp_item.sv"
 
 endpackage
 
