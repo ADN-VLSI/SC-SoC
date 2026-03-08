@@ -57,28 +57,66 @@ module axil_mem_tb;
   task automatic write_32(input bit [15:0] addr, input bit [31:0] data);
     bit [1:0] resp;
     fork
-          intf.send_aw({addr, 3'h0});
-          intf.send_w({data, 4'b1111});
-          intf.recv_b(resp);
+      intf.send_aw({addr, 3'h0});
+      intf.send_w({data, 4'b1111});
+      intf.recv_b(resp);
     join
   endtask
 
   task automatic write_16(input bit [15:0] addr, input bit [15:0] data);
-    bit [1:0] resp;
+    bit [ 1:0] resp;
+    bit [31:0] wdata;
+    bit [ 3:0] wstrb;
+    wstrb = 4'b11 << (addr % 4);
+    wdata = data;
+    wdata = wdata << ((addr % 4) * 8);
     fork
-          intf.send_aw({addr, 3'h0});
-          intf.send_w({(data<<((addr%4)*8)), 4'b11<<(addr%4)});
-          intf.recv_b(resp);
+      intf.send_aw({addr, 3'h0});
+      intf.send_w({wdata, wstrb});
+      intf.recv_b(resp);
     join
   endtask
 
   task automatic write_8(input bit [15:0] addr, input bit [7:0] data);
+    bit [ 1:0] resp;
+    bit [31:0] wdata;
+    bit [ 3:0] wstrb;
+    wstrb = 4'b1 << (addr % 4);
+    wdata = data;
+    wdata = wdata << ((addr % 4) * 8);
+    fork
+      intf.send_aw({addr, 3'h0});
+      intf.send_w({wdata, wstrb});
+      intf.recv_b(resp);
+    join
+  endtask
+
+  task automatic read_32(input bit [15:0] addr, output bit [31:0] data);
     bit [1:0] resp;
     fork
-          intf.send_aw({addr, 3'h0});
-          intf.send_w({(data<<((addr%4)*8)), 4'b1<<(addr%4)});
-          intf.recv_b(resp);
+      intf.send_ar({addr, 3'h0});
+      intf.recv_r({data, resp});
     join
+  endtask
+
+  task automatic read_16(input bit [15:0] addr, output bit [15:0] data);
+    bit [ 1:0] resp;
+    bit [31:0] rdata;
+    fork
+      intf.send_ar({addr, 3'h0});
+      intf.recv_r({rdata, resp});
+    join
+    data = rdata >> ((addr % 4) * 8);
+  endtask
+
+  task automatic read_8(input bit [15:0] addr, output bit [7:0] data);
+    bit [ 1:0] resp;
+    bit [31:0] rdata;
+    fork
+      intf.send_ar({addr, 3'h0});
+      intf.recv_r({rdata, resp});
+    join
+    data = rdata >> ((addr % 4) * 8);
   endtask
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +126,6 @@ module axil_mem_tb;
   initial begin
 
     automatic bit [31:0] data;
-    automatic bit [ 1:0] resp;
 
     $timeformat(-9, 1, " ns", 20);
     $dumpfile("axil_mem_tb.vcd");
@@ -106,14 +143,21 @@ module axil_mem_tb;
 
     @(posedge clk_i);
 
-    write_16(1,'hABCD);
+    write_16(1, 'hABCD);
 
     repeat (5) @(posedge clk_i);
 
-    intf.send_ar({16'h0, 3'h0});
-    intf.recv_r({data, resp});
+    read_32(0, data);
 
-    $display("DATA:0x%h RESP:%0d", data, resp);
+    $display("R32 0 DATA:0x%h", data);
+
+    read_16(1, data);
+
+    $display("R16 1 DATA:0x%h", data);
+
+    read_8(2, data);
+
+    $display("R8 2 DATA:0x%h", data);
 
     repeat (20) @(posedge clk_i);
 
