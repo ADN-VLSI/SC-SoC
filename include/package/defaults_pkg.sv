@@ -1,5 +1,5 @@
-`ifndef __GUARD_DEFAULTS_PKG_SV__
-`define __GUARD_DEFAULTS_PKG_SV__ 0
+`ifndef __GUARD_PACKAGE_DEFAULTS_PKG_SV__
+`define __GUARD_PACKAGE_DEFAULTS_PKG_SV__ 0
 
 `include "axi4l/typedef.svh"
 
