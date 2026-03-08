@@ -1,10 +1,10 @@
-// Module: axil_mem
+// Module: axi4l_mem
 //
 // Description:
 //   AXI4-Lite slave memory peripheral. Each AXI-Lite channel (AW, W, B, AR, R)
 //   is decoupled from the internal logic via a small FIFO, providing registered
 //   outputs on every port and isolating the master from back-pressure. An
-//   axil_mem_ctrlr instance arbitrates read/write requests and drives a
+//   axi4l_mem_ctrlr instance arbitrates read/write requests and drives a
 //   dual_port_mem instance that holds the actual data.
 //
 // Parameters:
@@ -13,7 +13,7 @@
 
 `include "package/defaults_pkg.sv"
 
-module axil_mem #(
+module axi4l_mem #(
     parameter type axi4l_req_t = defaults_pkg::axi4l_req_t,
     parameter type axi4l_rsp_t = defaults_pkg::axi4l_rsp_t,
     parameter int  ADDR_WIDTH  = 32,
@@ -149,7 +149,7 @@ module axil_mem #(
 
   // AXI-Lite memory controller: arbitrates between write and read requests,
   // drives the dual-port memory interface, and generates AXI responses.
-  axil_mem_ctrlr #(
+  axi4l_mem_ctrlr #(
       .axi4l_req_t(axi4l_req_t),
       .axi4l_rsp_t(axi4l_rsp_t),
       .ADDR_WIDTH(ADDR_WIDTH),

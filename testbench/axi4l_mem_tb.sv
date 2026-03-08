@@ -1,6 +1,6 @@
 `include "axi4l/typedef.svh"
 
-module axil_mem_tb;
+module axi4l_mem_tb;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // LOCAL PARAMETERS
@@ -38,7 +38,7 @@ module axil_mem_tb;
   // DUT
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  axil_mem #(
+  axi4l_mem #(
       .axi4l_req_t(my_req_t),
       .axi4l_rsp_t(my_rsp_t),
       .ADDR_WIDTH (ADDR_WIDTH),
@@ -110,8 +110,8 @@ module axil_mem_tb;
     automatic bit [31:0] data;
 
     $timeformat(-9, 1, " ns", 20);
-    $dumpfile("axil_mem_tb.vcd");
-    $dumpvars(0, axil_mem_tb);
+    $dumpfile("axi4l_mem_tb.vcd");
+    $dumpvars(0, axi4l_mem_tb);
 
     clk_i   <= '0;
     arst_ni <= '0;

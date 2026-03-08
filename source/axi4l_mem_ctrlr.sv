@@ -1,4 +1,4 @@
-// Module: axil_mem_ctrlr
+// Module: axi4l_mem_ctrlr
 //
 // Description:
 //   Purely combinational AXI4-Lite memory controller. It performs single-cycle
@@ -22,7 +22,7 @@
 
 `include "package/defaults_pkg.sv"
 
-module axil_mem_ctrlr #(
+module axi4l_mem_ctrlr #(
     parameter type axi4l_req_t = defaults_pkg::axi4l_req_t,
     parameter type axi4l_rsp_t = defaults_pkg::axi4l_rsp_t,
     parameter int  ADDR_WIDTH  = 32,
