@@ -62,6 +62,10 @@ interface axi4l_if #(
   `VALID_READY_METHODS(ar, arst_ni, clk_i, axi4l_ar_chan_t, req.ar, req.ar_valid, rsp.ar_ready, is_edge_aligned)
   `VALID_READY_METHODS(r,  arst_ni, clk_i, axi4l_r_chan_t,  rsp.r,  rsp.r_valid,  req.r_ready,  is_edge_aligned)
 
+  // send_aw send_w send_b send_ar send_r
+  // recv_aw recv_w send_b send_ar send_r
+  // look_aw look_w send_b send_ar send_r
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // ASSERTIONS
   //////////////////////////////////////////////////////////////////////////////////////////////////

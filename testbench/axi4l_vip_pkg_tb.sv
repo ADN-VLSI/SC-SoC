@@ -1,3 +1,4 @@
+`include "axi4l/typedef.svh"
 `include "vip/axi4l.svh"
 
 module axi4l_vip_pkg_tb;
@@ -8,36 +9,86 @@ module axi4l_vip_pkg_tb;
   import axi4l_vip_pkg::axi4l_cfg;
   import axi4l_vip_pkg::axi4l_seq_item;
   import axi4l_vip_pkg::axi4l_rsp_item;
+  import axi4l_vip_pkg::axi4l_driver;
+  import axi4l_vip_pkg::axi4l_monitor;
 
-  axi4l_cfg cfg;
-  axi4l_rsp_item item;
+  `AXI4L_ALL(axi4l, 32, 32)
+
+  logic arst_ni;
+  logic clk_i;
+
+  axi4l_if #(
+      .req_t(axi4l_req_t),
+      .rsp_t(axi4l_rsp_t)
+  ) intf (
+      .arst_ni(arst_ni),
+      .clk_i  (clk_i)
+  );
+
+  axi4l_mem #(
+      .axi4l_req_t(axi4l_req_t),
+      .axi4l_rsp_t(axi4l_rsp_t),
+      .ADDR_WIDTH (32),
+      .DATA_WIDTH (32)
+  ) u_mem (
+      .arst_ni(arst_ni),
+      .clk_i(clk_i),
+      .axi4l_req_i(intf.req),
+      .axi4l_rsp_o(intf.rsp)
+  );
+
+  axi4l_driver #(
+      .req_t(axi4l_req_t),
+      .rsp_t(axi4l_rsp_t),
+      .IS_MASTER(1)
+  ) dvr;
+
+  task automatic apply_reset();
+    #10ns;
+    arst_ni <= '0;
+    clk_i   <= '0;
+    dvr.reset();
+    #10ns;
+    arst_ni <= '1;
+    #10ns;
+  endtask
+
+  task automatic start_clock();
+    fork
+      forever begin
+        clk_i <= '1;
+        #5ns;
+        clk_i <= '0;
+        #5ns;
+      end
+    join_none
+    @(posedge clk_i);
+  endtask
 
   initial begin
-    cfg = new();
+
+    axi4l_seq_item item;
+
     item = new();
+    dvr  = new();
 
-    cfg.addr_width = 16;  // Example configuration
-    cfg.data_width = 64;  // Example configuration
+    dvr.connect_interface(intf);
 
-    item.cfg.print();
+    apply_reset();
 
-    if (item.randomize()) begin
+    dvr.run();
+    start_clock();
+
+    if (item.randomize() with {item.is_write == 1;}) begin
       $display("Randomized item:");
       item.print();
     end else begin
       $display("Failed to randomize item");
     end
 
-    item.configure(cfg);  // Set the configuration for the item
+    dvr.mbx.put(item);
 
-    item.cfg.print();
-
-    if (item.randomize()) begin
-      $display("Randomized item with configuration:");
-      item.print();
-    end else begin
-      $display("Failed to randomize item with configuration");
-    end
+    #100ns;
 
     $finish;
   end

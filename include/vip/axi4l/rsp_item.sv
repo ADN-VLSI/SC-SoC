@@ -15,9 +15,19 @@ class axi4l_rsp_item extends axi4l_seq_item;
 
   virtual function automatic string to_string();
     string data_str = "";
-    foreach (data[i]) $sformat(data_str, "%s\n  data[%0d]:0x%02x", data_str, i, data[i]);
+    foreach (data[i]) begin
+      $sformat(data_str, "%s\n  data[%0d]: 0x%02x", data_str, i, data[i]);
+      if (is_write) begin
+        $sformat(data_str, "%s   strb[%0d]: %0d", data_str, i, strb[i]);
+      end
+    end
     return $sformatf(
-        "AXI4-LITE Response Item:\n  addr   : 0x%0h\n  resp   : 0x%0h%s", addr, resp, data_str
+        "AXI4-LITE Response Item:\n  type   : %s\n  addr   : 0x%08x\n  size   : %0d\n  resp   : %0d%s",
+        (is_write ? "write" : "read "),
+        addr,
+        size,
+        resp,
+        data_str
     );
   endfunction
 

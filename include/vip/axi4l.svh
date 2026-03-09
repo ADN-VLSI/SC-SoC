@@ -12,6 +12,10 @@ package axi4l_vip_pkg;
   `include "vip/axi4l/seq_item.sv"
   
   `include "vip/axi4l/rsp_item.sv"
+  
+  `include "vip/axi4l/driver.sv"
+  
+  `include "vip/axi4l/monitor.sv"
 
 endpackage
 
