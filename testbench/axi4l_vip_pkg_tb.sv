@@ -70,6 +70,16 @@ module axi4l_vip_pkg_tb;
     @(posedge clk_i);
   endtask
 
+  task automatic do_tx(input bit is_write, input longint addr);
+      axi4l_seq_item item;
+      item = new();
+      void'(item.randomize() with {
+        item.is_write == is_write;
+        item.addr == addr;
+        });
+      dvr.mbx.put(item);
+  endtask
+
   initial begin
 
     dvr = new();
@@ -83,12 +93,19 @@ module axi4l_vip_pkg_tb;
     mon.run();
     start_clock();
 
-    repeat (5) begin
-      axi4l_seq_item item;
-      item = new();
-      void'(item.randomize() with {item.is_write == 1;});
-      dvr.mbx.put(item);
-    end
+    // repeat (5) begin
+    //   axi4l_seq_item item;
+    //   item = new();
+    //   void'(item.randomize() with {item.is_write == 1;});
+    //   dvr.mbx.put(item);
+    // end
+    do_tx(0,'h000);
+    do_tx(1,'h000);
+    do_tx(1,'h100);
+    do_tx(1,'h200);
+    do_tx(0,'h200);
+    do_tx(0,'h000);
+    do_tx(0,'h100);
 
     mon.wait_for_idle();
 
