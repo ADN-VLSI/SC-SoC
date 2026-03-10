@@ -43,6 +43,11 @@ module axi4l_vip_pkg_tb;
       .IS_MASTER(1)
   ) dvr;
 
+  axi4l_monitor #(
+      .req_t(axi4l_req_t),
+      .rsp_t(axi4l_rsp_t)
+  ) mon;
+
   task automatic apply_reset();
     #10ns;
     arst_ni <= '0;
@@ -67,32 +72,32 @@ module axi4l_vip_pkg_tb;
 
   initial begin
 
-    axi4l_seq_item item;
-
-    item = new();
-    dvr  = new();
-
+    dvr = new();
+    mon = new();
     dvr.connect_interface(intf);
+    mon.connect_interface(intf);
 
     apply_reset();
 
     dvr.run();
+    mon.run();
     start_clock();
 
     repeat (5) begin
-
-      if (item.randomize() with {item.is_write == 1;}) begin
-        $display("Randomized item:");
-        item.print();
-      end else begin
-        $display("Failed to randomize item");
-      end
-
+      axi4l_seq_item item;
+      item = new();
+      void'(item.randomize() with {item.is_write == 1;});
       dvr.mbx.put(item);
-
     end
 
-    #500ns;
+    mon.wait_for_idle();
+
+    while (mon.mbx.num()) begin
+      axi4l_rsp_item item;
+      mon.mbx.get(item);
+      $display("Received item:");
+      item.print();
+    end
 
     $finish;
   end

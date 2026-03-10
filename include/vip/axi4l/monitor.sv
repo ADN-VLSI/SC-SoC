@@ -139,4 +139,17 @@ class axi4l_monitor #(
     join_none
   endtask
 
+  task automatic wait_for_idle(int num_cycles = 10);
+    int x = 0;
+    while (x < num_cycles) begin
+      if (aw_mbx.num() == 0 && w_mbx.num() == 0 && b_mbx.num() == 0 &&
+          ar_mbx.num() == 0 && r_mbx.num() == 0) begin
+        x++;
+      end else begin
+        x = 0;
+      end
+      @(posedge vif.clk_i);
+    end
+  endtask
+
 endclass
