@@ -1,9 +1,6 @@
 // `ifndef __GUARD_VIP_AXI4L_DRIVER_SV__
 // `define __GUARD_VIP_AXI4L_DRIVER_SV__ 0
 
-`include "axi4l/typedef.svh"
-`include "vip/axi4l/seq_item.sv"
-
 class axi4l_driver #(
     parameter type req_t     = defaults_pkg::axi4l_req_t,
     parameter type rsp_t     = defaults_pkg::axi4l_rsp_t,

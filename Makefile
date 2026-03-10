@@ -7,6 +7,9 @@ ROOT_DIR := $(CURDIR)
 # Read the top-level module name from build/top; default to "hello" if the file does not exist
 TOP := $(shell cat build/top || echo "hello")
 
+# Set GUI=0 for headless simulation, any other value to open the Vivado waveform GUI
+GUI ?= 0
+
 # Simulation mode: GUI=0 runs headless (-runall), any other value opens the Vivado waveform GUI
 ifeq ($(GUI), 0)
 	SIM_ARGS := -runall
