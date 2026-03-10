@@ -1,8 +1,8 @@
-# AXI4-Lite Memory Peripheral
+# AXI4-Lite Memory
 
 ## Overview
 
-`axi4l_mem` is a fully registered **AXI4-Lite slave memory peripheral**. Each of the five AXI4-Lite channels (AW, W, B, AR, R) is decoupled from the internal logic through a small synchronous FIFO, providing registered outputs on every port and isolating the master from back-pressure. An `axi4l_mem_ctrlr` instance arbitrates read/write requests and drives a `dual_port_mem` instance that holds the actual storage.
+`axi4l_mem` is a fully registered **AXI4-Lite slave memory**. Each of the five AXI4-Lite channels (AW, W, B, AR, R) is decoupled from the internal logic through a small synchronous FIFO, providing registered outputs on every port and isolating the master from back-pressure. An `axi4l_mem_ctrlr` instance arbitrates read/write requests and drives a `dual_port_mem` instance that holds the actual storage.
 
 ---
 
@@ -18,12 +18,12 @@
 
 ## Parameters
 
-| Name           | Type   | Default                     | Description                                     |
-| -------------- | ------ | --------------------------- | ----------------------------------------------- |
-| `axi4l_req_t`  | type   | `defaults_pkg::axi4l_req_t` | AXI4-Lite request struct type (packed)          |
-| `axi4l_rsp_t`  | type   | `defaults_pkg::axi4l_rsp_t` | AXI4-Lite response struct type (packed)         |
-| `ADDR_WIDTH`   | int    | 32                          | Width of the AXI address bus in bits            |
-| `DATA_WIDTH`   | int    | 64                          | Width of the AXI data bus in bits (must be multiple of 8) |
+| Name          | Type | Default                     | Description                                               |
+| ------------- | ---- | --------------------------- | --------------------------------------------------------- |
+| `axi4l_req_t` | type | `defaults_pkg::axi4l_req_t` | AXI4-Lite request struct type (packed)                    |
+| `axi4l_rsp_t` | type | `defaults_pkg::axi4l_rsp_t` | AXI4-Lite response struct type (packed)                   |
+| `ADDR_WIDTH`  | int  | 32                          | Width of the AXI address bus in bits                      |
+| `DATA_WIDTH`  | int  | 64                          | Width of the AXI data bus in bits (must be multiple of 8) |
 
 ---
 
@@ -31,10 +31,10 @@
 
 ### Global Signals
 
-| Name      | Direction | Width | Description                     |
-| --------- | --------- | ----- | ------------------------------- |
-| `arst_ni` | input     | 1     | Asynchronous reset, active-low  |
-| `clk_i`   | input     | 1     | System clock                    |
+| Name      | Direction | Width | Description                    |
+| --------- | --------- | ----- | ------------------------------ |
+| `arst_ni` | input     | 1     | Asynchronous reset, active-low |
+| `clk_i`   | input     | 1     | System clock                   |
 
 ### AXI4-Lite Interface
 
@@ -48,43 +48,44 @@
 ## Architecture
 
 The `axi4l_mem` module consists of three main components:
+
 1. **Five FIFOs**: one for each AXI4-Lite channel, buffering requests and responses between the master and the controller
 2. **`axi4l_mem_ctrlr`**: a combinational controller that arbitr
-ates access to the memory based on incoming requests and generates appropriate responses
+   ates access to the memory based on incoming requests and generates appropriate responses
 3. **`dual_port_mem`**: a dual-port memory block that serves as the storage backend, allowing simultaneous read and write access without structural hazards
 
 <img src="./axi4l_mem_arch.svg">
 
 ### Submodule Instances
 
-| Instance     | Module            | Description                                                         |
-| ------------ | ----------------- | ------------------------------------------------------------------- |
-| `aw_fifo`    | `fifo`            | Buffers incoming write-address beats `{addr[ADDR_WIDTH-1:0], prot[2:0]}` |
+| Instance     | Module            | Description                                                                        |
+| ------------ | ----------------- | ---------------------------------------------------------------------------------- |
+| `aw_fifo`    | `fifo`            | Buffers incoming write-address beats `{addr[ADDR_WIDTH-1:0], prot[2:0]}`           |
 | `w_fifo`     | `fifo`            | Buffers incoming write-data beats `{data[DATA_WIDTH-1:0], strb[DATA_WIDTH/8-1:0]}` |
-| `b_fifo`     | `fifo`            | Buffers outgoing write-response beats `{resp[1:0]}`                 |
-| `ar_fifo`    | `fifo`            | Buffers incoming read-address beats `{addr[ADDR_WIDTH-1:0], prot[2:0]}`  |
-| `r_fifo`     | `fifo`            | Buffers outgoing read-data beats `{data[DATA_WIDTH-1:0], resp[1:0]}` |
-| `ctrlr_inst` | `axi4l_mem_ctrlr` | Arbitrates write/read requests and generates AXI responses          |
-| `mem_inst`   | `dual_port_mem`   | Dual-port storage backing the peripheral                            |
+| `b_fifo`     | `fifo`            | Buffers outgoing write-response beats `{resp[1:0]}`                                |
+| `ar_fifo`    | `fifo`            | Buffers incoming read-address beats `{addr[ADDR_WIDTH-1:0], prot[2:0]}`            |
+| `r_fifo`     | `fifo`            | Buffers outgoing read-data beats `{data[DATA_WIDTH-1:0], resp[1:0]}`               |
+| `ctrlr_inst` | `axi4l_mem_ctrlr` | Arbitrates write/read requests and generates AXI responses                         |
+| `mem_inst`   | `dual_port_mem`   | Dual-port storage backing the memory                                               |
 
 ### FIFO Configuration
 
 All five channel FIFOs share the same configuration:
 
-| Parameter          | Value | Notes                                          |
-| ------------------ | ----- | ---------------------------------------------- |
-| `FIFO_SIZE`        | 2     | Depth = 2² = 4 entries                         |
-| `ALLOW_FALLTHROUGH`| 0     | Registered outputs only — no combinational path |
+| Parameter           | Value | Notes                                           |
+| ------------------- | ----- | ----------------------------------------------- |
+| `FIFO_SIZE`         | 2     | Depth = 2² = 4 entries                          |
+| `ALLOW_FALLTHROUGH` | 0     | Registered outputs only — no combinational path |
 
 FIFO data widths:
 
-| FIFO       | `DATA_WIDTH` expression        | Example (ADDR=32, DATA=64) |
-| ---------- | ------------------------------ | -------------------------- |
-| `aw_fifo`  | `ADDR_WIDTH + 3`               | 35 bits                    |
-| `w_fifo`   | `DATA_WIDTH + DATA_WIDTH/8`    | 72 bits                    |
-| `b_fifo`   | `2`                            | 2 bits                     |
-| `ar_fifo`  | `ADDR_WIDTH + 3`               | 35 bits                    |
-| `r_fifo`   | `DATA_WIDTH + 2`               | 66 bits                    |
+| FIFO      | `DATA_WIDTH` expression     | Example (ADDR=32, DATA=64) |
+| --------- | --------------------------- | -------------------------- |
+| `aw_fifo` | `ADDR_WIDTH + 3`            | 35 bits                    |
+| `w_fifo`  | `DATA_WIDTH + DATA_WIDTH/8` | 72 bits                    |
+| `b_fifo`  | `2`                         | 2 bits                     |
+| `ar_fifo` | `ADDR_WIDTH + 3`            | 35 bits                    |
+| `r_fifo`  | `DATA_WIDTH + 2`            | 66 bits                    |
 
 ---
 
@@ -109,10 +110,10 @@ FIFO data widths:
 
 Both paths enforce the same rule using `prot[1:0]`:
 
-| `prot[1:0]` | Privilege     | Security   | Result                                               |
-| ----------- | ------------- | ---------- | ---------------------------------------------------- |
-| `2'b00`     | Unprivileged  | Non-secure | **OKAY** — access permitted, data read or written    |
-| Any other   | Privileged or Secure | —   | **SLVERR** — write suppressed, read data zeroed      |
+| `prot[1:0]` | Privilege            | Security   | Result                                            |
+| ----------- | -------------------- | ---------- | ------------------------------------------------- |
+| `2'b00`     | Unprivileged         | Non-secure | **OKAY** — access permitted, data read or written |
+| Any other   | Privileged or Secure | —          | **SLVERR** — write suppressed, read data zeroed   |
 
 ---
 

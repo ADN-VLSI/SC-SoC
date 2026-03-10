@@ -92,7 +92,7 @@ module fifo #(
   always_comb empty = msb_eq && nmsb_eq;
 
   // Back-pressure: if full then input ready follows output ready (to allow pop-then-push)
-  always_comb data_in_ready_o = full ? data_out_ready_i : 1'b1;
+  always_comb data_in_ready_o = arst_ni & (full ? data_out_ready_i : 1'b1);
 
   // Memory control: write when input valid & ready; read when output consumed
   always_comb mem_we = data_in_valid_i && data_in_ready_o;
