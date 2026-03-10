@@ -1,6 +1,3 @@
-// `ifndef __GUARD_VIP_AXI4L_MONITOR_SV__
-// `define __GUARD_VIP_AXI4L_MONITOR_SV__ 0
-
 class axi4l_monitor #(
     parameter type req_t = defaults_pkg::axi4l_req_t,
     parameter type rsp_t = defaults_pkg::axi4l_rsp_t
@@ -21,10 +18,8 @@ class axi4l_monitor #(
     this.vif = vif;
   endfunction
 
-  function automatic void connect_mailbox(mailbox #(axi4l_rsp_item) mbx);
+  function automatic void connect_mailbox(mailbox#(axi4l_rsp_item) mbx);
     this.mbx = mbx;
   endfunction
 
 endclass
-
-// `endif

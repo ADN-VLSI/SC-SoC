@@ -1,6 +1,3 @@
-// `ifndef __GUARD_VIP_AXI4L_DRIVER_SV__
-// `define __GUARD_VIP_AXI4L_DRIVER_SV__ 0
-
 class axi4l_driver #(
     parameter type req_t     = defaults_pkg::axi4l_req_t,
     parameter type rsp_t     = defaults_pkg::axi4l_rsp_t,
@@ -91,5 +88,3 @@ class axi4l_driver #(
   endtask
 
 endclass
-
-// `endif

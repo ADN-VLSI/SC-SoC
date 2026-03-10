@@ -1,6 +1,3 @@
-`ifndef __GUARD_VIP_AXI4L_RSP_ITEM_SV__
-`define __GUARD_VIP_AXI4L_RSP_ITEM_SV__ 0
-
 class axi4l_rsp_item extends axi4l_seq_item;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,5 +33,3 @@ class axi4l_rsp_item extends axi4l_seq_item;
   endfunction
 
 endclass
-
-`endif
