@@ -79,16 +79,20 @@ module axi4l_vip_pkg_tb;
     dvr.run();
     start_clock();
 
-    if (item.randomize() with {item.is_write == 1;}) begin
-      $display("Randomized item:");
-      item.print();
-    end else begin
-      $display("Failed to randomize item");
+    repeat (5) begin
+
+      if (item.randomize() with {item.is_write == 1;}) begin
+        $display("Randomized item:");
+        item.print();
+      end else begin
+        $display("Failed to randomize item");
+      end
+
+      dvr.mbx.put(item);
+
     end
 
-    dvr.mbx.put(item);
-
-    #100ns;
+    #500ns;
 
     $finish;
   end
