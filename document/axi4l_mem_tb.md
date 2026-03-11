@@ -169,11 +169,11 @@ Using the VIP driver, issue a write transaction targeting the highest possible A
 
 #### Expectation
 
-    --The write transaction to 0xFFFFFFFF completes with a B.RESP = OKAY (2'b00).
-    --The read transaction from the aligned address 0xFFFFFFFC returns the written byte in the
+    - The write transaction to 0xFFFFFFFF completes with a B.RESP = OKAY (2'b00).
+    - The read transaction from the aligned address 0xFFFFFFFC returns the written byte in the
       correct byte lane (bits [31:24]), with all other byte lanes unaffected.
-    --The read response R.RESP = OKAY (2'b00).
-    --No bus errors, timeouts, or protocol violations are observed on any AXI4-Lite channel.
+    - The read response R.RESP = OKAY (2'b00).
+    - No bus errors, timeouts, or protocol violations are observed on any AXI4-Lite channel.
 
 ### TC3 - Alignment Check
 <TODO Siam>
@@ -227,14 +227,14 @@ Using the VIP driver, issue a write followed by a read transaction for all 8 pos
 
 #### Expectation
 
-    --For prot[1:0] == 2'b00 (unprivileged, non-secure): write is committed to memory with B.
+     - For prot[1:0] == 2'b00 (unprivileged, non-secure): write is committed to memory with B.
       RESP = OKAY (2'b00), and the read returns the written data with R.RESP = OKAY (2'b00).
-    --For all other values of prot[1:0] (2'b01, 2'b10, 2'b11): the write is suppressed
+     - For all other values of prot[1:0] (2'b01, 2'b10, 2'b11): the write is suppressed
       (memory unchanged) with B.RESP = SLVERR (2'b10), and the read returns 32'h00000000 with
       R.RESP = SLVERR (2'b10).
-    --prot[2] (instruction vs. data) does not affect the outcome — only prot[1:0] govern the
+     - prot[2] (instruction vs. data) does not affect the outcome — only prot[1:0] govern the
       protection decision.
-    --All 8 prot combinations are exercised, satisfying the 100% coverage goal for both write
+     - All 8 prot combinations are exercised, satisfying the 100% coverage goal for both write
       and read protection.
 
 
@@ -300,14 +300,14 @@ Using the VIP driver, pre-load a known value (e.g., 32'hAAAA_AAAA) at address 0x
 
 #### Expectation
 
-    --The write transaction completes with B.RESP = OKAY (2'b00).
-    --The read transaction completes with R.RESP = OKAY (2'b00).
-    --The read data is either the old value (32'hAAAA_AAAA) or the new value (32'hDEAD_BEEF) —
-      both are acceptable, but the result must be deterministic and consistent with the DUT's
-      arbitration behavior.
-    --No data corruption (e.g., partially merged or undefined values) is observed on R.DATA.
-    --No protocol violations, timeouts, or unexpected SLVERR responses occur on any channel.
-    --A follow-up read to 0x00000200 after both transactions complete must return 32'hDEAD_BEEF,
+     - The write transaction completes with B.RESP = OKAY (2'b00).
+     - The read transaction completes with R.RESP = OKAY (2'b00).
+     - The read data is either the old value (32'hAAAA_AAAA) or the new value (32'hDEAD_BEEF) —
+       both are acceptable, but the result must be deterministic and consistent with the DUT's
+       arbitration behavior.
+     - No data corruption (e.g., partially merged or undefined values) is observed on R.DATA.
+     - No protocol violations, timeouts, or unexpected SLVERR responses occur on any channel.
+     - A follow-up read to 0x00000200 after both transactions complete must return 32'hDEAD_BEEF,
       confirming the write was ultimately committed.
 
 ### TC14 – Back-to-Back Write Transactions
