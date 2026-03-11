@@ -174,8 +174,10 @@ Test a single byte write read transaction in at Address 0xffffffff using VIP. `d
 Test a single byte write read transaction in at Address with last two LSB being `2'b00`, `2'b01`, `2'b10` & `2'b11` using VIP. `data_width` alignment will be considered.
 
 #### Description
+A single byte write followed by a single byte read is performed at each of the four byte offsets within an aligned word - `ADDR`, `ADDR+1`, `ADDR+2`, and `ADDR+3`. Each offset is tested with a distinct data value. The write task internally shifts the data and strobe by `addr % 4`, placing the byte into the correct lane within the 32-bit word.
 
 #### Expectation
+Each single byte read must return exactly the byte value written to that offset, with no contamination of the neighbouring byte lanes. All B and R responses must be `2'b00`.
 
 ### TC4 – Read-After-Write (Same Address)
 <TODO Adnan>
@@ -224,8 +226,10 @@ Test Write Read with all combination of the `AXPROT`
 Check AW gets blocked due to missing W valid or B ready.
 
 #### Description
+Two scenarios are tested manually on the testbench top. In the first scenario, `aw_valid` is asserted while `w_valid` is held deasserted for several cycles, then `w_valid` is asserted to complete the transaction. In the second scenario, both `aw_valid` and `w_valid` are asserted but `b_ready` is held deasserted until the B FIFO fills up, then `b_ready` is asserted to drain it.
 
 #### Expectation
+In the first scenario, the AW channel must stall until `w_valid` is asserted, after which the transaction completes with OKAY. In the second scenario, the AW channel must stop accepting new beats once the B FIFO is full, and all queued responses must drain correctly as OKAY once `b_ready` is asserted.
 
 ### TC9 – W-Channel Back-Pressure
 <TODO Adnan>
@@ -274,8 +278,11 @@ Simultaneous Read and Write (Same Addresses)
 Simultaneous Read and Write (Different Addresses)
 
 #### Description
+A known value is first written to a read target address (`ADDR_R`) using `write_32` and allowed to complete fully as a pre-condition. Then, using a `fork...join` block, an AW+W beat is driven to a separate write address (`ADDR_W`) while an AR beat is simultaneously driven to `ADDR_R` — mirroring how existing `write` and `read` tasks each internally fork their channel drives. Both `aw_valid`, `w_valid`, `b_ready`, `ar_valid`, and `r_ready` are asserted in the same cycle. After both transactions complete, a read-back to `ADDR_W` is performed to confirm the write was stored correctly. The two addresses are chosen to be word-aligned and distinct so they map to separate locations in `dual_port_mem`.
 
 #### Expectation
+The read from `ADDR_R` must return the value written during the pre-condition step, confirming it was not corrupted by the concurrent write to `ADDR_W`. The write response on the B channel must be `2'b00` and the read response on the R channel must be `2'b00` . The subsequent read-back of `ADDR_W` must return the data written during the simultaneous phase, confirming the write was not suppressed. No stall or deadlock should occur, and both responses must appear within the expected FIFO latency window.
+
 
 ### TC14 – Back-to-Back Write Transactions
 <TODO Adnan>
