@@ -154,8 +154,12 @@ Check all the critical output are in known state. Also check the output ready ar
 Test a single byte write read transaction in at Address 0x00000000 using VIP.
 
 #### Description
+The AXI4-Lite driver writes `0xA5` to address `0x00000000` with only the first byte strobe (`wstrb[0]`) asserted while all other byte lanes are inactive. After waiting for `b_valid` and confirming that `b_resp = OKAY`, a read request is issued to the same address immediately. The monitor captures `r.data` once `r_valid` is high.
 
 #### Expectation
+- `b_valid` asserts once with `b_resp = OKAY`.  
+- Read data returns `0xA5` in byte lane 0; other lanes remain unchanged (or zero if memory initialized to zero).  
+
 
 ### TC2 - Highest Address Access
 <TODO Dhruba>
@@ -204,8 +208,13 @@ Test Different Combinations of Write Strobe
 Test Writes with No Write Strobe asserted.
 
 #### Description
+The driver issues a write to a valid address (e.g., `0x00001000`) with `wstrb = 8'b00000000` (all lanes inactive). After `b_valid` asserts from the DUT, a read from the same address is performed to verify memory content.
 
 #### Expectation
+- `b_valid` asserts with `b_resp = OKAY` (write accepted but no data changes).  
+- Read returns the previous value at the address (no modifications).  
+- Write effectively behaves as a no-op.  
+
 
 ### TC7 – All Protection Combinations
 <TODO Dhruba>
@@ -254,8 +263,14 @@ Check W gets blocked due to missing R ready.
 Send W before and after AW.
 
 #### Description
+Verify that the DUT correctly handles independent AW and W channel arrivals (W before AW and AW before W).In Scenario 1, the W data beat is sent first while the AW beat is delayed by two cycles. In Scenario 2, the AW address beat is sent first while the W beat is delayed by two cycles. `b_valid` is monitored for both transactions, and memory content is checked to ensure correct writes.
 
 #### Expectation
+- DUT holds the W or AW beat in FIFO until its counterpart arrives.  
+- No data corruption occurs.  
+- `b_valid` asserts correctly after both AW and W are received and processed.  
+- Back-pressure is correctly applied if necessary (AW/W ready signals).  
+
 
 ### TC12 – Simultaneous Read and Write (Same Addresses)
 <TODO Dhruba>
@@ -304,8 +319,14 @@ Test back-to-back AR, and R without any dead cycles.
 Last simulation with random delays.
 
 #### Description
+The driver generates 50–100 random AXI4-Lite read/write transactions to random addresses. `wstrb`, `prot`, and delays between AW/W/AR submissions are randomized (0–5 cycles), and random `b_ready` and `r_ready` deassertions simulate back-pressure. All responses are captured via the monitor and forwarded to the scoreboard for verification.
 
 #### Expectation
+- All read/write responses are correct per AXI4-Lite protocol.  
+- No deadlocks occur despite random back-pressure and delayed arrivals.  
+- Memory contents match expected results after all transactions.  
+- Coverage goals for protection, byte strobes, and back-pressure are achieved.  
+
 
 ## Coverage Goals
 
