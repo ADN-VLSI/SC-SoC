@@ -184,8 +184,10 @@ Test a single byte write read transaction in at Address with last two LSB being 
 Initiate a read request immediately 1 cycle after the write request.
 
 #### Description
+Using the VIP, perform a write transaction to an 8-byte aligned address (e.g., `0x00000010`, chosen since `DATA_WIDTH=64` requires `address % 8 == 0`) with a known 64-bit data pattern and all byte strobes asserted (`wstrb = 8'hFF`). Assert `aw_valid` and `w_valid` simultaneously and wait for `b_valid` to confirm the write is accepted. Then, exactly 1 cycle after the write request is issued (i.e., on the very next clock edge after `aw_valid` is driven), issue a read request to the same address by asserting `ar_valid` with `prot = 3'b000`. Drive `r_ready` high and capture the read response.
 
 #### Expectation
+The write transaction is expected to complete with `b.resp = 2'b00` (OKAY), confirming the memory accepted the write. The subsequent read issued 1 cycle later should also return `r.resp = 2'b00` (OKAY) with `r.data` exactly matching the 64-bit value written, verifying that the memory was correctly updated before the read was serviced. Neither transaction should deadlock or stall — both must complete within a bounded number of cycles.
 
 ### TC5 – Partial Write (Byte Strobe)
 <TODO Motasim>
@@ -234,8 +236,10 @@ Check AW gets blocked due to missing W valid or B ready.
 Check W gets blocked due to missing AW valid or B ready.
 
 #### Description
+Manually drive the W channel (`w_valid = 1`, `w.data = <known 64-bit data>`, `w.strb = 8'hFF`) without asserting `aw_valid`. Hold `w_valid` asserted for at least 5 cycles to attempt to overflow the W FIFO (depth = 4). Observe the `w_ready` signal from the DUT during this period. Then, while `w_valid` remains high, additionally hold `b_ready` low to prevent the B channel from draining. Monitor all DUT outputs over this entire period. This test is driven manually at the testbench top level without using the VIP.
 
 #### Expectation
+Initially `w_ready` should remain high as the W FIFO accepts incoming beats, but once the FIFO reaches its capacity of 4 entries, `w_ready` must de-assert to signal back-pressure to the master. Throughout this period, no write should be committed to memory since `aw_valid` is absent — the controller is expected to hold off execution until a matching AW beat arrives. Once `aw_valid` is eventually driven with a valid 8-byte aligned 32-bit address and `prot = 3'b000`, the transaction should complete and `b_valid` should be asserted after `b_ready` goes high. At no point should data corruption or out-of-order completion be observed.
 
 ### TC10 – AR-Channel Back-Pressure
 <TODO Motasim>
@@ -284,8 +288,10 @@ Simultaneous Read and Write (Different Addresses)
 Test back-to-back AW, W, and B without any dead cycles.
 
 #### Description
+Using the VIP, issue a sequence of at least 4 consecutive write transactions to different 8-byte aligned addresses (e.g., `0x00000000`, `0x00000008`, `0x00000010`, `0x00000018` — consecutive 8-byte aligned locations chosen to satisfy the `DATA_WIDTH=64` alignment requirement of `address % 8 == 0`) with no idle or dead cycles inserted between them. Drive `aw_valid`, `w_valid`, and `b_ready` continuously high throughout the sequence, using `prot = 3'b000`. Each transaction carries a unique incrementing 64-bit data value with full byte-strobe asserted (`wstrb = 8'hFF`). After all writes complete, issue a read to each address to verify the stored data.
 
 #### Expectation
+All write transactions should complete with `b.resp = 2'b00` (OKAY) and the DUT is expected to accept a new AW+W pair every cycle without de-asserting `aw_ready` or `w_ready` between transactions, achieving maximum write throughput up to the FIFO depth of 4. The B channel should respond promptly with no dead cycles between consecutive write responses. Following the back-to-back writes, reads to each address must return the exact 64-bit data written, confirming that no write was lost, dropped, or corrupted during the continuous burst.
 
 ### TC15 – Back-to-Back Read Transactions
 <TODO Motasim>
