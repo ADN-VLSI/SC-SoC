@@ -60,19 +60,10 @@ XVLOG_DEFS += -d SIMULATION
 # FILE DISCOVERY AND BUILD CONFIGURATION
 ####################################################################################################
 
-# Start the file list with the include directory (passed as an include search path to xvlog)
-FILE_LIST := -i $(CURDIR)/include
-
-# Append all SystemVerilog source, interface, and testbench files discovered recursively
-FILE_LIST += $(shell find $(SC_SOC)/source -type f -name "*.sv")
-FILE_LIST += $(shell find $(SC_SOC)/interface -type f -name "*.sv")
-FILE_LIST += $(shell find $(SC_SOC)/testbench -type f -name "*.sv")
-
-SHA_ARGS += $$(find include/ -type f)
-SHA_ARGS += $$(find interface/ -type f)
-SHA_ARGS += $$(find source/ -type f)
-# SHA_ARGS += $$(find package/ -type f) # TODO: add package directory if it is used in the future
-SHA_ARGS += $$(find testbench/ -type f)
+SHA_FILES += $$(find include/ -type f)
+SHA_FILES += $$(find interface/ -type f)
+SHA_FILES += $$(find source/ -type f)
+SHA_FILES += $$(find testbench/ -type f)
 
 ####################################################################################################
 # TOOLS
@@ -120,7 +111,7 @@ clean_full:
 
 .PHONY: match_sha
 match_sha:
-	@sha256sum ${SHA_ARGS} > build/build_$(TOP)_new
+	@sha256sum ${SHA_FILES} > build/build_$(TOP)_new
 	@touch build/build_$(TOP)
 	@diff build/build_$(TOP)_new build/build_$(TOP) || make -s __ENV_BUILD__ TOP=$(TOP)
 
@@ -130,7 +121,6 @@ __COMPILE__:
 	@echo -e "\033[3;35mCompiling...\033[0m"
 	@make -s RV32IMF_COMPILE
 	@echo "-i ${SC_SOC}/include" > build/flist
-# 	@$(foreach file, $(PACKAGE_LIST), echo -e $(file) >> build/flist;) # TODO
 	@find ${SC_SOC}/interface -type f >> build/flist
 	@find ${SC_SOC}/source -type f >> build/flist
 	@find ${SC_SOC}/testbench -type f >> build/flist
@@ -142,7 +132,7 @@ __ELABORATE__:
 	@echo -e "\033[3;35mElaborating $(TOP)...\033[0m"
 	@cd build; $(XELAB) $(TOP) --O0 $(XELAB_FLAGS) --nolog $(EWHL)
 	@echo -e "\033[3;35mElaborated $(TOP)\033[0m"
-	@sha256sum ${SHA_ARGS} > build/build_$(TOP)
+	@sha256sum ${SHA_FILES} > build/build_$(TOP)
 
 .PHONY: __ENV_BUILD__
 __ENV_BUILD__:
