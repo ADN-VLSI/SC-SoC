@@ -165,7 +165,15 @@ Test a single byte write read transaction in at Address 0xffffffff using VIP. `d
 
 #### Description
 
+Using the VIP driver, issue a write transaction targeting the highest possible AXI4-Lite address 0xFFFFFFFF. Since DATA_WIDTH = 32 (4 bytes), the naturally aligned word address is 0xFFFFFFFC. The byte strobe is set to 4'b1000 to target only the most significant byte at offset 0x3. A read transaction is then issued to the same aligned address 0xFFFFFFFC to verify the stored value. Both transactions use prot = 3'b000 (unprivileged, non-secure) to ensure OKAY responses.
+
 #### Expectation
+
+- The write transaction to 0xFFFFFFFF completes with a B.RESP = OKAY (2'b00).
+- The read transaction from the aligned address 0xFFFFFFFC returns the written byte in the
+ correct byte lane (bits [31:24]), with all other byte lanes unaffected.
+- The read response R.RESP = OKAY (2'b00).
+- No bus errors, timeouts, or protocol violations are observed on any AXI4-Lite channel.
 
 ### TC3 - Alignment Check
 <TODO Siam>
@@ -217,7 +225,20 @@ Test Write Read with all combination of the `AXPROT`
 
 #### Description
 
+Using the VIP driver, issue a write followed by a read transaction for all 8 possible values of prot[2:0] (i.e., 3'b000 through 3'b111), targeting a fixed address such as 0x00000100. For each combination, a known data pattern unique to that prot value is written, then read back. All transactions use a full-word strobe 4'b1111. The monitor captures both the write response (B.RESP) and read response (R.RESP) for each prot combination, and the scoreboard checks them against the expected outcome based on the protection policy.
+
 #### Expectation
+
+- For prot[1:0] == 2'b00 (unprivileged, non-secure): write is committed to memory with B.
+ RESP = OKAY (2'b00), and the read returns the written data with R.RESP = OKAY (2'b00).
+- For all other values of prot[1:0] (2'b01, 2'b10, 2'b11): the write is suppressed
+ (memory unchanged) with B.RESP = SLVERR (2'b10), and the read returns 32'h00000000 with
+ R.RESP = SLVERR (2'b10).
+- prot[2] (instruction vs. data) does not affect the outcome — only prot[1:0] govern the
+  protection decision.
+- All 8 prot combinations are exercised, satisfying the 100% coverage goal for both write
+  and read protection.
+
 
 ### TC8 – AW-Channel Back-Pressure
 <TODO Siam>
@@ -280,9 +301,21 @@ Simultaneous Read and Write (Different Addresses)
 #### Description
 A known value is first written to a read target address (`ADDR_R`) using `write_32` and allowed to complete fully as a pre-condition. Then, using a `fork...join` block, an AW+W beat is driven to a separate write address (`ADDR_W`) while an AR beat is simultaneously driven to `ADDR_R` — mirroring how existing `write` and `read` tasks each internally fork their channel drives. Both `aw_valid`, `w_valid`, `b_ready`, `ar_valid`, and `r_ready` are asserted in the same cycle. After both transactions complete, a read-back to `ADDR_W` is performed to confirm the write was stored correctly. The two addresses are chosen to be word-aligned and distinct so they map to separate locations in `dual_port_mem`.
 
+Using the VIP driver, pre-load a known value (e.g., 32'hAAAA_AAAA) at address 0x00000200 via an initial write. Then, in the same simulation timestep, enqueue both a write transaction with a new value (e.g., 32'hDEAD_BEEF) and a read transaction to the same address 0x00000200 into the driver mailbox concurrently. Both transactions use prot = 3'b000 and full-word strobe 4'b1111. The monitor captures both the write response and the read data, and the scoreboard determines whether the read observed the old or new value, verifying that the DUT handles the collision consistently without data corruption or protocol error.
+
 #### Expectation
 The read from `ADDR_R` must return the value written during the pre-condition step, confirming it was not corrupted by the concurrent write to `ADDR_W`. The write response on the B channel must be `2'b00` and the read response on the R channel must be `2'b00` . The subsequent read-back of `ADDR_W` must return the data written during the simultaneous phase, confirming the write was not suppressed. No stall or deadlock should occur, and both responses must appear within the expected FIFO latency window.
 
+
+- The write transaction completes with B.RESP = OKAY (2'b00).
+- The read transaction completes with R.RESP = OKAY (2'b00).
+- The read data is either the old value (32'hAAAA_AAAA) or the new value (32'hDEAD_BEEF) —
+ both are acceptable, but the result must be deterministic and consistent with the DUT's
+ arbitration behavior.
+- No data corruption (e.g., partially merged or undefined values) is observed on R.DATA.
+- No protocol violations, timeouts, or unexpected SLVERR responses occur on any channel.
+- A follow-up read to 0x00000200 after both transactions complete must return 32'hDEAD_BEEF,
+ confirming the write was ultimately committed.
 
 ### TC14 – Back-to-Back Write Transactions
 <TODO Adnan>
