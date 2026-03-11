@@ -1,0 +1,3 @@
+[submodule "submodule/rv32imf"]
+	path = submodule/rv32imf
+	url = https://github.com/squared-studio/rv32imf.git
