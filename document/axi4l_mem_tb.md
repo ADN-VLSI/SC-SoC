@@ -138,168 +138,170 @@ The testbench will be implement the previously prepared AXI 4 Lite VIP (Verifica
 ## Test Cases
 
 ### TC0 – Reset Behavior
+<TODO Motasim>
 
 #### Goal
+Check all the critical output are in known state. Also check the output ready are low during reset and high after reset.
 
 #### Description
 
 #### Expectation
 
 ### TC1 - Lowest Address Access
+<TODO Shuparna>
 
 #### Goal
+Test a single byte write read transaction in at Address 0x00000000 using VIP.
 
 #### Description
 
 #### Expectation
 
 ### TC2 - Highest Address Access
+<TODO Dhruba>
 
 #### Goal
+Test a single byte write read transaction in at Address 0xffffffff using VIP. `data_width` alignment will be considered.
 
 #### Description
 
 #### Expectation
 
 ### TC3 - Alignment Check
+<TODO Siam>
 
 #### Goal
+Test a single byte write read transaction in at Address with last two LSB being `2'b00`, `2'b01`, `2'b10` & `2'b11` using VIP. `data_width` alignment will be considered.
 
 #### Description
 
 #### Expectation
 
-### TC4 – Basic Write (Full Word)
+### TC4 – Read-After-Write (Same Address)
+<TODO Adnan>
 
 #### Goal
+Initiate a read request immediately 1 cycle after the write request.
 
 #### Description
 
 #### Expectation
 
-### TC5 – Basic Read
+### TC5 – Partial Write (Byte Strobe)
+<TODO Motasim>
 
 #### Goal
+Test Different Combinations of Write Strobe
 
 #### Description
 
 #### Expectation
 
-### TC6 – Read-After-Write (Same Address)
+### TC6 – No-Op Write (All Strobes Deasserted)
+<TODO Shuparna>
 
 #### Goal
+Test Writes with No Write Strobe asserted.
 
 #### Description
 
 #### Expectation
 
-### TC7 – Partial Write (Byte Strobe)
+### TC7 – All Protection Combinations
+<TODO Dhruba>
 
 #### Goal
+Test Write Read with all combination of the `AXPROT`
 
 #### Description
 
 #### Expectation
 
-### TC8 – No-Op Write (All Strobes Deasserted)
+### TC8 – AW-Channel Back-Pressure
+<TODO Siam>
 
 #### Goal
+Check AW gets blocked due to missing W valid or B ready.
 
 #### Description
 
 #### Expectation
 
-### TC9 – Protected Write (SLVERR, Write Suppressed)
+### TC9 – W-Channel Back-Pressure
+<TODO Adnan>
 
 #### Goal
+Check W gets blocked due to missing AW valid or B ready.
 
 #### Description
 
 #### Expectation
 
-### TC10 – Protected Read (SLVERR, Zeroed Data)
+### TC10 – AR-Channel Back-Pressure
+<TODO Motasim>
 
 #### Goal
+Check W gets blocked due to missing R ready.
 
 #### Description
 
 #### Expectation
 
-### TC11 – All Protection Combinations
+### TC11 – AW and W Channel Independent Acceptance
+<TODO Shuparna>
 
 #### Goal
+Send W before and after AW.
 
 #### Description
 
 #### Expectation
 
-### TC12 – AW-Channel Back-Pressure
+### TC12 – Simultaneous Read and Write (Same Addresses)
+<TODO Dhruba>
 
 #### Goal
+Simultaneous Read and Write (Same Addresses)
 
 #### Description
 
 #### Expectation
 
-### TC13 – W-Channel Back-Pressure
+### TC13 – Simultaneous Read and Write (Different Addresses)
+<TODO Siam>
 
 #### Goal
+Simultaneous Read and Write (Different Addresses)
 
 #### Description
 
 #### Expectation
 
-### TC14 – AR-Channel Back-Pressure
+### TC14 – Back-to-Back Write Transactions
+<TODO Adnan>
 
 #### Goal
+Test back-to-back AW, W, and B without any dead cycles.
 
 #### Description
 
 #### Expectation
 
-### TC15 – AW and W Channel Independent Acceptance
+### TC15 – Back-to-Back Read Transactions
+<TODO Motasim>
 
 #### Goal
+Test back-to-back AR, and R without any dead cycles.
 
 #### Description
 
 #### Expectation
 
-### TC16 – Simultaneous Read and Write (Different Addresses)
+### TC16 – Random Stress Test
+<TODO Shuparna>
 
 #### Goal
-
-#### Description
-
-#### Expectation
-
-### TC17 – Back-to-Back Write Transactions
-
-#### Goal
-
-#### Description
-
-#### Expectation
-
-### TC18 – Back-to-Back Read Transactions
-
-#### Goal
-
-#### Description
-
-#### Expectation
-
-### TC19 – Single Byte Write
-
-#### Goal
-
-#### Description
-
-#### Expectation
-
-### TC20 – Random Stress Test
-
-#### Goal
+Last simulation with random delays.
 
 #### Description
 
