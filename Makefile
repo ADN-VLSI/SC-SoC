@@ -81,20 +81,35 @@ SHA_FILES += $$(find testbench/ -type f)
 # TOOLS
 ####################################################################################################
 
-# Xilinx Vivado toolchain binaries (override on the command line to point at a
-# specific installation, e.g. XVLOG=/opt/Xilinx/Vivado/2023.2/bin/xvlog)
-
 # SystemVerilog compiler
-XVLOG ?= xvlog  
+XVLOG ?= xvlog
 
 # elaborator / linker
-XELAB ?= xelab  
+XELAB ?= xelab
 
 # simulator
-XSIM  ?= xsim   
+XSIM ?= xsim
 
 # coverage report generator
-XCRG  ?= xcrg   
+XCRG ?= xcrg
+
+# RISC-V GCC toolchain for assembling and compiling test programs
+RISCV64_GCC ?= riscv64-unknown-elf-gcc
+
+# RISC-V objcopy for converting compiled test programs into Verilog hex files
+RISCV64_OBJCOPY ?= riscv64-unknown-elf-objcopy
+
+# RISC-V nm for inspecting symbol tables of compiled test programs
+RISCV64_NM ?= riscv64-unknown-elf-nm
+
+# RISC-V objdump for disassembling compiled test programs
+RISCV64_OBJDUMP ?= riscv64-unknown-elf-objdump
+
+# Reference Spike ISA simulator for functional verification of the RV32IMF core
+SPIKE ?= spike
+
+# Python interpreter for running utility scripts
+PYTHON ?= python
 
 ####################################################################################################
 # MAKE TARGETS
@@ -163,22 +178,15 @@ clean_full:
 # SC_SOC
 ##################################################
 
-# Compute a fresh SHA-256 digest of all tracked source files and compare it against
-# the digest saved after the last successful elaboration. If any file has changed,
-# trigger a full recompile + re-elaborate cycle; otherwise do nothing.
-.PHONY: match_sha
-match_sha:
-	@sha256sum ${SHA_FILES} > build/build_$(TOP)_new
-	@touch build/build_$(TOP)
-	@diff build/build_$(TOP)_new build/build_$(TOP) || make -s __ENV_BUILD__ TOP=$(TOP)
-
-# Compile all SC-SoC SystemVerilog sources (includes, interfaces, RTL, and testbenches).
-# Builds the file list (build/flist) on-the-fly from the directory tree, then
-# invokes xvlog in SystemVerilog mode with the preprocessor defines in XVLOG_DEFS.
-# The RV32IMF submodule is compiled first via RV32IMF_COMPILE.
+# Force a full recompilation of all SC-SoC sources regardless of whether files have changed.
+# Removes the elaboration stamp for TOP so it is re-elaborated on the next run, compiles the
+# RV32IMF submodule (skipped automatically if its commit hash is unchanged), assembles an
+# xvlog file-list covering include paths, interfaces, RTL sources, and testbenches, then
+# re-runs xvlog and updates the SHA-256 snapshot used by __ENV_BUILD__ for future change detection.
 .PHONY: __COMPILE__
 __COMPILE__:
 	@make -s build
+	@rm -rf build/build_$(TOP)
 	@echo -e "\033[3;35mCompiling...\033[0m"
 	@make -s RV32IMF_COMPILE
 	@echo "-i ${SC_SOC}/include" > build/flist
@@ -186,66 +194,47 @@ __COMPILE__:
 	@find ${SC_SOC}/source -type f >> build/flist
 	@find ${SC_SOC}/testbench -type f >> build/flist
 	@cd build; $(XVLOG) -sv -f flist $(XVLOG_DEFS) --nolog $(EWHL)
+	@sha256sum ${SHA_FILES} > build/build_sha
 	@echo -e "\033[3;35mCompiled\033[0m"
 
-# Elaborate the compiled design rooted at $(TOP).
-# --O0 disables xelab optimizations to keep elaboration fast during development.
-# On success the SHA-256 digest of all tracked sources is written to build/build_$(TOP)
-# so that subsequent match_sha checks can detect stale builds.
-.PHONY: __ELABORATE__
-__ELABORATE__:
+# Stamp file that records a successful xelab elaboration of TOP. Make treats the file as a
+# build artifact; if it does not exist (or TOP changes) xelab is re-run to produce a new
+# simulation snapshot, then the empty stamp file is written so subsequent runs skip this step.
+build/build_$(TOP):
 	@echo -e "\033[3;35mElaborating $(TOP)...\033[0m"
 	@cd build; $(XELAB) $(TOP) --O0 $(XELAB_FLAGS) --nolog $(EWHL)
+	@echo "" > build/build_$(TOP)
 	@echo -e "\033[3;35mElaborated $(TOP)\033[0m"
-	@sha256sum ${SHA_FILES} > build/build_$(TOP)
 
-# Full environment build: compile then elaborate. Called by match_sha when sources
-# have changed, or by CHK_BUILD when no prior build stamp exists.
+# Incremental build gate: computes a fresh SHA-256 digest of all tracked source files and
+# compares it against the digest saved from the last successful compilation. If the digests
+# differ, __COMPILE__ is invoked to recompile; otherwise compilation is skipped. Elaboration
+# is then checked separately via the build/build_$(TOP) stamp file.
 .PHONY: __ENV_BUILD__
 __ENV_BUILD__:
-	@make -s __COMPILE__
-	@make -s __ELABORATE__
+	@sha256sum ${SHA_FILES} > build/build_sha_new
+	@touch build/build_sha
+	@diff build/build_sha_new build/build_sha &> /dev/null || make -s __COMPILE__ TOP=$(TOP)
+	@make -s build/build_$(TOP)
 
-# Guard target called before every simulation run.
-# If no build stamp exists for $(TOP) the entire environment is built from scratch.
-# Otherwise the SHA-256 digest is compared to detect source changes and rebuild
-# only if necessary, avoiding unnecessary recompilation.
-.PHONY: CHK_BUILD
-CHK_BUILD:
-	@if [ ! -f build/build_$(TOP) ]; then                    \
-		echo -e "\033[3;33mEnvironment not built...\033[0m";   \
-		make -s __ENV_BUILD__ TOP=$(TOP);                      \
-	else                                                     \
-		echo -e "\033[3;33mChecking sha256sum...\033[0m";      \
-		make -s match_sha TOP=$(TOP);                          \
-	fi
-
-# Write the xsim plusarg file used by all simulation runs.
-# TEST selects the test case inside the testbench; DEBUG enables verbose logging
-# when set to a non-zero value. Both are forwarded as +TEST=... / +DEBUG=... at runtime.
+# Write the xsim plusarg file consumed by every simulation run. TEST selects the named
+# test case inside the testbench, and DEBUG passes an optional verbosity/debug level.
 .PHONY: common_sim_checks
 common_sim_checks:
 	@echo "--testplusarg TEST=$(TEST)" > build/xsim_args
 	@echo "--testplusarg DEBUG=$(DEBUG)" >> build/xsim_args
 
-# Top-level simulation target.
-# Usage examples:
-#   make simulate TOP=bin_2_gray_tb             – headless run, default test
-#   make simulate TOP=bin_2_gray_tb TEST=foo    – headless run, named test
-#   make simulate TOP=bin_2_gray_tb GUI=1       – open Vivado waveform viewer
-#   make simulate TOP=bin_2_gray_tb COV=1       – collect functional coverage
-#   make simulate TOP=bin_2_gray_tb COV=1 CC_COV=1 – functional + code coverage
-#
-# Steps:
-#   1. Ensure the log directory exists.
-#   2. Check / rebuild the compiled + elaborated environment for $(TOP).
-#   3. Write the xsim plusarg file.
-#   4. Run xsim; forward slashes in TEST are replaced with ___ to build a safe log filename.
-#   5. (COV=1) Generate an HTML coverage report and move it to coverage_report/.
+# Top-level simulation entry point. Ensures the build and log directories exist, triggers
+# an incremental compile+elaborate if sources have changed, writes the xsim plusarg file,
+# then launches xsim. The log file name is derived from TOP and TEST (forward slashes in
+# TEST are replaced with ___ to produce a valid filename). When COV=1, xcrg is used to
+# produce an HTML functional coverage report; when CC_COV=1 as well, the code coverage
+# report is also moved into the coverage_report directory.
 .PHONY: simulate
 simulate:
+	@make -s build
 	@make -s log
-	@make -s CHK_BUILD TOP=$(TOP)
+	@make -s __ENV_BUILD__ TOP=$(TOP)
 	@make -s common_sim_checks
 	@echo -e "\033[3;35mSimulating $(TOP) $(TEST)...\033[0m"
 	@$(eval log_file_name := $(shell echo "$(TOP)_$(TEST).txt" | sed "s/\//___/g"))
@@ -282,10 +271,9 @@ RV32IMF_COMPILE:
 	@echo "$(RV32IMF_COMMIT)" > build/current_rv32imf_commit.txt
 	@if [ -f build/rv32imf_commit.txt ] && [ -f build/current_rv32imf_commit.txt ] && \
 	     [ "$$(cat build/rv32imf_commit.txt)" = "$$(cat build/current_rv32imf_commit.txt)" ]; then \
-		echo -e "\033[0;33mRV32IMF is already compiled for commit $(RV32IMF_COMMIT), skipping recompilation.\033[0m"; \
+		echo -n ""; \
 	else \
 		cd build && $(XVLOG) -sv -f $(SC_SOC)/filelist/rv32imf.f $(EWHL); \
-		echo -e "\033[0;33mRV32IMF compiled for commit $(RV32IMF_COMMIT).\033[0m"; \
 	fi
 	@echo "$(RV32IMF_COMMIT)" > build/rv32imf_commit.txt
 	@rm -f build/current_rv32imf_commit.txt
