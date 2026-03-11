@@ -1,6 +1,8 @@
 # Use bash as the shell for all recipe commands
 export SHELL=/bin/bash
 
+.DEFAULT_GOAL := help
+
 ####################################################################################################
 # PATH EXPORTS
 ####################################################################################################
@@ -97,6 +99,35 @@ XCRG  ?= xcrg
 ####################################################################################################
 # MAKE TARGETS
 ####################################################################################################
+
+.PHONY: help
+help:
+	@echo -e "\033[1mSC-SoC Simulation Makefile\033[0m"
+	@echo ""
+	@echo -e "\033[1mUsage:\033[0m"
+	@echo "  make [TARGET] [OPTIONS]"
+	@echo ""
+	@echo -e "\033[1mMain Targets:\033[0m"
+	@echo -e "  \033[0;36msimulate\033[0m         Run simulation for the TOP module"
+	@echo -e "  \033[0;36mRV32IMF_COMPILE\033[0m  Compile only the RV32IMF submodule (skips if commit unchanged)"
+	@echo -e "  \033[0;36mclean\033[0m            Remove the build directory"
+	@echo -e "  \033[0;36mclean_full\033[0m       Remove build/, log/, and coverage_report/ directories"
+	@echo -e "  \033[0;36mhelp\033[0m             Show this help message"
+	@echo ""
+	@echo -e "\033[1mOptions:\033[0m"
+	@echo -e "  \033[0;33mTOP=<module>\033[0m     Top-level module to simulate              (default: hello)"
+	@echo -e "  \033[0;33mTEST=<name>\033[0m      Test name forwarded as +TEST plusarg      (default: default)"
+	@echo -e "  \033[0;33mDEBUG=<value>\033[0m    Value forwarded as +DEBUG plusarg         (default: unset)"
+	@echo -e "  \033[0;33mGUI=<0|1>\033[0m        0=headless, 1=open Vivado waveform GUI    (default: 0)"
+	@echo -e "  \033[0;33mCOV=<0|1>\033[0m        1=enable functional coverage collection   (default: 0)"
+	@echo -e "  \033[0;33mCC_COV=<0|1>\033[0m     1=also enable code coverage (needs COV=1) (default: 0)"
+	@echo ""
+	@echo -e "\033[1mExamples:\033[0m"
+	@echo "  make simulate TOP=bin_2_gray_tb"
+	@echo "  make simulate TOP=bin_2_gray_tb TEST=my_test"
+	@echo "  make simulate TOP=bin_2_gray_tb GUI=1"
+	@echo "  make simulate TOP=bin_2_gray_tb COV=1"
+	@echo "  make simulate TOP=bin_2_gray_tb COV=1 CC_COV=1"
 
 # Create the build output directory and add a .gitignore so its contents are not tracked by git
 build:
