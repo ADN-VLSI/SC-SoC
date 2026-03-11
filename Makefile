@@ -179,14 +179,14 @@ clean_full:
 ##################################################
 
 # Force a full recompilation of all SC-SoC sources regardless of whether files have changed.
-# Removes the elaboration stamp for TOP so it is re-elaborated on the next run, compiles the
-# RV32IMF submodule (skipped automatically if its commit hash is unchanged), assembles an
-# xvlog file-list covering include paths, interfaces, RTL sources, and testbenches, then
-# re-runs xvlog and updates the SHA-256 snapshot used by __ENV_BUILD__ for future change detection.
+# Removes all per-TOP elaboration stamps so every module is re-elaborated on the next run,
+# compiles the RV32IMF submodule (skipped automatically if its commit hash is unchanged),
+# assembles an xvlog file-list covering include paths, interfaces, RTL sources, and testbenches,
+# then re-runs xvlog and updates the SHA-256 snapshot used by __ENV_BUILD__ for future change detection.
 .PHONY: __COMPILE__
 __COMPILE__:
 	@make -s build
-	@rm -rf build/build_$(TOP)
+	@rm -rf build/build_*
 	@echo -e "\033[3;35mCompiling...\033[0m"
 	@make -s RV32IMF_COMPILE
 	@echo "-i ${SC_SOC}/include" > build/flist
@@ -214,7 +214,7 @@ build/build_$(TOP):
 __ENV_BUILD__:
 	@sha256sum ${SHA_FILES} > build/build_sha_new
 	@touch build/build_sha
-	@diff build/build_sha_new build/build_sha &> /dev/null || make -s __COMPILE__ TOP=$(TOP)
+	@diff build/build_sha_new build/build_sha &> /dev/null || make -s __COMPILE__
 	@make -s build/build_$(TOP)
 
 # Write the xsim plusarg file consumed by every simulation run. TEST selects the named
@@ -224,12 +224,13 @@ common_sim_checks:
 	@echo "--testplusarg TEST=$(TEST)" > build/xsim_args
 	@echo "--testplusarg DEBUG=$(DEBUG)" >> build/xsim_args
 
-# Top-level simulation entry point. Ensures the build and log directories exist, triggers
-# an incremental compile+elaborate if sources have changed, writes the xsim plusarg file,
-# then launches xsim. The log file name is derived from TOP and TEST (forward slashes in
-# TEST are replaced with ___ to produce a valid filename). When COV=1, xcrg is used to
-# produce an HTML functional coverage report; when CC_COV=1 as well, the code coverage
-# report is also moved into the coverage_report directory.
+# Top-level simulation entry point. Ensures the build and log directories exist, persists
+# the TOP name to build/top (so subsequent bare 'make simulate' invocations remember the last
+# used module), triggers an incremental compile+elaborate if sources have changed, writes the
+# xsim plusarg file, then launches xsim. The log file name is derived from TOP and TEST
+# (forward slashes in TEST are replaced with ___ to produce a valid filename). When COV=1,
+# xcrg is used to produce an HTML functional coverage report; when CC_COV=1 as well, the
+# code coverage report is also moved into the coverage_report directory.
 .PHONY: simulate
 simulate:
 	@make -s build
@@ -262,7 +263,7 @@ endif
 # compilation, and only recompiles if it has changed. The commit hash is stored in
 # build/rv32imf_commit.txt, and a temporary file build/current_rv32imf_commit.txt is used to compare
 # the current commit hash with the last compiled one. If the commit hash has not changed, the target
-# prints a message and skips recompilation. If it has changed, it compiles the RV32IMF sources with
+# silently skips recompilation. If it has changed, it compiles the RV32IMF sources with
 # xvlog and updates the stored commit hash.
 .PHONY: RV32IMF_COMPILE
 RV32IMF_COMPILE:
