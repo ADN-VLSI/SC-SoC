@@ -57,7 +57,7 @@ endif
 endif
 
 # Get RV32IMF submodule commit hash only
-RV32IMF_COMMIT := $(shell git submodule status -- $(RV32IMF) | awk '{print $$1}')
+RV32IMF_COMMIT = $(shell git submodule status -- $(RV32IMF) | awk '{print $$1}')
 
 # Filter xvlog/xelab/xsim output to highlight only Errors and Warnings
 EWHL := | grep -iE "Error:|Warning:|" --color=auto
@@ -263,7 +263,7 @@ endif
 # compilation, and only recompiles if it has changed. The commit hash is stored in
 # build/rv32imf_commit.txt, and a temporary file build/current_rv32imf_commit.txt is used to compare
 # the current commit hash with the last compiled one. If the commit hash has not changed, the target
-# silently skips recompilation. If it has changed, it compiles the RV32IMF sources with
+# prints a message and skips recompilation. If it has changed, it compiles the RV32IMF sources with
 # xvlog and updates the stored commit hash.
 .PHONY: RV32IMF_COMPILE
 RV32IMF_COMPILE:
