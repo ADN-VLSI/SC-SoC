@@ -32,15 +32,22 @@ else
 	SIM_ARGS += -gui --autoloadwcfg --view ../wcfg/$(TOP).wcfg
 endif
 
+# Set COV=1 to enable functional coverage collection during simulation
 COV ?= 0
+# Set CC_COV=1 to also enable code coverage (requires COV=1)
 CC_COV ?= 0
 
+# When both functional and code coverage are enabled, instruct xelab to instrument
+# the design for statement/branch/condition coverage using the SBC (SystemVerilog
+# Cover Constructs) mode
 ifeq ($(COV), 1)
 ifeq ($(CC_COV), 1)
 	XELAB_FLAGS += --cc_type -sbc
 endif
 endif
 
+# When both functional and code coverage are enabled, configure xcrg to merge the
+# code-coverage database and produce a full-file report under the cc_report directory
 ifeq ($(COV), 1)
 ifeq ($(CC_COV), 1)
 	XCRG_FLAGS += -cc_db $(TOP) -cc_fullfile -cc_report cc_report
@@ -53,13 +60,16 @@ RV32IMF_COMMIT := $(shell git submodule status -- $(RV32IMF) | awk '{print $$1}'
 # Filter xvlog/xelab/xsim output to highlight only Errors and Warnings
 EWHL := | grep -iE "Error:|Warning:|" --color=auto
 
-# Define XVLOG_DEFS
+# Preprocessor defines passed to xvlog; SIMULATION is used to gate simulation-only
+# code blocks (e.g. $display, $finish) inside RTL and testbench files
 XVLOG_DEFS += -d SIMULATION
 
 ####################################################################################################
 # FILE DISCOVERY AND BUILD CONFIGURATION
 ####################################################################################################
 
+# List of all tracked source files whose SHA-256 checksums are used to detect
+# changes and trigger incremental recompilation / elaboration only when needed
 SHA_FILES += $$(find include/ -type f)
 SHA_FILES += $$(find interface/ -type f)
 SHA_FILES += $$(find source/ -type f)
@@ -69,10 +79,20 @@ SHA_FILES += $$(find testbench/ -type f)
 # TOOLS
 ####################################################################################################
 
-XVLOG ?= xvlog
-XELAB ?= xelab
-XSIM ?= xsim
-XCRG ?= xcrg
+# Xilinx Vivado toolchain binaries (override on the command line to point at a
+# specific installation, e.g. XVLOG=/opt/Xilinx/Vivado/2023.2/bin/xvlog)
+
+# SystemVerilog compiler
+XVLOG ?= xvlog  
+
+# elaborator / linker
+XELAB ?= xelab  
+
+# simulator
+XSIM  ?= xsim   
+
+# coverage report generator
+XCRG  ?= xcrg   
 
 ####################################################################################################
 # MAKE TARGETS
@@ -84,11 +104,13 @@ build:
 	@mkdir build
 	@echo "*" > build/.gitignore
 
+# Create the log output directory and add a .gitignore so simulation logs are not tracked by git
 log:
 	@echo "Creating log directory..."
 	@mkdir -p log
 	@echo "*" > log/.gitignore
 
+# Create the coverage report output directory and exclude its contents from git
 coverage_report:
 	@mkdir -p coverage_report
 	@echo "*" > coverage_report/.gitignore
@@ -99,6 +121,7 @@ clean:
 	@echo "Cleaning build directory..."
 	@rm -rf build
 
+# Remove the build directory as well as all log and coverage report artifacts
 .PHONY: clean_full
 clean_full:
 	@make -s clean
@@ -109,12 +132,19 @@ clean_full:
 # SC_SOC
 ##################################################
 
+# Compute a fresh SHA-256 digest of all tracked source files and compare it against
+# the digest saved after the last successful elaboration. If any file has changed,
+# trigger a full recompile + re-elaborate cycle; otherwise do nothing.
 .PHONY: match_sha
 match_sha:
 	@sha256sum ${SHA_FILES} > build/build_$(TOP)_new
 	@touch build/build_$(TOP)
 	@diff build/build_$(TOP)_new build/build_$(TOP) || make -s __ENV_BUILD__ TOP=$(TOP)
 
+# Compile all SC-SoC SystemVerilog sources (includes, interfaces, RTL, and testbenches).
+# Builds the file list (build/flist) on-the-fly from the directory tree, then
+# invokes xvlog in SystemVerilog mode with the preprocessor defines in XVLOG_DEFS.
+# The RV32IMF submodule is compiled first via RV32IMF_COMPILE.
 .PHONY: __COMPILE__
 __COMPILE__:
 	@make -s build
@@ -127,6 +157,10 @@ __COMPILE__:
 	@cd build; $(XVLOG) -sv -f flist $(XVLOG_DEFS) --nolog $(EWHL)
 	@echo -e "\033[3;35mCompiled\033[0m"
 
+# Elaborate the compiled design rooted at $(TOP).
+# --O0 disables xelab optimizations to keep elaboration fast during development.
+# On success the SHA-256 digest of all tracked sources is written to build/build_$(TOP)
+# so that subsequent match_sha checks can detect stale builds.
 .PHONY: __ELABORATE__
 __ELABORATE__:
 	@echo -e "\033[3;35mElaborating $(TOP)...\033[0m"
@@ -134,11 +168,17 @@ __ELABORATE__:
 	@echo -e "\033[3;35mElaborated $(TOP)\033[0m"
 	@sha256sum ${SHA_FILES} > build/build_$(TOP)
 
+# Full environment build: compile then elaborate. Called by match_sha when sources
+# have changed, or by CHK_BUILD when no prior build stamp exists.
 .PHONY: __ENV_BUILD__
 __ENV_BUILD__:
 	@make -s __COMPILE__
 	@make -s __ELABORATE__
 
+# Guard target called before every simulation run.
+# If no build stamp exists for $(TOP) the entire environment is built from scratch.
+# Otherwise the SHA-256 digest is compared to detect source changes and rebuild
+# only if necessary, avoiding unnecessary recompilation.
 .PHONY: CHK_BUILD
 CHK_BUILD:
 	@if [ ! -f build/build_$(TOP) ]; then                    \
@@ -149,11 +189,28 @@ CHK_BUILD:
 		make -s match_sha TOP=$(TOP);                          \
 	fi
 
+# Write the xsim plusarg file used by all simulation runs.
+# TEST selects the test case inside the testbench; DEBUG enables verbose logging
+# when set to a non-zero value. Both are forwarded as +TEST=... / +DEBUG=... at runtime.
 .PHONY: common_sim_checks
 common_sim_checks:
 	@echo "--testplusarg TEST=$(TEST)" > build/xsim_args
 	@echo "--testplusarg DEBUG=$(DEBUG)" >> build/xsim_args
 
+# Top-level simulation target.
+# Usage examples:
+#   make simulate TOP=bin_2_gray_tb             – headless run, default test
+#   make simulate TOP=bin_2_gray_tb TEST=foo    – headless run, named test
+#   make simulate TOP=bin_2_gray_tb GUI=1       – open Vivado waveform viewer
+#   make simulate TOP=bin_2_gray_tb COV=1       – collect functional coverage
+#   make simulate TOP=bin_2_gray_tb COV=1 CC_COV=1 – functional + code coverage
+#
+# Steps:
+#   1. Ensure the log directory exists.
+#   2. Check / rebuild the compiled + elaborated environment for $(TOP).
+#   3. Write the xsim plusarg file.
+#   4. Run xsim; forward slashes in TEST are replaced with ___ to build a safe log filename.
+#   5. (COV=1) Generate an HTML coverage report and move it to coverage_report/.
 .PHONY: simulate
 simulate:
 	@make -s log
