@@ -234,6 +234,7 @@ common_sim_checks:
 simulate:
 	@make -s build
 	@make -s log
+	@echo "$(TOP)" > build/top
 	@make -s __ENV_BUILD__ TOP=$(TOP)
 	@make -s common_sim_checks
 	@echo -e "\033[3;35mSimulating $(TOP) $(TEST)...\033[0m"
