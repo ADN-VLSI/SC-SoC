@@ -184,10 +184,10 @@ Test a single byte write read transaction in at Address with last two LSB being 
 Initiate a read request immediately 1 cycle after the write request.
 
 #### Description
-Using the VIP, perform a write transaction to an 8-byte aligned address (e.g., `0x00000010`, chosen since `DATA_WIDTH=64` requires `address % 8 == 0`) with a known 64-bit data pattern and all byte strobes asserted (`wstrb = 8'hFF`). Assert `aw_valid` and `w_valid` simultaneously and wait for `b_valid` to confirm the write is accepted. Then, exactly 1 cycle after the write request is issued (i.e., on the very next clock edge after `aw_valid` is driven), issue a read request to the same address by asserting `ar_valid` with `prot = 3'b000`. Drive `r_ready` high and capture the read response.
+Using the VIP, write a known 64-bit value to address `0x00000010` with `wstrb = 8'hFF` and `prot = 3'b000`. Assert `aw_valid` and `w_valid` simultaneously on Cycle N. On Cycle N+1 — without waiting for `b_valid` — assert `ar_valid` to the same address with `prot = 3'b000`. Drive `b_ready` and `r_ready` high throughout. Capture both `b_valid` and `r_valid` responses.
 
 #### Expectation
-The write transaction is expected to complete with `b.resp = 2'b00` (OKAY), confirming the memory accepted the write. The subsequent read issued 1 cycle later should also return `r.resp = 2'b00` (OKAY) with `r.data` exactly matching the 64-bit value written, verifying that the memory was correctly updated before the read was serviced. Neither transaction should deadlock or stall — both must complete within a bounded number of cycles.
+Write must complete with `b.resp = OKAY`. Read must complete with `r.resp = OKAY`. Since the read is issued before the write has committed through the FIFO, `r.data` may return either the written value or the previous memory value — both are acceptable. After both responses are received, issue a second read to confirm `r.data` now returns the written value, proving the write was not lost.
 
 ### TC5 – Partial Write (Byte Strobe)
 <TODO Motasim>
@@ -236,10 +236,10 @@ Check AW gets blocked due to missing W valid or B ready.
 Check W gets blocked due to missing AW valid or B ready.
 
 #### Description
-Manually drive the W channel (`w_valid = 1`, `w.data = <known 64-bit data>`, `w.strb = 8'hFF`) without asserting `aw_valid`. Hold `w_valid` asserted for at least 5 cycles to attempt to overflow the W FIFO (depth = 4). Observe the `w_ready` signal from the DUT during this period. Then, while `w_valid` remains high, additionally hold `b_ready` low to prevent the B channel from draining. Monitor all DUT outputs over this entire period. This test is driven manually at the testbench top level without using the VIP.
+This test is driven manually without the VIP. Assert `w_valid = 1` with `w.data = <known value>` and `w.strb = 8'hFF`, but keep `aw_valid = 0` and `b_ready = 0`. Hold this for 5 cycles to overflow the W FIFO (depth = 4). Observe `w_ready` de-asserting once the FIFO is full. Then drive `aw_valid = 1` with address `0x00000000` and `prot = 3'b000`, and assert `b_ready = 1` to drain the channel. Repeat `aw_valid` for all 4 buffered beats.
 
 #### Expectation
-Initially `w_ready` should remain high as the W FIFO accepts incoming beats, but once the FIFO reaches its capacity of 4 entries, `w_ready` must de-assert to signal back-pressure to the master. Throughout this period, no write should be committed to memory since `aw_valid` is absent — the controller is expected to hold off execution until a matching AW beat arrives. Once `aw_valid` is eventually driven with a valid 8-byte aligned 32-bit address and `prot = 3'b000`, the transaction should complete and `b_valid` should be asserted after `b_ready` goes high. At no point should data corruption or out-of-order completion be observed.
+Initially`w_ready` must stay HIGH for the first 4 beats then de-assert when the FIFO is full. No write must be committed to memory while `aw_valid` is absent. Once `aw_valid` and `b_ready` are driven, all 4 buffered W beats must complete with `b.resp = OKAY` each. A read-back after must confirm the correct data, with no beats lost or corrupted.
 
 ### TC10 – AR-Channel Back-Pressure
 <TODO Motasim>
