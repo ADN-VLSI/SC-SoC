@@ -70,12 +70,9 @@ XVLOG_DEFS += -d SIMULATION
 # FILE DISCOVERY AND BUILD CONFIGURATION
 ####################################################################################################
 
-# List of all tracked source files whose SHA-256 checksums are used to detect
-# changes and trigger incremental recompilation / elaboration only when needed
-SHA_FILES += $$(find include/ -type f)
-SHA_FILES += $$(find interface/ -type f)
-SHA_FILES += $$(find source/ -type f)
-SHA_FILES += $$(find testbench/ -type f)
+# List of all tracked hardware files whose SHA-256 checksums are used to detect changes and trigger
+# incremental recompilation / elaboration only when needed
+SHA_FILES = $(shell find $(SC_SOC)/hardware/ -name "*" -type f)
 
 ####################################################################################################
 # TOOLS
@@ -189,10 +186,10 @@ __COMPILE__:
 	@rm -rf build/build_*
 	@echo -e "\033[3;35mCompiling...\033[0m"
 	@make -s RV32IMF_COMPILE
-	@echo "-i ${SC_SOC}/include" > build/flist
-	@find ${SC_SOC}/interface -type f >> build/flist
-	@find ${SC_SOC}/source -type f >> build/flist
-	@find ${SC_SOC}/testbench -type f >> build/flist
+	@echo "-i ${SC_SOC}/hardware/include" > build/flist
+	@find ${SC_SOC}/hardware/interface -type f >> build/flist
+	@find ${SC_SOC}/hardware/source -type f >> build/flist
+	@find ${SC_SOC}/hardware/testbench -type f >> build/flist
 	@cd build; $(XVLOG) -sv -f flist $(XVLOG_DEFS) --nolog $(EWHL)
 	@sha256sum ${SHA_FILES} > build/build_sha
 	@echo -e "\033[3;35mCompiled\033[0m"
@@ -275,7 +272,24 @@ RV32IMF_COMPILE:
 	     [ "$$(cat build/rv32imf_commit.txt)" = "$$(cat build/current_rv32imf_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/filelist/rv32imf.f $(EWHL); \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/rv32imf.f $(EWHL); \
 	fi
 	@echo "$(RV32IMF_COMMIT)" > build/rv32imf_commit.txt
 	@rm -f build/current_rv32imf_commit.txt
+
+####################################################################################################
+# RISC V
+####################################################################################################
+
+# Compile and prepare test program using RISC-V GCC tools
+.PHONY: test
+test:
+	@$(eval TEST_PATH := $(shell find software/source -type f -name "*${TEST}*"))
+	@if [ -z "${TEST_PATH}" ]; then echo -e "\033[1;31mTest file ${TEST} not found!\033[0m"; exit 1; fi
+	@if [ $$(echo "${TEST_PATH}" | wc -w) -gt 1 ]; then echo -e "\033[1;31mMultiple test files found for ${TEST}:\n${TEST_PATH}\033[0m"; exit 1; fi
+	@echo -e "\033[3;35mCompiling test program ${TEST_PATH}...\033[0m"
+	@make -s build
+	@${RISCV64_GCC} -march=rv32imf -mabi=ilp32f -nostdlib -nostartfiles -T software/linkers/core.ld -o build/prog.elf software/include/startup.S ${TEST_PATH} -I software/include
+	@${RISCV64_OBJCOPY} -O verilog build/prog.elf build/prog.hex
+	@${RISCV64_NM} -n build/prog.elf > build/prog.sym
+	@${RISCV64_OBJDUMP} -d build/prog.elf > build/prog.dis
