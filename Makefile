@@ -276,3 +276,20 @@ RV32IMF_COMPILE:
 	fi
 	@echo "$(RV32IMF_COMMIT)" > build/rv32imf_commit.txt
 	@rm -f build/current_rv32imf_commit.txt
+
+####################################################################################################
+# RISC V
+####################################################################################################
+
+# Compile and prepare test program using RISC-V GCC tools
+.PHONY: test
+test:
+	@$(eval TEST_PATH := $(shell find software/source -type f -name "*${TEST}*"))
+	@if [ -z "${TEST_PATH}" ]; then echo -e "\033[1;31mTest file ${TEST} not found!\033[0m"; exit 1; fi
+	@if [ $$(echo "${TEST_PATH}" | wc -w) -gt 1 ]; then echo -e "\033[1;31mMultiple test files found for ${TEST}:\n${TEST_PATH}\033[0m"; exit 1; fi
+	@echo -e "\033[3;35mCompiling test program ${TEST_PATH}...\033[0m"
+	@make -s build
+	@${RISCV64_GCC} -march=rv32imf -mabi=ilp32f -nostdlib -nostartfiles -T software/linkers/core.ld -o build/prog.elf software/include/startup.S ${TEST_PATH} -I software/include
+	@${RISCV64_OBJCOPY} -O verilog build/prog.elf build/prog.hex
+	@${RISCV64_NM} -n build/prog.elf > build/prog.sym
+	@${RISCV64_OBJDUMP} -d build/prog.elf > build/prog.dis
