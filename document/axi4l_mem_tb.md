@@ -206,8 +206,10 @@ Each single byte read must return exactly the byte value written to that offset,
 Initiate a read request immediately 1 cycle after the write request.
 
 #### Description
+Using the VIP, write a known 64-bit value to address `0x00000010` with `wstrb = 8'hFF` and `prot = 3'b000`. Assert `aw_valid` and `w_valid` simultaneously on Cycle N. On Cycle N+1 — without waiting for `b_valid` — assert `ar_valid` to the same address with `prot = 3'b000`. Drive `b_ready` and `r_ready` high throughout. Capture both `b_valid` and `r_valid` responses.
 
 #### Expectation
+Write must complete with `b.resp = OKAY`. Read must complete with `r.resp = OKAY`. Since the read is issued before the write has committed through the FIFO, `r.data` may return either the written value or the previous memory value — both are acceptable. After both responses are received, issue a second read to confirm `r.data` now returns the written value, proving the write was not lost.
 
 ### TC5 – Partial Write (Byte Strobe)
 <TODO Motasim>
@@ -284,8 +286,10 @@ In the first scenario, the AW channel must stall until `w_valid` is asserted, af
 Check W gets blocked due to missing AW valid or B ready.
 
 #### Description
+This test is driven manually without the VIP. Assert `w_valid = 1` with `w.data = <known value>` and `w.strb = 8'hFF`, but keep `aw_valid = 0` and `b_ready = 0`. Hold this for 5 cycles to overflow the W FIFO (depth = 4). Observe `w_ready` de-asserting once the FIFO is full. Then drive `aw_valid = 1` with address `0x00000000` and `prot = 3'b000`, and assert `b_ready = 1` to drain the channel. Repeat `aw_valid` for all 4 buffered beats.
 
 #### Expectation
+Initially`w_ready` must stay HIGH for the first 4 beats then de-assert when the FIFO is full. No write must be committed to memory while `aw_valid` is absent. Once `aw_valid` and `b_ready` are driven, all 4 buffered W beats must complete with `b.resp = OKAY` each. A read-back after must confirm the correct data, with no beats lost or corrupted.
 
 ### TC10 – AR-Channel Back-Pressure
 <TODO Motasim>
@@ -363,8 +367,10 @@ The read from `ADDR_R` must return the value written during the pre-condition st
 Test back-to-back AW, W, and B without any dead cycles.
 
 #### Description
+Using the VIP, issue a sequence of at least 4 consecutive write transactions to different 8-byte aligned addresses (e.g., `0x00000000`, `0x00000008`, `0x00000010`, `0x00000018` — consecutive 8-byte aligned locations chosen to satisfy the `DATA_WIDTH=64` alignment requirement of `address % 8 == 0`) with no idle or dead cycles inserted between them. Drive `aw_valid`, `w_valid`, and `b_ready` continuously high throughout the sequence, using `prot = 3'b000`. Each transaction carries a unique incrementing 64-bit data value with full byte-strobe asserted (`wstrb = 8'hFF`). After all writes complete, issue a read to each address to verify the stored data.
 
 #### Expectation
+All write transactions should complete with `b.resp = 2'b00` (OKAY) and the DUT is expected to accept a new AW+W pair every cycle without de-asserting `aw_ready` or `w_ready` between transactions, achieving maximum write throughput up to the FIFO depth of 4. The B channel should respond promptly with no dead cycles between consecutive write responses. Following the back-to-back writes, reads to each address must return the exact 64-bit data written, confirming that no write was lost, dropped, or corrupted during the continuous burst.
 
 ### TC15 – Back-to-Back Read Transactions
 <TODO Motasim>
