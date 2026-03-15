@@ -135,6 +135,26 @@ module rv32imf_tb;
     u_mem.load_hex(filename);
   endfunction
 
+  task static monitor_prints();
+    string prints;
+    prints = "";
+    fork
+      forever begin
+        @(posedge clk);
+        if ((data_addr === sym["putchar_stdout"]
+                     && data_we === '1 && data_req === '1 && data_gnt === '1))
+                begin
+          if (data_wdata[7:0] == "\n") begin
+            $display("\033[1;33mSTDOUT         : %s\033[0m [%0t]", prints, $realtime);
+            prints = "";
+          end else begin
+            $sformat(prints, "%s%c", prints, data_wdata[7:0]);
+          end
+        end
+      end
+    join_none
+  endtask
+
   task static wait_exit();
     int exit_code;
     exit_code = '1;
@@ -161,20 +181,24 @@ module rv32imf_tb;
 
   initial begin
 
-    $timeformat(-9, 0, "ns", 6);
+    $timeformat(-6, 3, "us");
 
-    $dumpfile("rv32imf_tb.vcd");
-    $dumpvars(0, rv32imf_tb);
+    if ($test$plusargs("DEBUG")) begin
+      $display("\033[1;33m###### DEBUG ENABLED ######\033[0m");
+      $dumpfile("rv32imf_tb.vcd");
+      $dumpvars(0, rv32imf_tb);
+    end
 
     load_sym_file("prog.sym");
     load_hex_file("prog.hex");
 
     apply_reset();
 
-    boot_addr         <= sym["_start"];
+    boot_addr <= sym["_start"];
 
     start_clock();
 
+    monitor_prints();
     wait_exit();
 
     $finish;
