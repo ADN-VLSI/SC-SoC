@@ -1,0 +1,32 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Sun Mar 15 10:58:03 2026
+[*]
+[dumpfile] "C:\workspace\SC-SoC\wcfg\build\rv32imf_tb.vcd"
+[savefile] "C:\workspace\SC-SoC\wcfg\rv32imf_tb.gtkw"
+[timestart] 0
+[size] 1920 1009
+[pos] -243 -243
+*-17.970837 150000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] rv32imf_tb.
+[sst_width] 197
+[signals_width] 166
+[sst_expanded] 1
+[sst_vpaned_height] 297
+@22
+rv32imf_tb.wait_exit.exit_code[31:0]
+@200
+-
+@22
+rv32imf_tb.instr_addr[31:0]
+@28
+rv32imf_tb.instr_req
+rv32imf_tb.instr_gnt
+@201
+-
+@28
+rv32imf_tb.instr_rvalid
+@22
+rv32imf_tb.instr_rdata[31:0]
+[pattern_trace] 1
+[pattern_trace] 0

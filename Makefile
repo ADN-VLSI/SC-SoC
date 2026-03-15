@@ -220,6 +220,9 @@ __ENV_BUILD__:
 common_sim_checks:
 	@echo "--testplusarg TEST=$(TEST)" > build/xsim_args
 	@echo "--testplusarg DEBUG=$(DEBUG)" >> build/xsim_args
+ifeq ($(TOP), rv32imf_tb)
+	@make -s test TEST=$(TEST)
+endif
 
 # Top-level simulation entry point. Ensures the build and log directories exist, persists
 # the TOP name to build/top (so subsequent bare 'make simulate' invocations remember the last
@@ -234,7 +237,7 @@ simulate:
 	@make -s log
 	@echo "$(TOP)" > build/top
 	@make -s __ENV_BUILD__ TOP=$(TOP)
-	@make -s common_sim_checks
+	@make -s common_sim_checks TEST=$(TEST) DEBUG=$(DEBUG)
 	@echo -e "\033[3;35mSimulating $(TOP) $(TEST)...\033[0m"
 	@$(eval log_file_name := $(shell echo "$(TOP)_$(TEST).txt" | sed "s/\//___/g"))
 	@cd build; $(XSIM) $(TOP) -f xsim_args $(SIM_ARGS) -log ../log/$(log_file_name)
