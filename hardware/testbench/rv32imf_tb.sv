@@ -171,10 +171,7 @@ module rv32imf_tb;
 
     apply_reset();
 
-    boot_addr         <= sym["__start"];
-    dm_halt_addr      <= sym["__dm_halt"];
-    hart_id           <= sym["__hart_id"];
-    dm_exception_addr <= sym["__dm_exception"];
+    boot_addr         <= sym["_start"];
 
     start_clock();
 
