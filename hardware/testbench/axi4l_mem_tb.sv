@@ -1817,3 +1817,342 @@ endmodule
 */
 
 
+/* ADNAN
+
+`include "axi4l/typedef.svh"
+`include "vip/axi4l.svh"
+
+// =============================================================================
+// TC4  – Read-After-Write      → VIP interface tasks
+// TC9  – W-channel backpressure → fully manual
+// TC14 – Back-to-back writes   → VIP interface tasks
+// DUT  : axi4l_mem  ADDR_WIDTH=32  DATA_WIDTH=64
+// =============================================================================
+
+module axi4l_mem_tb;
+
+  // -------------------------------------------------------------------
+  // 1. Clock / reset
+  // -------------------------------------------------------------------
+
+  logic clk_i   = 0;
+  logic arst_ni = 0;
+
+  always #5ns clk_i = ~clk_i;  // 100 MHz
+
+  // -------------------------------------------------------------------
+  // 2. Type definitions  (32-bit addr, 64-bit data)
+  // -------------------------------------------------------------------
+
+  `AXI4L_ALL(my, 32, 64)
+
+  // -------------------------------------------------------------------
+  // 3. Interface
+  // -------------------------------------------------------------------
+
+  axi4l_if #(
+    .req_t (my_req_t),
+    .rsp_t (my_rsp_t)
+  ) intf (
+    .arst_ni (arst_ni),
+    .clk_i   (clk_i)
+  );
+
+  // -------------------------------------------------------------------
+  // 4. DUT
+  // -------------------------------------------------------------------
+
+  axi4l_mem #(
+    .axi4l_req_t (my_req_t),
+    .axi4l_rsp_t (my_rsp_t),
+    .ADDR_WIDTH  (32),
+    .DATA_WIDTH  (64)
+  ) dut (
+    .arst_ni     (arst_ni),
+    .clk_i       (clk_i),
+    .axi4l_req_i (intf.req),
+    .axi4l_rsp_o (intf.rsp)
+  );
+
+  // -------------------------------------------------------------------
+  // 5. VIP objects
+  // -------------------------------------------------------------------
+
+  import axi4l_vip_pkg::axi4l_driver;
+  import axi4l_vip_pkg::axi4l_monitor;
+
+  axi4l_driver  #(.req_t(my_req_t), .rsp_t(my_rsp_t), .IS_MASTER(1)) dvr;
+  axi4l_monitor #(.req_t(my_req_t), .rsp_t(my_rsp_t))                 mon;
+
+  // -------------------------------------------------------------------
+  // 6. Scoreboard
+  // -------------------------------------------------------------------
+
+  int pass_count = 0;
+  int fail_count = 0;
+
+  task automatic check_resp(
+    input string      label,
+    input logic [1:0] got,
+    input logic [1:0] exp
+  );
+    if (got === exp)
+      $display("  [PASS] %s", label);
+    else
+      $display("  [FAIL] %s  got=2'b%02b  exp=2'b%02b", label, got, exp);
+    if (got === exp) pass_count++; else fail_count++;
+  endtask
+
+  task automatic check_data(
+    input string       label,
+    input logic [63:0] got,
+    input logic [63:0] exp
+  );
+    if (got === exp)
+      $display("  [PASS] %s", label);
+    else
+      $display("  [FAIL] %s  got=0x%016h  exp=0x%016h", label, got, exp);
+    if (got === exp) pass_count++; else fail_count++;
+  endtask
+
+  // -------------------------------------------------------------------
+  // 7. write64 / read64 helpers
+  // -------------------------------------------------------------------
+
+  task automatic write64(
+    input logic [31:0] addr,
+    input logic [63:0] data
+  );
+    my_aw_chan_t aw;
+    my_w_chan_t  w;
+    my_b_chan_t  b;
+    aw.addr = addr;  aw.prot = 3'b000;
+    w.data  = data;  w.strb  = 8'hFF;
+    fork
+      intf.send_aw(aw);
+      intf.send_w(w);
+      intf.recv_b(b);
+    join
+  endtask
+
+  task automatic read64(
+    input  logic [31:0] addr,
+    output logic [63:0] data
+  );
+    my_ar_chan_t ar;
+    my_r_chan_t  r;
+    ar.addr = addr;  ar.prot = 3'b000;
+    fork
+      intf.send_ar(ar);
+      intf.recv_r(r);
+    join
+    data = r.data;
+  endtask
+
+  // ===================================================================
+  // TC4 – Read-After-Write
+  // ===================================================================
+
+  task automatic tc4();
+    my_aw_chan_t aw;
+    my_w_chan_t  w;
+    my_b_chan_t  b;
+    my_ar_chan_t ar;
+    my_r_chan_t  r1;
+    logic [63:0] rdata2;
+
+    $display("\n[TC4] Read-After-Write");
+
+    aw.addr = 32'h0000_0010;  aw.prot = 3'b000;
+    w.data  = 64'hDEAD_BEEF_CAFE_1234;  w.strb = 8'hFF;
+    ar.addr = 32'h0000_0010;  ar.prot = 3'b000;
+
+    fork
+      intf.send_aw(aw);
+      intf.send_w(w);
+      begin @(posedge clk_i); intf.send_ar(ar); end  // 1 cycle after AW+W
+      intf.recv_b(b);
+      intf.recv_r(r1);
+    join
+
+    $display("  b.resp=%0b  r1.data=0x%016h (old or new – both OK)",
+             b.resp, r1.data);
+    check_resp("TC4 write resp", b.resp, 2'b00);
+
+    read64(32'h0000_0010, rdata2);
+    $display("  r2.data=0x%016h", rdata2);
+    check_data("TC4 readback", rdata2, 64'hDEAD_BEEF_CAFE_1234);
+
+  endtask
+
+  // =========================================================================
+  // TC9 – W-Channel Back-Pressure  (manual — no VIP driver)
+  //
+  // Phase 1 – fill W FIFO:
+  //   Drive each beat as a PROPER handshake:
+  //     assert w_valid → wait one posedge → if w_ready=1 beat accepted,
+  //     deassert w_valid → wait one cycle → next beat.
+  //   This keeps w_valid LOW when w_ready=0, which is AXI-compliant and
+  //   prevents new beats entering the FIFO during the drain phase.
+  //   Loop runs 6 cycles: expect 4 accepted + 2 blocked (FIFO full).
+  //
+  // Phase 2 – drain:
+  //   w_valid is already 0. Supply 4 AW beats with b_ready=1.
+  //   FIFO drains cleanly with no new beats entering.
+  //
+  // Phase 3 – readback.
+  // =========================================================================
+
+  task automatic tc9();
+    int  accepted = 0;
+    bit  went_low = 0;
+    logic [63:0] rdata;
+
+    $display("\n[TC9] W-channel back-pressure");
+
+    // Idle all channels
+    intf.req.aw_valid <= 0;
+    intf.req.b_ready  <= 0;
+    intf.req.w_valid  <= 0;
+    intf.req.ar_valid <= 0;
+    intf.req.r_ready  <= 0;
+    @(posedge clk_i);
+
+    // ------------------------------------------------------------------
+    // Phase 1: drive beats — check w_ready BEFORE asserting w_valid
+    //
+    // KEY FIX: if w_ready is already 0 (FIFO full), do NOT assert valid.
+    // AXI rule: valid must not be dropped while ready=0.
+    // Solution: never assert valid when ready=0 — observe full passively.
+    // ------------------------------------------------------------------
+    for (int i = 0; i < 6; i++) begin
+
+      // Sample w_ready BEFORE asserting valid
+      // Use negedge to set data stable, then check ready at next posedge
+      @(negedge clk_i);
+      intf.req.w.data <= 64'hA5A5_A5A5_5A5A_5A5A;
+      intf.req.w.strb <= 8'hFF;
+
+      @(posedge clk_i);   // sample point — valid still 0 here
+
+      if (intf.rsp.w_ready) begin
+        // FIFO has space — safe to assert valid and complete handshake
+        @(negedge clk_i);
+        intf.req.w_valid <= 1;          // assert valid
+        @(posedge clk_i);               // handshake completes this cycle
+        // w_ready=1 (we checked before asserting), handshake done
+        @(negedge clk_i);
+        intf.req.w_valid <= 0;          // safe to drop — ready was 1
+        accepted++;
+        $display("  beat %0d accepted", accepted);
+      end else begin
+        // FIFO full — observe back-pressure WITHOUT asserting valid
+        // No AXI violation possible since valid never went high
+        if (!went_low) begin
+          went_low = 1;
+          $display("  FIFO full after %0d beats – now blocking", accepted);
+        end
+        // w_valid stays 0 — nothing to clean up
+      end
+
+    end
+
+    // ------------------------------------------------------------------
+    // Phase 2: drain — w_valid=0, FIFO has exactly 4 buffered beats
+    // Supply 4 AW beats. Each pops one W beat from FIFO.
+    // Nothing new enters because w_valid=0.
+    // ------------------------------------------------------------------
+    intf.req.b_ready <= 1;
+
+    repeat (4) begin
+      @(negedge clk_i);
+      intf.req.aw.addr  <= 32'h0000_0000;
+      intf.req.aw.prot  <= 3'b000;
+      intf.req.aw_valid <= 1;
+
+      do @(posedge clk_i); while (!intf.rsp.aw_ready);
+
+      @(negedge clk_i);
+      intf.req.aw_valid <= 0;
+
+      do @(posedge clk_i); while (!intf.rsp.b_valid);
+      check_resp("TC9 b.resp", intf.rsp.b.resp, 2'b00);
+    end
+
+    @(negedge clk_i);
+    intf.req.b_ready <= 0;
+    repeat(3) @(posedge clk_i);
+
+    // ------------------------------------------------------------------
+    // Phase 3: read back
+    // ------------------------------------------------------------------
+    read64(32'h0000_0000, rdata);
+    check_resp("TC9 w_ready went low", {1'b0, went_low}, 2'b01);
+    check_data("TC9 readback",         rdata, 64'hA5A5_A5A5_5A5A_5A5A);
+
+  endtask
+
+  // ===================================================================
+  // TC14 – Back-to-Back Writes
+  // ===================================================================
+
+  task automatic tc14();
+    logic [63:0] rdata;
+
+    $display("\n[TC14] Back-to-back writes");
+
+    write64(32'h0000_0100, 64'hCAFE_0000_0000_0001);
+    write64(32'h0000_0108, 64'hCAFE_0000_0000_0002);
+    write64(32'h0000_0110, 64'hCAFE_0000_0000_0003);
+    write64(32'h0000_0118, 64'hCAFE_0000_0000_0004);
+
+    read64(32'h0000_0100, rdata); check_data("TC14 addr=0x100", rdata, 64'hCAFE_0000_0000_0001);
+    read64(32'h0000_0108, rdata); check_data("TC14 addr=0x108", rdata, 64'hCAFE_0000_0000_0002);
+    read64(32'h0000_0110, rdata); check_data("TC14 addr=0x110", rdata, 64'hCAFE_0000_0000_0003);
+    read64(32'h0000_0118, rdata); check_data("TC14 addr=0x118", rdata, 64'hCAFE_0000_0000_0004);
+
+  endtask
+
+  // ===================================================================
+  // Main
+  // ===================================================================
+
+  initial begin
+    $timeformat(-9, 1, " ns", 20);
+    $dumpfile("axi4l_mem_tb.vcd");
+    $dumpvars(0, axi4l_mem_tb);
+    $display("\033[7;38m TEST STARTED \033[0m");
+
+    dvr = new();
+    mon = new();
+    dvr.connect_interface(intf);
+    mon.connect_interface(intf);
+
+    arst_ni = 0;
+    intf.req_reset();
+    repeat (4) @(posedge clk_i);
+    arst_ni = 1;
+    repeat (4) @(posedge clk_i);
+
+    dvr.run();
+    mon.run();
+
+    tc4();
+    repeat (10) @(posedge clk_i);
+
+    tc9();
+    repeat (10) @(posedge clk_i);
+
+    tc14();
+    repeat (5) @(posedge clk_i);
+
+    $display("\n\033[7;%0dm  RESULT: %0d PASS  |  %0d FAIL  \033[0m",
+             (fail_count == 0) ? 32 : 31, pass_count, fail_count);
+    $display("\033[7;38m TEST ENDED \033[0m");
+    $finish;
+  end
+
+endmodule
+
+*/
+
