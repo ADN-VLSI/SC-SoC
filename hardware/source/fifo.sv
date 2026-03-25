@@ -88,7 +88,7 @@ module fifo #(
   always_comb nmsb_eq = (wr_ptr[FIFO_SIZE-1:0] == rd_ptr[FIFO_SIZE-1:0]);
 
   // Full when MSBs equal but lower bits differ; empty when both equal
-  always_comb full = msb_eq && !nmsb_eq;
+  always_comb full = !msb_eq && nmsb_eq;
   always_comb empty = msb_eq && nmsb_eq;
 
   // Back-pressure: if full then input ready follows output ready (to allow pop-then-push)
