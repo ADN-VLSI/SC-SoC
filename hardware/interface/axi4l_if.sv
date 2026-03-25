@@ -76,6 +76,4 @@ interface axi4l_if #(
   `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.ar, req.ar_valid, rsp.ar_ready)
   `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, rsp.r,  rsp.r_valid,  req.r_ready)
 
-  `undef VALID_READY_PROPERTY_CHECK
-
 endinterface
