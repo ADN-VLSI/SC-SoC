@@ -187,9 +187,10 @@ __COMPILE__:
 	@echo -e "\033[3;35mCompiling...\033[0m"
 	@make -s RV32IMF_COMPILE
 	@echo "-i ${SC_SOC}/hardware/include" > build/flist
-	@find ${SC_SOC}/hardware/interface -type f >> build/flist
-	@find ${SC_SOC}/hardware/source -type f >> build/flist
-	@find ${SC_SOC}/hardware/testbench -type f >> build/flist
+	@echo "-i ${SC_SOC}/hardware/testbench" >> build/flist
+	@find ${SC_SOC}/hardware/interface -maxdepth 1 -name "*" -type f >> build/flist
+	@find ${SC_SOC}/hardware/source -maxdepth 1 -name "*" -type f >> build/flist
+	@find ${SC_SOC}/hardware/testbench -maxdepth 1 -name "*" -type f >> build/flist
 	@cd build; $(XVLOG) -sv -f flist $(XVLOG_DEFS) --nolog $(EWHL)
 	@sha256sum ${SHA_FILES} > build/build_sha
 	@echo -e "\033[3;35mCompiled\033[0m"

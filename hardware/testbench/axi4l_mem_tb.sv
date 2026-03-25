@@ -2,20 +2,68 @@
 `include "vip/axi4l.svh"
 module axi4l_mem_tb;
 
-// ------------------- PARAMETERS -------------------
-// AXI4-Lite configuration: 16-bit address, 32-bit data bus
-localparam int ADDR_WIDTH = 16;
-localparam int DATA_WIDTH = 32;
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // IMPORTS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Macro expands all AXI4-Lite typedefs (req_t, rsp_t, etc.)
-`AXI4L_ALL(my, ADDR_WIDTH, DATA_WIDTH)
+  import axi4l_vip_pkg::axi4l_cfg;
+  import axi4l_vip_pkg::axi4l_seq_item;
+  import axi4l_vip_pkg::axi4l_rsp_item;
+  import axi4l_vip_pkg::axi4l_driver;
+  import axi4l_vip_pkg::axi4l_monitor;
 
-// ------------------- SIGNALS -------------------
-logic arst_ni;          // active-low asynchronous reset
-logic clk_i;            // clock input
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // LOCAL PARAMETERS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-// AXI4-Lite interface instance (uses the typedefs from macro)
-axi4l_if #(
+  localparam int ADDR_WIDTH = 16;
+  localparam int DATA_WIDTH = 32;
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // Macros
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  `AXI4L_ALL(my, ADDR_WIDTH, DATA_WIDTH)
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // SIGNALS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  logic arst_ni;  // active-low asynchronous reset
+  logic clk_i;  // clock input
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // Variables
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // Class Instances
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  axi4l_cfg cfg;
+
+  mailbox #(axi4l_seq_item) dvr_mbx;
+  mailbox #(axi4l_rsp_item) mon_mbx;
+
+  // Driver (master side) – used by test cases to inject transactions
+  axi4l_driver #(
+      .req_t    (my_req_t),
+      .rsp_t    (my_rsp_t),
+      .IS_MASTER(1)          // drives AW/W/AR channels; samples B/R channels
+  ) dvr;
+
+  // Monitor – passively captures all transactions for checking
+  axi4l_monitor #(
+      .req_t(my_req_t),
+      .rsp_t(my_rsp_t)
+  ) mon;
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // Interfaces
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // AXI4-Lite interface instance (uses the typedefs from macro)
+  axi4l_if #(
       .req_t(my_req_t),
       .rsp_t(my_rsp_t)
   ) intf (
@@ -23,9 +71,8 @@ axi4l_if #(
       .clk_i  (clk_i)
   );
 
-// ------------------- DUT INSTANTIATION -------------------
-// Memory model under test – single-cycle AXI4-Lite slave memory
-axi4l_mem #(
+  // Memory model under test – single-cycle AXI4-Lite slave memory
+  axi4l_mem #(
       .axi4l_req_t(my_req_t),
       .axi4l_rsp_t(my_rsp_t),
       .ADDR_WIDTH (ADDR_WIDTH),
@@ -37,255 +84,301 @@ axi4l_mem #(
       .axi4l_rsp_o(intf.rsp)
   );
 
-// -------------------- TASKS --------------------
-// Low-level write task – handles byte-lane alignment & strobes
-task automatic write(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // METHODS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // Low-level write task – handles byte-lane alignment & strobes
+  task automatic write(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
     bit [31:0] wdata;
-    bit [3:0]  wstrb;
-    bit [1:0]  resp;
+    bit [ 3:0] wstrb;
+    bit [ 1:0] resp;
     wdata = data << ((addr % 4) * 8);   // shift data to correct byte lane (e.g. addr=1 → shift 8 bits)
-    wstrb = strb << (addr % 4);         // shift strobe to match byte lane position
+    wstrb = strb << (addr % 4);  // shift strobe to match byte lane position
     fork
-      intf.send_aw({addr, 3'h0});       // AXI4-Lite requires word-aligned addr; lower 3 bits forced 0
-      intf.send_w({wdata, wstrb});      // send shifted data and strobe together on W channel
-      intf.recv_b(resp);                // wait for write response on B channel (OKAY = 2'b00)
+      intf.send_aw({addr, 3'h0});  // AXI4-Lite requires word-aligned addr; lower 3 bits forced 0
+      intf.send_w({wdata, wstrb});  // send shifted data and strobe together on W channel
+      intf.recv_b(resp);  // wait for write response on B channel (OKAY = 2'b00)
     join
-endtask
+  endtask
 
-// Low-level read task – handles byte-lane extraction
-task automatic read(input bit [15:0] addr, output bit [31:0] data);
+  // Low-level read task – handles byte-lane extraction
+  task automatic read(input bit [15:0] addr, output bit [31:0] data);
     bit [31:0] rdata;
-    bit [1:0]  resp;
+    bit [ 1:0] resp;
     fork
-      intf.send_ar({addr, 3'h0});       // send word-aligned address on AR channel
-      intf.recv_r({rdata, resp});       // capture full 32-bit word from R channel
+      intf.send_ar({addr, 3'h0});  // send word-aligned address on AR channel
+      intf.recv_r({rdata, resp});  // capture full 32-bit word from R channel
     join
-    data = rdata >> ((addr % 4) * 8);   // right-shift to extract the target byte lane
-endtask
+    data = rdata >> ((addr % 4) * 8);  // right-shift to extract the target byte lane
+  endtask
 
-// Convenience wrappers for common access sizes
-task automatic write_32(input bit [15:0] addr, input bit [31:0] data);
-    write(addr, data, 4'b1111);         // all 4 byte strobes asserted → full word write
-endtask
+  // Convenience wrappers for common access sizes
+  task automatic write_32(input bit [15:0] addr, input bit [31:0] data);
+    write(addr, data, 4'b1111);  // all 4 byte strobes asserted → full word write
+  endtask
 
-task automatic write_16(input bit [15:0] addr, input bit [15:0] data);
-    write(addr, data, 4'b0011);         // lower 2 byte strobes; shift in write() places at addr%4
-endtask
+  task automatic write_16(input bit [15:0] addr, input bit [15:0] data);
+    write(addr, data, 4'b0011);  // lower 2 byte strobes; shift in write() places at addr%4
+  endtask
 
-task automatic write_8(input bit [15:0] addr, input bit [7:0] data);
-    write(addr, data, 4'b0001);         // single byte strobe; shift in write() places at addr%4
-endtask
+  task automatic write_8(input bit [15:0] addr, input bit [7:0] data);
+    write(addr, data, 4'b0001);  // single byte strobe; shift in write() places at addr%4
+  endtask
 
-task automatic read_32(input bit [15:0] addr, output bit [31:0] data);
+  task automatic read_32(input bit [15:0] addr, output bit [31:0] data);
     read(addr, data);
-endtask
+  endtask
 
-task automatic read_16(input bit [15:0] addr, output bit [15:0] data);
-    read(addr, data);                   // upper 16 bits silently dropped by implicit truncation on assign
-endtask
+  task automatic read_16(input bit [15:0] addr, output bit [15:0] data);
+    read(addr, data);  // upper 16 bits silently dropped by implicit truncation on assign
+  endtask
 
-task automatic read_8(input bit [15:0] addr, output bit [7:0] data);
-    read(addr, data);                   // upper 24 bits dropped by truncation; lower byte is the result
-endtask
+  task automatic read_8(input bit [15:0] addr, output bit [7:0] data);
+    read(addr, data);  // upper 24 bits dropped by truncation; lower byte is the result
+  endtask
 
-// -------------------- VIP DRIVER / MONITOR --------------------
-import axi4l_vip_pkg::axi4l_driver;
-import axi4l_vip_pkg::axi4l_monitor;
-import axi4l_vip_pkg::axi4l_seq_item; // stimulus descriptor: addr, data, strb, is_write
-import axi4l_vip_pkg::axi4l_rsp_item; // response descriptor: resp code from B or R channel
+  // Do a High Level AXI4-Lite Write transaction using the VIP driver
+  task automatic write_seq(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
+    axi4l_seq_item sit;
+    cfg = new();
+    cfg.addr_width = ADDR_WIDTH;
+    cfg.data_width = DATA_WIDTH;
+    sit = new();
+    sit.configure(cfg);
+    sit.randomize() with {sit.is_write == 1; sit.addr == addr; sit.size == $clog2(DATA_WIDTH / 8);};
+    sit.data = data;
+    sit.strb = strb;
+    dvr_mbx.put(sit);
+  endtask
 
-// Driver (master side) – used by test cases to inject transactions
-axi4l_driver #(
-      .req_t(my_req_t),
-      .rsp_t(my_rsp_t),
-      .IS_MASTER(1)                     // drives AW/W/AR channels; samples B/R channels
-  ) dvr;
+  // Do a High Level AXI4-Lite Read transaction using the VIP driver
+  task automatic read_seq(input bit [15:0] addr);
+    axi4l_seq_item sit;
+    cfg = new();
+    cfg.addr_width = ADDR_WIDTH;
+    cfg.data_width = DATA_WIDTH;
+    sit = new();
+    sit.configure(cfg);
+    sit.randomize() with {sit.is_write == 0; sit.addr == addr; sit.size == $clog2(DATA_WIDTH / 8);};
+    dvr_mbx.put(sit);
+  endtask
 
-// Monitor – passively captures all transactions for checking
-axi4l_monitor #(
-      .req_t(my_req_t),
-      .rsp_t(my_rsp_t)
-  ) mon;                                // deposits captured rsp_items into mon.mbx mailbox
+  // HELPER TASKS
+  task automatic check(input bit ok, inout int p, inout int f);
+    if (ok) p++;
+    else f++;  // increment pass or fail counter
+  endtask
 
-// -------------------- HELPER TASKS --------------------
-task automatic check(input bit ok, inout int p, inout int f);
-    if (ok) p++; else f++;              // increment pass or fail counter
-endtask
-
-// Drain monitor mailbox into queue for post-test verification
-task automatic drain(output axi4l_rsp_item q[$]);
+  // Collect monitor mailbox into queue for post-test verification
+  task automatic collect(output axi4l_rsp_item q[$]);
     axi4l_rsp_item r;
-    mon.wait_for_idle();                // block until no bus activity seen for idle window
+    mon.wait_for_idle();  // block until no bus activity seen for idle window
     while (mon.mbx.num()) begin
       mon.mbx.get(r);
-      q.push_back(r);                  // collect all pending responses into dynamic queue
+      q.push_back(r);  // collect all pending responses into dynamic queue
     end
-endtask
+  endtask
 
-// -------------------- TEST CASES --------------------
+  `include "axi4l_mem_tb/methods/adnan.sv"
+  `include "axi4l_mem_tb/methods/siam.sv"
+  `include "axi4l_mem_tb/methods/motasim.sv"
+  `include "axi4l_mem_tb/methods/shuparna.sv"
+  `include "axi4l_mem_tb/methods/dhruba.sv"
 
-// TC3: 4 consecutive 32-bit writes followed by 4 reads using VIP driver
-task automatic tc3(output int p, output int f);
-    axi4l_seq_item item;
-    axi4l_rsp_item q[$];
-    p = 0; f = 0;
+  // TEST CASES
 
-    // Queue 4 write transactions to word-aligned addresses 0x00..0x0C
-    for (int i=0; i<4; i++) begin
-        item = new();
-        item.is_write = 1;
-        item.addr     = i * 4;          // word-aligned (0, 4, 8, 12)
-        item.data     = 32'hA0 + i;
-        item.strb     = 4'b1111;
-        dvr.mbx.put(item);
-    end
-    drain(q);
+  `include "axi4l_mem_tb/tc0.sv"
 
-    // Check write responses
-    foreach (q[i])
-        check(q[i].resp === 2'b00, p, f);
+  `include "axi4l_mem_tb/tc1.sv"
 
-    q.delete();
+  `include "axi4l_mem_tb/tc2.sv"
 
-    // Queue 4 read transactions to same addresses
-    for (int i=0; i<4; i++) begin
-        item = new();
-        item.is_write = 0;
-        item.addr     = i * 4;          // word-aligned, matching writes above
-        dvr.mbx.put(item);
-    end
-    drain(q);
+  `include "axi4l_mem_tb/tc3.sv"
 
-    // verify both OKAY response and read-back data against written values;
-    // confirmed the memory actually returned the correct data
-    foreach (q[i]) begin
-        check(q[i].resp === 2'b00,      p, f);  // read OKAY
-        check(q[i].data === 32'hA0 + i, p, f);  // data matches written value
-    end
-endtask
+  `include "axi4l_mem_tb/tc4.sv"
 
-// TC8: Single 32-bit write, idle delay before checking response
-task automatic tc8(output int p, output int f);
-    axi4l_seq_item item;
-    axi4l_rsp_item q[$];
-    p = 0; f = 0;
+  `include "axi4l_mem_tb/tc5.sv"
 
-    item = new();
-    item.is_write = 1;
-    item.addr     = 32'h100;
-    item.data     = 32'hDEAD_BEEF;
-    item.strb     = 4'b1111;
-    dvr.mbx.put(item);
+  `include "axi4l_mem_tb/tc6.sv"
 
-    repeat(5) @(posedge clk_i);   // idle gap
-    drain(q);
+  `include "axi4l_mem_tb/tc7.sv"
 
-    foreach (q[i])
-        check(q[i].resp === 2'b00, p, f);
-endtask
+  `include "axi4l_mem_tb/tc8.sv"
 
-// TC13: Preload write → concurrent write + read → response check
-task automatic tc13(output int p, output int f);
-    axi4l_seq_item item_wr;             // dedicated handle for write branch
-    axi4l_seq_item item_rd;             // dedicated handle for read branch
-    axi4l_rsp_item q[$];
-    p = 0; f = 0;
+  `include "axi4l_mem_tb/tc9.sv"
 
-    // Preload: single write
-    item_wr = new();
-    item_wr.is_write = 1;
-    item_wr.addr     = 32'h200;
-    item_wr.data     = 32'hAAAA_AAAA;
-    item_wr.strb     = 4'b1111;
-    dvr.mbx.put(item_wr);
-    drain(q);
-    check(q[0].resp === 2'b00, p, f);
+  `include "axi4l_mem_tb/tc10.sv"
 
-    q.delete();  // clear the queue
+  `include "axi4l_mem_tb/tc11.sv"
 
-    // Concurrent write + read
-    fork
-        begin
-            item_wr = new();
-            item_wr.is_write = 1;
-            item_wr.addr     = 32'h500;
-            item_wr.data     = 32'hDEAD_BEEF;
-            item_wr.strb     = 4'b1111;
-            dvr.mbx.put(item_wr);
-        end
-        begin
-            item_rd = new();
-            item_rd.is_write = 0;
-            item_rd.addr     = 32'h200;
-            dvr.mbx.put(item_rd);
-        end
-    join
+  `include "axi4l_mem_tb/tc12.sv"
 
-    // to fire before bus activity begins; drain() handles sync correctly on its own
-    drain(q);
+  `include "axi4l_mem_tb/tc13.sv"
 
-    foreach (q[i])
-        check(q[i].resp === 2'b00, p, f);
-endtask
+  `include "axi4l_mem_tb/tc14.sv"
 
-// -------------------- MAIN INITIAL --------------------
-initial begin
+  `include "axi4l_mem_tb/tc15.sv"
+
+  `include "axi4l_mem_tb/tc16.sv"
+
+  // MAIN INITIAL
+  initial begin
     automatic bit [31:0] data;
-    int total_p = 0;
-    int total_f = 0;
+    automatic int total_p = 0;
+    automatic int total_f = 0;
     int p, f;
+    int test_number;
 
-    $timeformat(-9,1," ns",20);        // display time in nanoseconds with 1 decimal place
-    $dumpfile("axi4l_mem_tb.vcd");     // VCD output for waveform viewing (GTKWave etc.)
-    $dumpvars(0, axi4l_mem_tb);        // depth=0 dumps all signals in the module hierarchy
+    if (!$value$plusargs("TEST=%d", test_number)) begin
+      $fatal(1, "Must specify test number with +test=N argument (e.g. +test=3)");
+    end else begin
+      $display("Running test number %0d", test_number);
+    end
+
+    $timeformat(-9, 1, " ns", 20);  // display time in nanoseconds with 1 decimal place
+    $dumpfile("axi4l_mem_tb.vcd");  // VCD output for waveform viewing (GTKWave etc.)
+    $dumpvars(0, axi4l_mem_tb);  // depth=0 dumps all signals in the module hierarchy
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // BUILD
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    cfg     = new();
+    dvr_mbx = new(1);
+    mon_mbx = new();
+    dvr     = new();
+    mon     = new();
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // CONNECT
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    dvr.connect_interface(intf);
+    mon.connect_interface(intf);
+    dvr.connect_mailbox(dvr_mbx);
+    mon.connect_mailbox(mon_mbx);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // RUN
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////
+    // RESET
+    //////////////////////////////////////////////
 
     clk_i   <= '0;
     arst_ni <= '0;
-    intf.req_reset();                  // drive all AXI request signals to idle/default state
+    intf.req_reset();  // drive all AXI request signals to idle/default state
     #20;
-    arst_ni <= '1;                     // de-assert reset; DUT begins normal operation
+    arst_ni <= '1;  // de-assert reset; DUT begins normal operation
     #20;
 
-    fork forever #5 clk_i <= ~clk_i; join_none  // 10-unit period clock; join_none = non-blocking
-    @(posedge clk_i);                  // sync to first rising edge before driving any transactions
+    //////////////////////////////////////////////
+    // CONFIGURE
+    //////////////////////////////////////////////
 
-    // -------------------- ORIGINAL TESTS --------------------
-    write_16(1, 'hABCD);               // 16-bit write to byte offset 1; data shifts to lanes [1:0]
-    repeat (5) @(posedge clk_i);
-    read_32(0, data);
-    $display("R32 0 DATA:0x%h", data); // expect 0x0000ABCD (byte lanes [1:0] set; [3:2] still 0)
-    read_16(1, data);
-    $display("R16 1 DATA:0x%h", data);
-    read_8(2, data);
-    $display("R8 2 DATA:0x%h", data);
+    cfg.addr_width = ADDR_WIDTH;
+    cfg.data_width = DATA_WIDTH;
 
-    // -------------------- VIP DRIVER RUN --------------------
-    dvr = new();
-    mon = new();
-    dvr.connect_interface(intf);       // bind driver to the DUT interface virtual interface handle
-    mon.connect_interface(intf);       // bind monitor to the same interface for passive observation
-    dvr.run();                         // spawn driver thread: pulls items from dvr.mbx and drives bus
-    mon.run();                         // spawn monitor thread: samples bus, pushes rsp_items to mon.mbx
+    fork
+      forever #5 clk_i <= ~clk_i;
+    join_none  // 10-unit period clock; join_none = non-blocking
+    @(posedge clk_i);  // sync to first rising edge before driving any transactions
 
-    // -------------------- RUN TEST CASES --------------------
-    repeat(5) begin                    // repeat all test cases 5× to stress pipelining behaviour
-      tc3(p,f);  total_p += p; total_f += f;
-      tc8(p,f);  total_p += p; total_f += f;
-      tc13(p,f); total_p += p; total_f += f;
+    //////////////////////////////////////////////
+    // MAIN
+    //////////////////////////////////////////////
+
+    dvr.run();  // spawn driver thread: pulls items from dvr_mbx and drives bus
+    mon.run();  // spawn monitor thread: samples bus, pushes rsp_items to mon.mbx
+
+    case (test_number)
+      0: begin
+        tc0(p, f);
+      end
+      1: begin
+        tc1(p, f);
+      end
+      2: begin
+        tc2(p, f);
+      end
+      3: begin
+        tc3(p, f);
+      end
+      4: begin
+        tc4(p, f);
+      end
+      5: begin
+        tc5(p, f);
+      end
+      6: begin
+        tc6(p, f);
+      end
+      7: begin
+        tc7(p, f);
+      end
+      8: begin
+        tc8(p, f);
+      end
+      9: begin
+        tc9(p, f);
+      end
+      10: begin
+        tc10(p, f);
+      end
+      11: begin
+        tc11(p, f);
+      end
+      12: begin
+        tc12(p, f);
+      end
+      13: begin
+        tc13(p, f);
+      end
+      14: begin
+        tc14(p, f);
+      end
+      15: begin
+        tc15(p, f);
+      end
+      16: begin
+        tc16(p, f);
+      end
+      default: $fatal(1, "Invalid test number %0d. Valid range is 0-16.", test_number);
+    endcase
+
+    // TODO FIXME
+    // RUN TEST CASES
+    repeat (5) begin  // repeat all test cases 5× to stress pipelining behaviour
+      tc3(p, f);
+      total_p += p;
+      total_f += f;
+      tc8(p, f);
+      total_p += p;
+      total_f += f;
+      tc13(p, f);
+      total_p += p;
+      total_f += f;
     end
 
-    // -------------------- FINAL RESULT --------------------
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // CLEANUP
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // FINAL RESULT
     $display("\n==== FINAL RESULT ====");
     $display("TOTAL PASS = %0d", total_p);
     $display("TOTAL FAIL = %0d", total_f);
-    if (total_f == 0)
-      $display("OVERALL PASSED");
-    else
-      $display("OVERALL FAILED");
+    if (total_f == 0) $display("OVERALL PASSED");
+    else $display("OVERALL FAILED");
 
-    repeat (20) @(posedge clk_i);     // 20-cycle tail: lets in-flight transactions retire before finish
+    repeat (20)
+    @(posedge clk_i);  // 20-cycle tail: lets in-flight transactions retire before finish
     $finish;
-end
+
+  end
+
 endmodule
 
 /*
@@ -529,7 +622,7 @@ module axi4l_mem_tb;
     item.addr     = addr;
     item.data     = exp;
     item.strb     = 4'b1111;
-    dvr.mbx.put(item);
+    dvr_mbx.put(item);
 
     // XSIM/VIP monitor is returning 2 response items here
     drain_and_check_resps(2, p, f);
@@ -561,7 +654,7 @@ module axi4l_mem_tb;
     item.addr     = addr;
     item.data     = exp;
     item.strb     = 4'b1111;
-    dvr.mbx.put(item);
+    dvr_mbx.put(item);
 
     // XSIM/VIP monitor is returning 2 response items here
     drain_and_check_resps(2, p, f);
@@ -744,7 +837,7 @@ axi4l_mem #(
       .axi4l_rsp_o(intf.rsp)
   );
 
-// -------------------- TASKS --------------------
+// TASKS
 // Low-level write task – handles byte-lane alignment & strobes
 task automatic write(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
     bit [31:0] wdata;
@@ -795,7 +888,7 @@ task automatic read_8(input bit [15:0] addr, output bit [7:0] data);
     read(addr, data);                   // upper 24 bits dropped by truncation; lower byte is the result
 endtask
 
-// -------------------- VIP DRIVER / MONITOR --------------------
+// VIP DRIVER / MONITOR
 import axi4l_vip_pkg::axi4l_driver;
 import axi4l_vip_pkg::axi4l_monitor;
 import axi4l_vip_pkg::axi4l_seq_item; // stimulus descriptor: addr, data, strb, is_write
@@ -814,7 +907,7 @@ axi4l_monitor #(
       .rsp_t(my_rsp_t)
   ) mon;                                // deposits captured rsp_items into mon.mbx mailbox
 
-// -------------------- HELPER TASKS --------------------
+// HELPER TASKS
 task automatic check(input bit ok, inout int p, inout int f);
     if (ok) p++; else f++;              // increment pass or fail counter
 endtask
@@ -829,7 +922,7 @@ task automatic drain(output axi4l_rsp_item q[$]);
     end
 endtask
 
-// -------------------- TEST CASES --------------------
+// TEST CASES
 
 // TC3: 4 consecutive 32-bit writes followed by 4 reads using VIP driver
 task automatic tc3(output int p, output int f);
@@ -844,7 +937,7 @@ task automatic tc3(output int p, output int f);
         item.addr     = i * 4;          // word-aligned (0, 4, 8, 12)
         item.data     = 32'hA0 + i;
         item.strb     = 4'b1111;
-        dvr.mbx.put(item);
+        dvr_mbx.put(item);
     end
     drain(q);
 
@@ -859,7 +952,7 @@ task automatic tc3(output int p, output int f);
         item = new();
         item.is_write = 0;
         item.addr     = i * 4;          // word-aligned, matching writes above
-        dvr.mbx.put(item);
+        dvr_mbx.put(item);
     end
     drain(q);
 
@@ -882,7 +975,7 @@ task automatic tc8(output int p, output int f);
     item.addr     = 32'h100;
     item.data     = 32'hDEAD_BEEF;
     item.strb     = 4'b1111;
-    dvr.mbx.put(item);
+    dvr_mbx.put(item);
 
     repeat(5) @(posedge clk_i);   // idle gap
     drain(q);
@@ -904,7 +997,7 @@ task automatic tc13(output int p, output int f);
     item_wr.addr     = 32'h200;
     item_wr.data     = 32'hAAAA_AAAA;
     item_wr.strb     = 4'b1111;
-    dvr.mbx.put(item_wr);
+    dvr_mbx.put(item_wr);
     drain(q);
     check(q[0].resp === 2'b00, p, f);
 
@@ -918,13 +1011,13 @@ task automatic tc13(output int p, output int f);
             item_wr.addr     = 32'h500;
             item_wr.data     = 32'hDEAD_BEEF;
             item_wr.strb     = 4'b1111;
-            dvr.mbx.put(item_wr);
+            dvr_mbx.put(item_wr);
         end
         begin
             item_rd = new();
             item_rd.is_write = 0;
             item_rd.addr     = 32'h200;
-            dvr.mbx.put(item_rd);
+            dvr_mbx.put(item_rd);
         end
     join
 
@@ -935,7 +1028,7 @@ task automatic tc13(output int p, output int f);
         check(q[i].resp === 2'b00, p, f);
 endtask
 
-// -------------------- MAIN INITIAL --------------------
+// MAIN INITIAL
 initial begin
     automatic bit [31:0] data;
     int total_p = 0;
@@ -956,7 +1049,7 @@ initial begin
     fork forever #5 clk_i <= ~clk_i; join_none  // 10-unit period clock; join_none = non-blocking
     @(posedge clk_i);                  // sync to first rising edge before driving any transactions
 
-    // -------------------- ORIGINAL TESTS --------------------
+    // ORIGINAL TESTS
     write_16(1, 'hABCD);               // 16-bit write to byte offset 1; data shifts to lanes [1:0]
     repeat (5) @(posedge clk_i);
     read_32(0, data);
@@ -966,12 +1059,12 @@ initial begin
     read_8(2, data);
     $display("R8 2 DATA:0x%h", data);
 
-    // -------------------- VIP DRIVER RUN --------------------
+    // VIP DRIVER RUN
     dvr = new();
     mon = new();
     dvr.connect_interface(intf);       // bind driver to the DUT interface virtual interface handle
     mon.connect_interface(intf);       // bind monitor to the same interface for passive observation
-    dvr.run();                         // spawn driver thread: pulls items from dvr.mbx and drives bus
+    dvr.run();                         // spawn driver thread: pulls items from dvr_mbx and drives bus
     mon.run();                         // spawn monitor thread: samples bus, pushes rsp_items to mon.mbx
   /////////////////////////////////////////////////////////////
   // DRIVER / MONITOR
@@ -1091,7 +1184,7 @@ initial begin
     item.data = data_in;
     item.strb = strb_in;
 
-    dvr.mbx.put(item);
+    dvr_mbx.put(item);
 
     // coverage
     wstrb = strb_in;
@@ -1111,7 +1204,7 @@ initial begin
       item.addr     == addr_in;
     });
 
-    dvr.mbx.put(item);
+    dvr_mbx.put(item);
 
     back2back_reads++;
     cg.sample();
@@ -1320,7 +1413,7 @@ initial begin
     item.data = data_in;
     item.strb = strb_in;
 
-    dvr.mbx.put(item);
+    dvr_mbx.put(item);
 
     // coverage
     wstrb = strb_in;
@@ -1340,7 +1433,7 @@ initial begin
       item.addr     == addr_in;
     });
 
-    dvr.mbx.put(item);
+    dvr_mbx.put(item);
 
     back2back_reads++;
     cg.sample();
@@ -1448,14 +1541,14 @@ initial begin
       $display("\n*** TEST PASSED: %0d checks executed; tc0=%0d, tc5=%0d, tc10=%0d, tc15=%0d ***", pass_count, tc0_hits, tc5_hits, tc10_hits, tc15_hits);
     end
 
-    // -------------------- RUN TEST CASES --------------------
+    // RUN TEST CASES
     repeat(5) begin                    // repeat all test cases 5× to stress pipelining behaviour
       tc3(p,f);  total_p += p; total_f += f;
       tc8(p,f);  total_p += p; total_f += f;
       tc13(p,f); total_p += p; total_f += f;
     end
 
-    // -------------------- FINAL RESULT --------------------
+    // FINAL RESULT
     $display("\n==== FINAL RESULT ====");
     $display("TOTAL PASS = %0d", total_p);
     $display("TOTAL FAIL = %0d", total_f);
@@ -1831,24 +1924,24 @@ endmodule
 
 module axi4l_mem_tb;
 
-  // -------------------------------------------------------------------
+  //-------
   // 1. Clock / reset
-  // -------------------------------------------------------------------
+  //-------
 
   logic clk_i   = 0;
   logic arst_ni = 0;
 
   always #5ns clk_i = ~clk_i;  // 100 MHz
 
-  // -------------------------------------------------------------------
+  //-------
   // 2. Type definitions  (32-bit addr, 64-bit data)
-  // -------------------------------------------------------------------
+  //-------
 
   `AXI4L_ALL(my, 32, 64)
 
-  // -------------------------------------------------------------------
+  //-------
   // 3. Interface
-  // -------------------------------------------------------------------
+  //-------
 
   axi4l_if #(
     .req_t (my_req_t),
@@ -1858,9 +1951,9 @@ module axi4l_mem_tb;
     .clk_i   (clk_i)
   );
 
-  // -------------------------------------------------------------------
+  //-------
   // 4. DUT
-  // -------------------------------------------------------------------
+  //-------
 
   axi4l_mem #(
     .axi4l_req_t (my_req_t),
@@ -1874,9 +1967,9 @@ module axi4l_mem_tb;
     .axi4l_rsp_o (intf.rsp)
   );
 
-  // -------------------------------------------------------------------
+  //-------
   // 5. VIP objects
-  // -------------------------------------------------------------------
+  //-------
 
   import axi4l_vip_pkg::axi4l_driver;
   import axi4l_vip_pkg::axi4l_monitor;
@@ -1884,9 +1977,9 @@ module axi4l_mem_tb;
   axi4l_driver  #(.req_t(my_req_t), .rsp_t(my_rsp_t), .IS_MASTER(1)) dvr;
   axi4l_monitor #(.req_t(my_req_t), .rsp_t(my_rsp_t))                 mon;
 
-  // -------------------------------------------------------------------
+  //-------
   // 6. Scoreboard
-  // -------------------------------------------------------------------
+  //-------
 
   int pass_count = 0;
   int fail_count = 0;
@@ -1915,9 +2008,9 @@ module axi4l_mem_tb;
     if (got === exp) pass_count++; else fail_count++;
   endtask
 
-  // -------------------------------------------------------------------
+  //-------
   // 7. write64 / read64 helpers
-  // -------------------------------------------------------------------
+  //-------
 
   task automatic write64(
     input logic [31:0] addr,
@@ -2018,13 +2111,13 @@ module axi4l_mem_tb;
     intf.req.r_ready  <= 0;
     @(posedge clk_i);
 
-    // ------------------------------------------------------------------
+    //------
     // Phase 1: drive beats — check w_ready BEFORE asserting w_valid
     //
     // KEY FIX: if w_ready is already 0 (FIFO full), do NOT assert valid.
     // AXI rule: valid must not be dropped while ready=0.
     // Solution: never assert valid when ready=0 — observe full passively.
-    // ------------------------------------------------------------------
+    //------
     for (int i = 0; i < 6; i++) begin
 
       // Sample w_ready BEFORE asserting valid
@@ -2057,11 +2150,11 @@ module axi4l_mem_tb;
 
     end
 
-    // ------------------------------------------------------------------
+    //------
     // Phase 2: drain — w_valid=0, FIFO has exactly 4 buffered beats
     // Supply 4 AW beats. Each pops one W beat from FIFO.
     // Nothing new enters because w_valid=0.
-    // ------------------------------------------------------------------
+    //------
     intf.req.b_ready <= 1;
 
     repeat (4) begin
@@ -2083,9 +2176,9 @@ module axi4l_mem_tb;
     intf.req.b_ready <= 0;
     repeat(3) @(posedge clk_i);
 
-    // ------------------------------------------------------------------
+    //------
     // Phase 3: read back
-    // ------------------------------------------------------------------
+    //------
     read64(32'h0000_0000, rdata);
     check_resp("TC9 w_ready went low", {1'b0, went_low}, 2'b01);
     check_data("TC9 readback",         rdata, 64'hA5A5_A5A5_5A5A_5A5A);
