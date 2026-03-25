@@ -181,9 +181,13 @@ module axi4l_mem_tb;
   endtask
 
   `include "axi4l_mem_tb/methods/adnan.sv"
+
   `include "axi4l_mem_tb/methods/siam.sv"
+
   `include "axi4l_mem_tb/methods/motasim.sv"
+
   `include "axi4l_mem_tb/methods/shuparna.sv"
+
   `include "axi4l_mem_tb/methods/dhruba.sv"
 
   // TEST CASES
