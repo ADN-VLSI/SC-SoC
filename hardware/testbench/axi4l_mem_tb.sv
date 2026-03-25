@@ -298,58 +298,79 @@ module axi4l_mem_tb;
     mon.run();  // spawn monitor thread: samples bus, pushes rsp_items to mon.mbx
 
     case (test_number)
+
       0: begin
         tc0(p, f);
       end
+
       1: begin
         tc1(p, f);
       end
+
       2: begin
         tc2(p, f);
       end
+
       3: begin
         tc3(p, f);
       end
+
       4: begin
         tc4(p, f);
       end
+
       5: begin
         tc5(p, f);
       end
+
       6: begin
         tc6(p, f);
       end
+
       7: begin
         tc7(p, f);
       end
+
       8: begin
         tc8(p, f);
       end
+
       9: begin
         tc9(p, f);
       end
+
       10: begin
         tc10(p, f);
       end
+
       11: begin
         tc11(p, f);
       end
+
       12: begin
         tc12(p, f);
       end
+
       13: begin
         tc13(p, f);
       end
+
       14: begin
         tc14(p, f);
       end
+
       15: begin
         tc15(p, f);
       end
+
       16: begin
         tc16(p, f);
       end
-      default: $fatal(1, "Invalid test number %0d. Valid range is 0-16.", test_number);
+
+      default: begin
+        $fatal(1, "Invalid test number %0d. Valid range is 0-16.", test_number);
+      end
+
     endcase
 
     // TODO FIXME
