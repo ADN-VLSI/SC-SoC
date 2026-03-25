@@ -131,8 +131,6 @@ task automatic tc3(output int p, output int f);
     p = 0; f = 0;
 
     // Queue 4 write transactions to word-aligned addresses 0x00..0x0C
-    // FIX: i*4 used instead of i – AXI4-Lite slaves require naturally
-    //      aligned addresses; byte offsets 1,2,3 are not valid word addresses
     for (int i=0; i<4; i++) begin
         item = new();
         item.is_write = 1;
@@ -141,6 +139,13 @@ task automatic tc3(output int p, output int f);
         item.strb     = 4'b1111;
         dvr.mbx.put(item);
     end
+    drain(q);
+
+    // Check write responses
+    foreach (q[i])
+        check(q[i].resp === 2'b00, p, f);
+
+    q.delete();
 
     // Queue 4 read transactions to same addresses
     for (int i=0; i<4; i++) begin
@@ -149,12 +154,14 @@ task automatic tc3(output int p, output int f);
         item.addr     = i * 4;          // word-aligned, matching writes above
         dvr.mbx.put(item);
     end
-
     drain(q);
 
-    // Check write responses
-    foreach (q[i])
-        check(q[i].resp === 2'b00, p, f);
+    // verify both OKAY response and read-back data against written values;
+    // confirmed the memory actually returned the correct data
+    foreach (q[i]) begin
+        check(q[i].resp === 2'b00,      p, f);  // read OKAY
+        check(q[i].data === 32'hA0 + i, p, f);  // data matches written value
+    end
 endtask
 
 // TC8: Single 32-bit write, idle delay before checking response
@@ -179,10 +186,6 @@ endtask
 
 // TC13: Preload write → concurrent write + read → response check
 task automatic tc13(output int p, output int f);
-    // FIX: split into item_wr / item_rd so each fork branch owns its handle;
-    //      original single 'item' variable was shared across both threads –
-    //      thread B's item=new() could overwrite the handle before thread A's
-    //      mbx.put(item) consumed it, silently sending the wrong transaction
     axi4l_seq_item item_wr;             // dedicated handle for write branch
     axi4l_seq_item item_rd;             // dedicated handle for read branch
     axi4l_rsp_item q[$];
@@ -218,12 +221,13 @@ task automatic tc13(output int p, output int f);
         end
     join
 
-    #1ns;  // small delay to ensure all transactions are on the bus
+    // to fire before bus activity begins; drain() handles sync correctly on its own
     drain(q);
 
     foreach (q[i])
         check(q[i].resp === 2'b00, p, f);
 endtask
+
 // -------------------- MAIN INITIAL --------------------
 initial begin
     automatic bit [31:0] data;
