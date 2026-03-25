@@ -130,11 +130,13 @@ task automatic tc3(output int p, output int f);
     axi4l_rsp_item q[$];
     p = 0; f = 0;
 
-    // Queue 4 write transactions to addresses 0-3
+    // Queue 4 write transactions to word-aligned addresses 0x00..0x0C
+    // FIX: i*4 used instead of i – AXI4-Lite slaves require naturally
+    //      aligned addresses; byte offsets 1,2,3 are not valid word addresses
     for (int i=0; i<4; i++) begin
         item = new();
         item.is_write = 1;
-        item.addr     = i;
+        item.addr     = i * 4;          // word-aligned (0, 4, 8, 12)
         item.data     = 32'hA0 + i;
         item.strb     = 4'b1111;
         dvr.mbx.put(item);
@@ -144,7 +146,7 @@ task automatic tc3(output int p, output int f);
     for (int i=0; i<4; i++) begin
         item = new();
         item.is_write = 0;
-        item.addr     = i;
+        item.addr     = i * 4;          // word-aligned, matching writes above
         dvr.mbx.put(item);
     end
 
@@ -177,17 +179,22 @@ endtask
 
 // TC13: Preload write → concurrent write + read → response check
 task automatic tc13(output int p, output int f);
-    axi4l_seq_item item;
+    // FIX: split into item_wr / item_rd so each fork branch owns its handle;
+    //      original single 'item' variable was shared across both threads –
+    //      thread B's item=new() could overwrite the handle before thread A's
+    //      mbx.put(item) consumed it, silently sending the wrong transaction
+    axi4l_seq_item item_wr;             // dedicated handle for write branch
+    axi4l_seq_item item_rd;             // dedicated handle for read branch
     axi4l_rsp_item q[$];
     p = 0; f = 0;
 
     // Preload: single write
-    item = new();
-    item.is_write = 1;
-    item.addr     = 32'h200;
-    item.data     = 32'hAAAA_AAAA;
-    item.strb     = 4'b1111;
-    dvr.mbx.put(item);
+    item_wr = new();
+    item_wr.is_write = 1;
+    item_wr.addr     = 32'h200;
+    item_wr.data     = 32'hAAAA_AAAA;
+    item_wr.strb     = 4'b1111;
+    dvr.mbx.put(item_wr);
     drain(q);
     check(q[0].resp === 2'b00, p, f);
 
@@ -196,18 +203,18 @@ task automatic tc13(output int p, output int f);
     // Concurrent write + read
     fork
         begin
-            item = new();
-            item.is_write = 1;
-            item.addr     = 32'h500;
-            item.data     = 32'hDEAD_BEEF;
-            item.strb     = 4'b1111;
-            dvr.mbx.put(item);
+            item_wr = new();
+            item_wr.is_write = 1;
+            item_wr.addr     = 32'h500;
+            item_wr.data     = 32'hDEAD_BEEF;
+            item_wr.strb     = 4'b1111;
+            dvr.mbx.put(item_wr);
         end
         begin
-            item = new();
-            item.is_write = 0;
-            item.addr     = 32'h200;
-            dvr.mbx.put(item);
+            item_rd = new();
+            item_rd.is_write = 0;
+            item_rd.addr     = 32'h200;
+            dvr.mbx.put(item_rd);
         end
     join
 
