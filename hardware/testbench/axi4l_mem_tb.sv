@@ -1471,3 +1471,349 @@ initial begin
 endmodule
 
 */
+
+
+/* TODO SHUPARNA
+
+
+
+`include "axi4l/typedef.svh"
+`include "vip/axi4l.svh"
+
+module axi4l_mem_tb;
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // LOCAL PARAMETERS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  localparam int ADDR_WIDTH = 16;
+  localparam int DATA_WIDTH = 32;
+
+
+  import axi4l_vip_pkg::axi4l_cfg;
+  import axi4l_vip_pkg::axi4l_seq_item;
+  import axi4l_vip_pkg::axi4l_rsp_item;
+  import axi4l_vip_pkg::axi4l_driver;
+  import axi4l_vip_pkg::axi4l_monitor;
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // TYPE DEFINITIONS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  `AXI4L_ALL(axi4l, 32, 32)
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // SIGNALS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  logic arst_ni;
+  logic clk_i;
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // INTERFACES
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  axi4l_if #(
+      .req_t(axi4l_req_t),
+      .rsp_t(axi4l_rsp_t)
+  ) intf (
+      .arst_ni(arst_ni),
+      .clk_i  (clk_i)
+  );
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // DUT
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  axi4l_mem #(
+      .axi4l_req_t(axi4l_req_t),
+      .axi4l_rsp_t(axi4l_rsp_t),
+      .ADDR_WIDTH (ADDR_WIDTH),
+      .DATA_WIDTH (DATA_WIDTH)
+  ) u_mem (
+      .arst_ni(arst_ni),
+      .clk_i(clk_i),
+      .axi4l_req_i(intf.req),
+      .axi4l_rsp_o(intf.rsp)
+  );
+// Driver and Monitor
+
+    axi4l_driver #(
+      .req_t(axi4l_req_t),
+      .rsp_t(axi4l_rsp_t),
+      .IS_MASTER(1)
+  ) dvr;
+
+  axi4l_monitor #(
+      .req_t(axi4l_req_t),
+      .rsp_t(axi4l_rsp_t)
+  ) mon;
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // METHODS
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  task automatic write(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
+    bit [31:0] wdata;
+    bit [ 3:0] wstrb;
+    bit [ 1:0] resp;
+    wdata = data << ((addr % 4) * 8);
+    wstrb = strb << (addr % 4);
+    fork
+      intf.send_aw({addr, 3'h0});
+      intf.send_w({wdata, wstrb});
+      intf.recv_b(resp);
+    join
+  endtask
+
+  task automatic read(input bit [15:0] addr, output bit [31:0] data);
+    bit [31:0] rdata;
+    bit [ 1:0] resp;
+    fork
+      intf.send_ar({addr, 3'h0});
+      intf.recv_r({rdata, resp});
+    join
+    data = rdata >> ((addr % 4) * 8);
+  endtask
+
+  task automatic write_32(input bit [15:0] addr, input bit [31:0] data);
+    write(addr, data, 4'b1111);
+  endtask
+
+  task automatic write_16(input bit [15:0] addr, input bit [15:0] data);
+    write(addr, data, 4'b0011);
+  endtask
+
+  task automatic write_8(input bit [15:0] addr, input bit [7:0] data);
+    write(addr, data, 4'b0001);
+  endtask
+
+  task automatic read_32(input bit [15:0] addr, output bit [31:0] data);
+    read(addr, data);
+  endtask
+
+  task automatic read_16(input bit [15:0] addr, output bit [15:0] data);
+    read(addr, data);
+  endtask
+
+  task automatic read_8(input bit [15:0] addr, output bit [7:0] data);
+    read(addr, data);
+  endtask
+  // Test Case Tasks
+
+  // Test Case 01: Lowest Address Access
+
+
+  
+task automatic lowest_address_access();
+  bit [7:0] byte_data;
+
+  // Write 0xA5 to address 0x0000
+  write_8(16'h0000, 8'hA5);
+
+  // Read back the same byte
+  read_8(16'h0000, byte_data);
+
+  $display("TC1 Read Byte @0x0000 = 0x%02h", byte_data);
+endtask
+
+
+task automatic lowest_address_access();
+    bit [7:0] expected = 8'hA5;
+    bit [31:0] rdata;
+    bit [1:0]  resp;
+
+    $display("[%0t] TC1: Direct Write and Read at 0x0000", $time);
+
+    // --- WRITE 1 byte ---
+    fork
+        intf.send_aw({16'h0000, 3'h0});                // send address
+        intf.send_w({expected, 4'b0001});              // send data + strobe
+        intf.recv_b(resp);                             // wait for write response
+    join
+    $display("[%0t] WRITE @0x0000 = 0x%02h, resp=%0d", $time, expected, resp);
+
+    repeat (2) @(posedge clk_i);
+
+    // --- READ 1 byte ---
+    fork
+        intf.send_ar({16'h0000, 3'h0});                // send read address
+        intf.recv_r({rdata, resp});                    // wait for read data
+    join
+
+    $display("[%0t] READ @0x0000 = 0x%02h", $time, rdata[7:0]);
+
+    if (rdata[7:0] === expected)
+        $display("[%0t] TC1 PASSED: Data matches 0x%02h", $time, rdata[7:0]);
+    else
+        $display("[%0t] TC1 FAILED: Expected 0x%02h, Got 0x%02h",
+                  $time, expected, rdata[7:0]);
+
+    repeat (5) @(posedge clk_i);
+endtask
+
+ // Test Case 06: No-Op Write 
+
+task automatic no_op_write();
+  bit [31:0] data;   // local variable
+  write(16'h1000, 32'hDEADBEEF, 4'b0000); // no-op write
+  read_32(16'h1000, data);
+  $display("TC6 Read @0x1000 = 0x%08h", data);
+endtask
+
+
+// Test Case 11: AW and W Independent Scenarios
+
+
+task automatic aw_w_independent();
+    bit [31:0] exp_data;
+    bit [31:0] rdata;
+    bit [1:0]  resp;
+
+    $display("[%0t] TC11: AW/W independence", $time);
+
+    // Scenario 1: W before AW
+    exp_data = 32'h000000A5; // example data
+    fork
+        intf.send_w({exp_data, 4'b0001});   // send data first
+        intf.send_aw({32'h0000_2000, 3'h0}); // send address later
+        intf.recv_b(resp);                  // wait for write response
+    join
+    // Read back
+    fork
+        intf.send_ar({32'h0000_2000, 3'h0});
+        intf.recv_r({rdata, resp});
+    join
+    $display("[%0t] TC11 Scenario1 Read = 0x%08h", $time, rdata);
+    if (rdata == exp_data)
+        $display("[%0t] TC11 Scenario1 PASSED", $time);
+    else
+        $display("[%0t] TC11 Scenario1 FAILED", $time);
+
+    // Scenario 2: AW before W
+    exp_data = 32'h0000005A; // another example data
+    fork
+        intf.send_aw({32'h0000_2004, 3'h0}); // send address first
+        intf.send_w({exp_data, 4'b0001});    // send data later
+        intf.recv_b(resp);
+    join
+    // Read back
+    fork
+        intf.send_ar({32'h0000_2004, 3'h0});
+        intf.recv_r({rdata, resp});
+    join
+    $display("[%0t] TC11 Scenario2 Read = 0x%08h", $time, rdata);
+    if (rdata == exp_data)
+        $display("[%0t] TC11 Scenario2 PASSED", $time);
+    else
+        $display("[%0t] TC11 Scenario2 FAILED", $time);
+
+    $display("[%0t] TC11 completed", $time);
+endtask
+
+
+// Test Case 16: Random Stress Test
+
+task automatic random_stress_test();
+    int num_txn = $urandom_range(50, 100);
+    int pass_count = 0;
+    bit [7:0] mem_model [0:65535]; // reference memory
+    bit [15:0] addr;
+    bit [7:0] data8;
+
+    $display("[%0t] TC16 Random Stress Test Start (%0d transactions)", $time, num_txn);
+
+    repeat (num_txn) begin
+        addr  = $urandom_range(0, 65535);
+        data8 = $urandom_range(0, 255);
+
+        // Random delay
+        repeat ($urandom_range(0, 5)) @(posedge clk_i);
+
+        if ($urandom_range(0,1)) begin
+            // WRITE
+            write_8(addr, data8);
+            mem_model[addr] = data8;
+            $display("[%0t] WRITE addr=0x%04h data=0x%02h", $time, addr, data8);
+        end else begin
+            // READ
+            read_8(addr, data8);
+            if (data8 !== mem_model[addr]) begin
+                $display("[%0t] READ MISMATCH addr=0x%04h exp=0x%02h got=0x%02h",
+                         $time, addr, mem_model[addr], data8);
+            end else begin
+                $display("[%0t] READ OK addr=0x%04h data=0x%02h", $time, addr, data8);
+                pass_count++;
+            end
+        end
+    end
+
+    $display("[%0t] TC16 Random Stress Test Completed: %0d/%0d reads passed",
+             $time, pass_count, num_txn);
+endtask
+
+
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // PROCEDURAL
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  initial begin
+
+    automatic bit [31:0] data;
+
+    $timeformat(-9, 1, " ns", 20);
+    $dumpfile("axi4l_mem_tb.vcd");
+    $dumpvars(0, axi4l_mem_tb);
+
+    clk_i   <= '0;
+    arst_ni <= '0;
+    intf.req_reset();
+    #20;
+    arst_ni <= '1;
+    #20;
+    fork
+      forever #5 clk_i <= ~clk_i;
+    join_none
+
+    dvr = new();
+    mon = new();
+    dvr.connect_interface(intf);
+    mon.connect_interface(intf);
+
+    dvr.run();
+    mon.run();
+
+  repeat (10) @(posedge clk_i);
+
+
+    write_16(1, 'hABCD);
+
+    repeat (5) @(posedge clk_i);
+
+    read_32(0, data);
+
+    $display("R32 0 DATA:0x%h", data);
+
+    read_16(1, data);
+
+    $display("R16 1 DATA:0x%h", data);
+
+    read_8(2, data);
+
+    $display("R8 2 DATA:0x%h", data);
+
+    lowest_address_access();
+    no_op_write();
+    aw_w_independent();
+    random_stress_test();
+    repeat (20) @(posedge clk_i);
+
+    $finish;
+
+  end
+
+endmodule
+
+*/
+
+
