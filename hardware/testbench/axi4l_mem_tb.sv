@@ -231,7 +231,7 @@ module axi4l_mem_tb;
     int test_number;
 
     if (!$value$plusargs("TEST=%d", test_number)) begin
-      $fatal(1, "Must specify test number with +test=N argument (e.g. +test=3)");
+      $fatal(1, "Must specify test number with TEST=N argument (e.g. TEST=3)");
     end else begin
       $display("Running test number %0d", test_number);
     end
