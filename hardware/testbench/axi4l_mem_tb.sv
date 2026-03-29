@@ -139,30 +139,29 @@ module axi4l_mem_tb;
   endtask
 
   // Do a High Level AXI4-Lite Write transaction using the VIP driver
-  task automatic write_seq(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
+  task automatic write_seq(input bit [ADDR_WIDTH-1:0] _addr, input bit [DATA_WIDTH-1:0] data, input bit [DATA_WIDTH/8-1:0] strb);
     axi4l_seq_item sit;
     cfg = new();
     cfg.addr_width = ADDR_WIDTH;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 1; sit.size == $clog2(DATA_WIDTH / 8);};
-    sit.addr = addr;
+    sit.randomize() with {sit.is_write == 1; sit.addr == _addr; sit.size == $clog2(DATA_WIDTH / 8);};
     sit.data = data;
     sit.strb = strb;
     dvr_mbx.put(sit);
   endtask
 
   // Do a High Level AXI4-Lite Read transaction using the VIP driver
-  task automatic read_seq(input bit [15:0] addr);
+  task automatic read_seq(input bit [ADDR_WIDTH-1:0] _addr);
     axi4l_seq_item sit;
     cfg = new();
     cfg.addr_width = ADDR_WIDTH;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 0;  sit.size == $clog2(DATA_WIDTH / 8);};
-    sit.addr = addr;
+    sit.randomize() with {sit.is_write == 0; sit.addr == _addr; sit.size == $clog2(DATA_WIDTH / 8);};
+    
     dvr_mbx.put(sit);
   endtask
 
