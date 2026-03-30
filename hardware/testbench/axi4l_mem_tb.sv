@@ -146,7 +146,8 @@ module axi4l_mem_tb;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 1; sit.addr == addr; sit.size == $clog2(DATA_WIDTH / 8);};
+    sit.randomize() with {sit.is_write == 1; sit.size == $clog2(DATA_WIDTH / 8);};
+    sit.addr = addr;
     sit.data = data;
     sit.strb = strb;
     dvr_mbx.put(sit);
@@ -160,7 +161,8 @@ module axi4l_mem_tb;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 0; sit.addr == addr; sit.size == $clog2(DATA_WIDTH / 8);};
+    sit.randomize() with {sit.is_write == 0;  sit.size == $clog2(DATA_WIDTH / 8);};
+    sit.addr = addr;
     dvr_mbx.put(sit);
   endtask
 
@@ -302,95 +304,116 @@ module axi4l_mem_tb;
     dvr.run();  // spawn driver thread: pulls items from dvr_mbx and drives bus
     mon.run();  // spawn monitor thread: samples bus, pushes rsp_items to mon.mbx
 
-    case (test_number)
+    repeat (5) begin
+      case (test_number)
 
-      0: begin
-        tc0(p, f);
-      end
+        0: begin
+          tc0(p, f);
+        end
 
-      1: begin
-        tc1(p, f);
-      end
+        1: begin
+          tc1(p, f);
+        end
 
-      2: begin
-        tc2(p, f);
-      end
+        2: begin
+          tc2(p, f);
+        end
 
-      3: begin
-        tc3(p, f);
-      end
+        3: begin
+          tc3(p, f);
+        end
 
-      4: begin
-        tc4(p, f);
-      end
+        4: begin
+          tc4(p, f);
 
-      5: begin
-        tc5(p, f);
-      end
+        end
 
-      6: begin
-        tc6(p, f);
-      end
+        5: begin
+          tc5(p, f);
+        end
 
-      7: begin
-        tc7(p, f);
-      end
+        6: begin
+          tc6(p, f);
+        end
 
-      8: begin
-        tc8(p, f);
-      end
+        7: begin
+          tc7(p, f);
+        end
 
-      9: begin
-        tc9(p, f);
-      end
+        8: begin
+          tc8(p, f);
+        end
 
-      10: begin
-        tc10(p, f);
-      end
+        9: begin
+          tc9(p, f);
+        end
 
-      11: begin
-        tc11(p, f);
-      end
+        10: begin
+          tc10(p, f);
+        end
 
-      12: begin
-        tc12(p, f);
-      end
+        11: begin
+          tc11(p, f);
+        end
 
-      13: begin
-        tc13(p, f);
-      end
+        12: begin
+          tc12(p, f);
+        end
 
-      14: begin
-        tc14(p, f);
-      end
+        13: begin
+          tc13(p, f);
+        end
 
-      15: begin
-        tc15(p, f);
-      end
+        14: begin
+          tc14(p, f);
+        end
 
-      16: begin
-        tc16(p, f);
-      end
+        15: begin
+          tc15(p, f);
+        end
 
-      default: begin
-        $fatal(1, "Invalid test number %0d. Valid range is 0-16.", test_number);
-      end
+        16: begin
+          tc16(p, f);
+        end
+      
+        default: begin
+          $fatal(1, "Invalid test number %0d. Valid range is 0-16.", test_number);
+        end
 
-    endcase
+      endcase
+      total_p += p;
+      total_f += f;
 
+    end   
     // TODO FIXME
-    // RUN TEST CASES
+/*
     repeat (5) begin  // repeat all test cases 5× to stress pipelining behaviour
-      tc3(p, f);
-      total_p += p;
-      total_f += f;
-      tc8(p, f);
-      total_p += p;
-      total_f += f;
-      tc13(p, f);
-      total_p += p;
-      total_f += f;
+    for (int i = 0; i <= 16; i++) begin
+        case (i)
+            0:  tc0(p, f);
+            1:  tc1(p, f);
+            2:  tc2(p, f);
+            3:  tc3(p, f);
+            4:  tc4(p, f);
+            5:  tc5(p, f);
+            6:  tc6(p, f);
+            7:  tc7(p, f);
+            8:  tc8(p, f);
+            9:  tc9(p, f);
+            10: tc10(p, f);
+            11: tc11(p, f);
+            12: tc12(p, f);
+            13: tc13(p, f);
+            14: tc14(p, f);
+            15: tc15(p, f);
+            16: tc16(p, f);
+        endcase
+        total_p += p;  
+        total_f += f;  
     end
+end 
+    */
+    
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // CLEANUP
