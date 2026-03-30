@@ -139,30 +139,29 @@ module axi4l_mem_tb;
   endtask
 
   // Do a High Level AXI4-Lite Write transaction using the VIP driver
-  task automatic write_seq(input bit [15:0] addr, input bit [31:0] data, input bit [3:0] strb);
+  task automatic write_seq(input bit [ADDR_WIDTH-1:0] _addr, input bit [DATA_WIDTH-1:0] data, input bit [DATA_WIDTH/8-1:0] strb);
     axi4l_seq_item sit;
     cfg = new();
     cfg.addr_width = ADDR_WIDTH;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 1; sit.size == $clog2(DATA_WIDTH / 8);};
-    sit.addr = addr;
+    sit.randomize() with {sit.is_write == 1; sit.addr == _addr; sit.size == $clog2(DATA_WIDTH / 8);};
     sit.data = data;
     sit.strb = strb;
     dvr_mbx.put(sit);
   endtask
 
   // Do a High Level AXI4-Lite Read transaction using the VIP driver
-  task automatic read_seq(input bit [15:0] addr);
+  task automatic read_seq(input bit [ADDR_WIDTH-1:0] _addr);
     axi4l_seq_item sit;
     cfg = new();
     cfg.addr_width = ADDR_WIDTH;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 0;  sit.size == $clog2(DATA_WIDTH / 8);};
-    sit.addr = addr;
+    sit.randomize() with {sit.is_write == 0; sit.addr == _addr; sit.size == $clog2(DATA_WIDTH / 8);};
+    
     dvr_mbx.put(sit);
   endtask
 
@@ -385,36 +384,7 @@ module axi4l_mem_tb;
       total_f += f;
 
     end   
-    // TODO FIXME
-/*
-    repeat (5) begin  // repeat all test cases 5× to stress pipelining behaviour
-    for (int i = 0; i <= 16; i++) begin
-        case (i)
-            0:  tc0(p, f);
-            1:  tc1(p, f);
-            2:  tc2(p, f);
-            3:  tc3(p, f);
-            4:  tc4(p, f);
-            5:  tc5(p, f);
-            6:  tc6(p, f);
-            7:  tc7(p, f);
-            8:  tc8(p, f);
-            9:  tc9(p, f);
-            10: tc10(p, f);
-            11: tc11(p, f);
-            12: tc12(p, f);
-            13: tc13(p, f);
-            14: tc14(p, f);
-            15: tc15(p, f);
-            16: tc16(p, f);
-        endcase
-        total_p += p;  
-        total_f += f;  
-    end
-end 
-    */
     
-
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // CLEANUP
     ////////////////////////////////////////////////////////////////////////////////////////////////
