@@ -130,8 +130,8 @@
     input logic [63:0] data,                                                                       \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
-    logic [``__NAME__``_AW/8-1:0] tstrb;                                                           \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW/8-1:0] tstrb;                                                           \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFF8;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
@@ -151,7 +151,7 @@
     output logic [63:0] data,                                                                      \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFF8;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
@@ -168,8 +168,8 @@
     input logic [31:0] data,                                                                       \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
-    logic [``__NAME__``_AW/8-1:0] tstrb;                                                           \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW/8-1:0] tstrb;                                                           \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFFC;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
@@ -189,7 +189,7 @@
     output logic [31:0] data,                                                                      \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFFC;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
@@ -206,8 +206,8 @@
     input logic [15:0] data,                                                                       \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
-    logic [``__NAME__``_AW/8-1:0] tstrb;                                                           \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW/8-1:0] tstrb;                                                           \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFFE;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
@@ -227,7 +227,7 @@
     output logic [15:0] data,                                                                      \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFFE;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
@@ -244,8 +244,8 @@
     input logic [7:0] data,                                                                        \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
-    logic [``__NAME__``_AW/8-1:0] tstrb;                                                           \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW/8-1:0] tstrb;                                                           \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFFF;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
@@ -265,7 +265,7 @@
     output logic [7:0] data,                                                                       \
     output logic [1:0] resp);                                                                      \
     int offset;                                                                                    \
-    logic [``__NAME__``_AW-1:0] tdata;                                                             \
+    logic [``__NAME__``_DW-1:0] tdata;                                                             \
     offset = addr;                                                                                 \
     offset = offset & 'hFFFF_FFFF;                                                                 \
     offset = offset % (``__NAME__``_DW / 8);                                                       \
