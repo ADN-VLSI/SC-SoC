@@ -139,14 +139,17 @@ module axi4l_mem_tb;
   endtask
 
   // Do a High Level AXI4-Lite Write transaction using the VIP driver
-  task automatic write_seq(input bit [ADDR_WIDTH-1:0] _addr, input bit [DATA_WIDTH-1:0] data, input bit [DATA_WIDTH/8-1:0] strb);
+  task automatic write_seq(input bit [ADDR_WIDTH-1:0] _addr, input bit [DATA_WIDTH-1:0] data,
+                           input bit [DATA_WIDTH/8-1:0] strb);
     axi4l_seq_item sit;
     cfg = new();
     cfg.addr_width = ADDR_WIDTH;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 1; sit.addr == _addr; sit.size == $clog2(DATA_WIDTH / 8);};
+    sit.randomize() with {sit.is_write == 1;
+                          sit.addr == _addr;
+                          sit.size == $clog2(DATA_WIDTH / 8);};
     sit.data = data;
     sit.strb = strb;
     dvr_mbx.put(sit);
@@ -160,8 +163,10 @@ module axi4l_mem_tb;
     cfg.data_width = DATA_WIDTH;
     sit = new();
     sit.configure(cfg);
-    sit.randomize() with {sit.is_write == 0; sit.addr == _addr; sit.size == $clog2(DATA_WIDTH / 8);};
-    
+    sit.randomize() with {sit.is_write == 0;
+                          sit.addr == _addr;
+                          sit.size == $clog2(DATA_WIDTH / 8);};
+
     dvr_mbx.put(sit);
   endtask
 
@@ -306,86 +311,31 @@ module axi4l_mem_tb;
     end
 
     case (test_number)
-
-      0: begin
-        tc0(p, f);
-      end
-
-      1: begin
-        tc1(p, f);
-      end
-
-      2: begin
-        tc2(p, f);
-      end
-
-      3: begin
-        tc3(p, f);
-      end
-
-      4: begin
-        tc4(p, f);
-      end
-
-      5: begin
-        tc5(p, f);
-      end
-
-      6: begin
-        tc6(p, f);
-      end
-
-      7: begin
-        tc7(p, f);
-      end
-
-      8: begin
-        tc8(p, f);
-      end
-
-      9: begin
-        tc9(p, f);
-      end
-
-      10: begin
-        tc10(p, f);
-      end
-
-      11: begin
-        tc11(p, f);
-      end
-
-      12: begin
-        tc12(p, f);
-      end
-
-      13: begin
-        tc13(p, f);
-      end
-
-      14: begin
-        tc14(p, f);
-      end
-
-      15: begin
-        tc15(p, f);
-      end
-
-      16: begin
-        tc16(p, f);
-      end
-
-      default: begin
-        $fatal(1, "Invalid test number %0d. Valid range is 0-16.", test_number);
-      end
-
+      0: tc0(p, f);
+      1: tc1(p, f);
+      2: tc2(p, f);
+      3: tc3(p, f);
+      4: tc4(p, f);
+      5: tc5(p, f);
+      6: tc6(p, f);
+      7: tc7(p, f);
+      8: tc8(p, f);
+      9: tc9(p, f);
+      10: tc10(p, f);
+      11: tc11(p, f);
+      12: tc12(p, f);
+      13: tc13(p, f);
+      14: tc14(p, f);
+      15: tc15(p, f);
+      16: tc16(p, f);
+      default: $fatal(1, "Invalid test number %0d. Valid range is 0-16.", test_number);
     endcase
 
     // show selected test result in terminal (unconditional, immediate)
     $display("SELECTED TEST %0d RESULT: PASS=%0d FAIL=%0d", test_number, p, f);
     total_p += p;
     total_f += f;
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // CLEANUP
     ////////////////////////////////////////////////////////////////////////////////////////////////

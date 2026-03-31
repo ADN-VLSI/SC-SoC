@@ -25,7 +25,7 @@ task automatic tc2(output int p, output int f);
   if (q.size() > 0) begin
     check(!q[0].is_write, p, f);
     check(q[0].resp == 2'b00, p, f);
-    rd_data = q[0].data[31:0];
+    rd_data = q[0].data[3:0];
     check(rd_data[31:24] == 8'hA5, p, f);
   end
 endtask
