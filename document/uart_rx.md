@@ -63,11 +63,11 @@ The following diagram illustrates the finite state machine (FSM) of the `uart_rx
  
 | State         | Description                                                                                       |
 | ------------- | ------------------------------------------------------------------------------------------------- |
-| **IDLE**      | Waits for a falling edge on the filtered `rx_i` line indicating the start of a new frame          |
-| **START**     | Waits 8 oversampling ticks (half bit period) then re-samples; advances if LOW, aborts if HIGH     |
-| **DATA_BITS** | Samples `rx_i` at the center of each of the 8 data bit windows and shifts into the shift register |
-| **PARITY**    | If `parity_en_i` is set, samples the parity bit and compares against the computed parity value    |
-| **STOP**      | Samples the stop bit; if HIGH (valid), asserts `data_valid_o` for one cycle; returns to IDLE      |  
+| IDLE          | Waits for a falling edge on the filtered `rx_i` line indicating the start of a new frame          |
+| START         | Waits 8 oversampling ticks (half bit period) then re-samples; advances if LOW, aborts if HIGH     |
+| DATA_BITS     | Samples `rx_i` at the center of each of the 8 data bit windows and shifts into the shift register |
+| PARITY        | If `parity_en_i` is set, samples the parity bit and compares against the computed parity value    |
+| STOP          | Samples the stop bit; if HIGH (valid), asserts `data_valid_o` for one cycle; returns to IDLE      |  
 
 ## Baud Rate and Oversampling
  
