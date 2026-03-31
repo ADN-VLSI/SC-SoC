@@ -1,5 +1,7 @@
 # AXI‑Lite UART Register Interface Documentation
 
+
+
 ## Overview
 The AXI‑Lite UART register interface provides memory‑mapped control and status registers for the UART peripheral.  
 Software uses these registers to configure baud rate and frame format, monitor FIFO status, enqueue transmit/receive requests, and manage interrupts.  
@@ -11,7 +13,8 @@ Registers are categorized as:
 - **WO (Write‑Only):** Software writes values; reading is not meaningful.
 
 ---
-
+![AXI4-Lite UART RTL Diagram](axi4l_uart_regif.svg)
+- - -
 ## Register Map
 
 | Offset | Register    | Type | Reset Value | Description                                |
@@ -141,5 +144,5 @@ Registers are categorized as:
 
 ---
 
-## Block Diagram
+
 
