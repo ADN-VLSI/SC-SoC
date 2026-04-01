@@ -93,12 +93,12 @@ uart_tx  reasserts data_ready_o when it returns to IDLE
 ---
 
 ## Design Decisions
-
+ 
 **Why is `clk_i` the baud clock?**
-The `clk_div` output feeds directly as `clk_i`. One cycle = one baud period. No internal tick counter needed. Same pattern as the APB-UART reference design.
-
+The `clk_div` output feeds directly as `clk_i`. One cycle = one baud period. No internal tick counter needed inside `uart_tx`.
+ 
 **Why valid/ready handshake?**
 Decouples `uart_tx` from the FIFO implementation. Any data source — CDC FIFO, sync FIFO — connects without changing the transmitter.
-
+ 
 **Why add `data_bits_i` and `parity_type_i`?**
-The APB version used fixed 8-bit data. The AXI4-Lite `uart_reg` exposes configurable data bits (5–8) and parity type from `UART_CFG`, so these ports are needed for full register-driven control.
+The SC-SoC `uart_reg` exposes configurable data bits (5–8) and parity type from `UART_CFG`. These ports allow `uart_tx` to be fully driven by `uart_reg` outputs without any hardcoded frame format.
