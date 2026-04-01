@@ -48,7 +48,7 @@ The following table describes all input and output ports of the `uart_rx` module
 |------------------ |-----------|-------|---------------------------------------------------------------------- |
 | `arst_ni`         | Input     | 1     | Asynchronous reset, active low                                        | 
 | `clk_i`           | Input     | 1     | Baud-rate clock input                                                 |
-| `data_bits_i`     | Input     | 4     | Number of data bits per frame: 0=5 bits, 1=6 bits, 2=7 bits, 3=8 bits |
+| `data_bits_i`     | Input     | 2     | Number of data bits per frame: 0=5 bits, 1=6 bits, 2=7 bits, 3=8 bits |
 | `rx_i`            | Input     | 1     | UART serial data input                                                |
 | `data_o`          | Output    | 8     | Received parallel data byte                                           |
 | `data_valid_o`    | Output    | 1     | HIGH when a valid frame is received                                   |
