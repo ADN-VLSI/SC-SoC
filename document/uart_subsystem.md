@@ -16,7 +16,7 @@ The design supports bus-side register access and UART-side serial transmit/recei
 
 ## 2. Top-Level Architecture
 
-![UART Subsystem Block Diagram](./uart_subsytem_topview.svg)
+![UART subsystem top view](./uart_subsystem_topview.svg)
 
 ## 3. Block Description
 
