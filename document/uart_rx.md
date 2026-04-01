@@ -44,14 +44,15 @@ The UART Receiver uses the following parameters for configuration:
 
 The following table describes all input and output ports of the `uart_rx` module:
 
-| Port Name         | Direction | Width | Description                                         |
-| ----------------  | --------- | ----- | --------------------------------------------------- |
-| `arst_ni `        | Input     | 1     | Asynchronous reset, active low                      |
-| `clk_i`           | Input     | 1     | Baud-rate clock input                               |
-| `rx_i`            | Input     | 1     | UART serial data input                              |
-| `data_o`          | Output    | 8     | Received parallel data byte                         |
-| `data_valid_o`    | Output    | 1     | HIGH when a valid frame is received                 |
-| `parity_error_o`  | Output    | 1     | HIGH when a parity error is detected (if enabled)   |
+| Port Name         | Direction | Width | Description                                                           |
+|------------------ |-----------|-------|---------------------------------------------------------------------- |
+| `arst_ni`         | Input     | 1     | Asynchronous reset, active low                                        | 
+| `clk_i`           | Input     | 1     | Baud-rate clock input                                                 |
+| `data_bits_i`     | Input     | 4     | Number of data bits per frame: 0=5 bits, 1=6 bits, 2=7 bits, 3=8 bits |
+| `rx_i`            | Input     | 1     | UART serial data input                                                |
+| `data_o`          | Output    | 8     | Received parallel data byte                                           |
+| `data_valid_o`    | Output    | 1     | HIGH when a valid frame is received                                   |
+| `parity_error_o`  | Output    | 1     | HIGH when a parity error is detected (if enabled)                     |
 
 ## UART Receiver FSM Diagram
 
