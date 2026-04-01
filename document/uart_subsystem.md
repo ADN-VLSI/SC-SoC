@@ -1,9 +1,6 @@
 # AXI4-Lite UART Subsystem Documentation
 
-========================================
 ## Author: Dhruba Jyoti Barua
-========================================
-
 
 ## 1. Overview
 
@@ -89,13 +86,17 @@ The AXI4-Lite interface itself does not implement UART serialization or bufferin
 
 ---
 
-## 4. UART Register Interface
+## 4. Block Diagram
 
-## 4.1 Purpose
+![UART Subsystem Top View](./uart_subsystem_topview.svg)
+
+## 5. UART Register Interface
+
+## 5.1 Purpose
 
 The UART register interface is the central control and status block of the subsystem. It maps AXI4-Lite accesses to UART control, configuration, transmit, receive, arbitration, and interrupt behavior.
 
-## 4.2 Register-Controlled Outputs
+## 5.2 Register-Controlled Outputs
 
 The provided register interface drives the following outputs:
 
@@ -111,7 +112,7 @@ The provided register interface drives the following outputs:
 
 These outputs configure the downstream UART logic.
 
-## 4.3 TX and RX Data Handshake Signals
+## 5.3 TX and RX Data Handshake Signals
 
 The register interface also exposes datapath-related signals:
 
@@ -128,25 +129,25 @@ This allows the register block to serve as the software-facing endpoint of both 
 
 ---
 
-## 5. Register Map Summary
+## 6. Register Map Summary
 
 See [UART Register Map and Bit Fields](./uart_reg.md).
 
 ---
 
-## 6. Register Descriptions
+## 7. Register Descriptions
 
 See [UART Register Map and Bit Fields](./uart_reg.md).
 
 ---
 
-## 7. CDC FIFO for Transmitter
+## 8. CDC FIFO for Transmitter
 
-## 7.1 Purpose
+## 8.1 Purpose
 
 The TX CDC FIFO safely transfers transmit bytes from the AXI/register clock domain into the UART transmit domain.
 
-## 7.2 Why It Is Needed
+## 8.2 Why It Is Needed
 
 The software-facing AXI side and the UART serial engine may operate at different rates or even different clock domains. A CDC FIFO is used to:
 
@@ -154,7 +155,7 @@ The software-facing AXI side and the UART serial engine may operate at different
 - absorb software-side burstiness
 - decouple bus timing from serial transmission timing
 
-## 7.3 TX Data Path Operation
+## 8.3 TX Data Path Operation
 
 The intended flow is:
 
@@ -164,7 +165,7 @@ The intended flow is:
 4. the TX CDC FIFO captures the byte
 5. the UART transmitter reads bytes from the FIFO when ready
 
-## 7.4 TX Status Contribution
+## 8.4 TX Status Contribution
 
 The TX CDC FIFO should provide the live values used by `UART_STAT`:
 
@@ -174,13 +175,13 @@ The TX CDC FIFO should provide the live values used by `UART_STAT`:
 
 ---
 
-## 8. CDC FIFO for Receiver
+## 9. CDC FIFO for Receiver
 
-## 8.1 Purpose
+## 9.1 Purpose
 
 The RX CDC FIFO safely transfers received bytes from the UART receive domain into the AXI/register domain.
 
-## 8.2 Why It Is Needed
+## 9.2 Why It Is Needed
 
 The UART receiver operates according to serial timing, while software reads data according to bus timing. The RX CDC FIFO:
 
@@ -188,7 +189,7 @@ The UART receiver operates according to serial timing, while software reads data
 - prevents loss of incoming bytes
 - buffers back-to-back received frames
 
-## 8.3 RX Data Path Operation
+## 9.3 RX Data Path Operation
 
 The intended flow is:
 
@@ -198,7 +199,7 @@ The intended flow is:
 4. software reads `UART_RXD`
 5. the register interface asserts
 
-## 8.4 RX Status Contribution
+## 9.4 RX Status Contribution
 
 The RX CDC FIFO should provide the live values used by `UART_STAT`:
 
@@ -208,13 +209,13 @@ The RX CDC FIFO should provide the live values used by `UART_STAT`:
 
 ---
 
-## 9. Clock Divider
+## 10. Clock Divider
 
-## 9.1 Purpose
+## 10.1 Purpose
 
 The clock divider generates the baud timing basis used by the UART transmitter and UART receiver.
 
-## 9.2 Configuration Inputs
+## 10.2 Configuration Inputs
 
 Clocking configuration comes from `UART_CFG`:
 
@@ -226,7 +227,7 @@ These are already exported by the register interface as:
 - `uart_clk_div_o`
 - `uart_psclr_o` :contentReference[oaicite:22]{index=22}
 
-## 9.3 Functional Role
+## 10.3 Functional Role
 
 The divider should generate a baud tick or sampling enable used by:
 
@@ -237,13 +238,13 @@ The exact divider formula depends on the RTL implementation, but logically it is
 
 ---
 
-## 10. UART Transmitter
+## 11. UART Transmitter
 
-## 10.1 Purpose
+## 11.1 Purpose
 
 The UART transmitter converts parallel bytes into serial UART frames.
 
-## 10.2 Inputs
+## 11.2 Inputs
 
 The transmitter uses:
 
@@ -259,7 +260,7 @@ These include:
 - parity type
 - stop bits 
 
-## 10.3 Operation
+## 11.3 Operation
 
 For each byte, the transmitter generally emits:
 
@@ -268,7 +269,7 @@ For each byte, the transmitter generally emits:
 3. optional parity bit
 4. one or two stop bits
 
-## 10.4 Relationship to TX FIFO
+## 11.4 Relationship to TX FIFO
 
 The transmitter should consume a byte only when:
 
@@ -280,13 +281,13 @@ This allows the FIFO to absorb software timing differences while the transmitter
 
 ---
 
-## 11. UART Receiver
+## 12. UART Receiver
 
-## 11.1 Purpose
+## 12.1 Purpose
 
 The UART receiver samples the serial RX line and reconstructs UART frames into bytes.
 
-## 11.2 Inputs
+## 12.2 Inputs
 
 The receiver uses:
 
@@ -295,7 +296,7 @@ The receiver uses:
 - frame format settings from `UART_CFG`
 - serial RX input
 
-## 11.3 Operation
+## 12.3 Operation
 
 The receiver typically performs:
 
@@ -307,13 +308,13 @@ The receiver typically performs:
 
 When a valid frame is received, the byte is pushed into the RX CDC FIFO.
 
-## 11.4 Relationship to RX FIFO
+## 12.4 Relationship to RX FIFO
 
 The RX FIFO buffers valid received bytes until software reads them through `UART_RXD`. This prevents immediate software servicing from being required on every received byte.
 
 ---
 
-## 12. Top-Level Functional Connectivity
+## 13. Top-Level Functional Connectivity
 
 The functional interaction between blocks is as follows:
 
@@ -329,14 +330,14 @@ The functional interaction between blocks is as follows:
 
 ---
 
-## 13. Register-to-Block Mapping
+## 14. Register-to-Block Mapping
 
-## 13.1 Control Mapping
+## 14.1 Control Mapping
 
 - `UART_CTRL[3]` maps to `uart_tx_en_o`
 - `UART_CTRL[4]` maps to `uart_rx_en_o` 
 
-## 13.2 Clock and Frame Configuration Mapping
+## 14.2 Clock and Frame Configuration Mapping
 
 - `UART_CFG[11:0]` maps to `uart_clk_div_o`
 - `UART_CFG[15:12]` maps to `uart_psclr_o`
@@ -345,7 +346,7 @@ The functional interaction between blocks is as follows:
 - `UART_CFG[19]` maps to `uart_ptp_o`
 - `UART_CFG[20]` maps to `uart_sb_o` 
 
-## 13.3 TX Path Mapping
+## 14.3 TX Path Mapping
 
 - software writes `UART_TXD`
 - register interface outputs `tx_data_o`
@@ -353,14 +354,14 @@ The functional interaction between blocks is as follows:
 - TX FIFO captures the byte
 - transmitter consumes the byte when ready
 
-## 13.4 RX Path Mapping
+## 14.4 RX Path Mapping
 
 - receiver produces received bytes
 - RX FIFO buffers them
 - register interface reads them through `rx_data_i`
 - `rx_pop_o` removes one entry when `UART_RXD` is read 
 
-## 13.5 Interrupt Mapping
+## 14.5 Interrupt Mapping
 
 `UART_INT[3:0]` enables interrupts for:
 
@@ -371,7 +372,7 @@ The functional interaction between blocks is as follows:
 
 ---
 
-## 14. Conclusion
+## 15. Conclusion
 
 This subsystem is a **register-based AXI4-Lite UART peripheral** with no internal memory block.
 
