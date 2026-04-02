@@ -57,14 +57,14 @@ In operation, software writes transmit data through the register interface, and 
 
 Transmit data moves through the subsystem as follows:
 
-    1. Software writes a byte to `UART_TXD`
-    2. AXI-Lite register interface generates:
-        -tx_data_o[7:0]
-        -tx_data_valid_o
-    3. TX CDC FIFO stores the byte in the system clock domain
-    4. TX CDC FIFO transfers the byte into the TX baud clock domain
-    5. UART transmitter consumes the byte through valid/ready handshake
-    6. UART transmitter serializes the byte to tx_o
+1. Software writes a byte to `UART_TXD`
+2. AXI-Lite register interface generates:
+-tx_data_o[7:0]
+-tx_data_valid_o
+3. TX CDC FIFO stores the byte in the system clock domain
+4. TX CDC FIFO transfers the byte into the TX baud clock domain
+5. UART transmitter consumes the byte through valid/ready handshake
+6. UART transmitter serializes the byte to tx_o
 
 This matches the intended register-to-FIFO-to-transmitter structure documented by the UART register interface and UART TX module docs.
 
@@ -72,15 +72,15 @@ This matches the intended register-to-FIFO-to-transmitter structure documented b
 
 Receive data moves through the subsystem as follows:
 
-    1. Serial data enters through rx_i
-    2. UART receiver samples and reconstructs the frame
-    3. RX CDC FIFO stores the received byte in the RX clock domain
-    4. RX CDC FIFO transfers the byte into the AXI/system clock domain
-    5. AXI-Lite register interface receives:
-        - rx_data_i[7:0]
-        - rx_data_valid_i
-    6.Software reads the byte from UART_RXD
-    7. Register interface asserts rx_pop_o to consume the FIFO entry
+1. Serial data enters through rx_i
+2. UART receiver samples and reconstructs the frame
+3. RX CDC FIFO stores the received byte in the RX clock domain
+4. RX CDC FIFO transfers the byte into the AXI/system clock domain
+5. AXI-Lite register interface receives:
+    - rx_data_i[7:0]
+    - rx_data_valid_i
+6.Software reads the byte from UART_RXD
+7. Register interface asserts rx_pop_o to consume the FIFO entry
 
 This matches the RX-side datapath described by the register interface and register map doc
 
@@ -122,12 +122,12 @@ These outputs come directly from the register interface documentation and map to
 
 The TX CDC FIFO transfers outgoing data from the AXI/system clock domain into the transmitter baud clock domain. The FIFO documentation defines a dual-clock structure with:
 
-    - write clock : `wr_clk`
-    - read clock  : `rd_clk`
-    - write-side valid/ready handshake
-    - read-side valid/ready handshake
-    - occupancy counters
-    - full/empty detection
+- write clock : `wr_clk`
+- read clock  : `rd_clk`
+- write-side valid/ready handshake
+- read-side valid/ready handshake
+- occupancy counters
+- full/empty detection
 
 Important FIFO interface signals:
 
@@ -145,28 +145,23 @@ Important FIFO interface signals:
 The FIFO is explicitly documented as supporting asynchronous clock crossing and using Gray-code-safe synchronization internally.
 
 ### TX FIFO Role in This Subsystem
-    -Write side clock domain: clk_i (AXI/system clock)
-    -Read side clock domain: tx_baud_clk
-    -Input source: AXI-Lite register interface
-    -Output destination: UART transmitter
+-Write side clock domain: clk_i (AXI/system clock)
+-Read side clock domain: tx_baud_clk
+-Input source: AXI-Lite register interface
+-Output destination: UART transmitter
 ### TX FIFO Connection Summary
-    - `tx_data_o` -> `tx_fifo.wr_data`
-    - `tx_data_valid_o` -> `tx_fifo.wr_valid`
-    - `tx_fifo.wr_ready` -> used to derive FIFO-not-full condition
-    - `tx_fifo.rd_data` -> `uart_tx.data_i`
-    - `tx_fifo.rd_valid` -> `uart_tx.data_valid_i`
+- `tx_data_o` -> `tx_fifo.wr_data`
+- `tx_data_valid_o` -> `tx_fifo.wr_valid`
+- `tx_fifo.wr_ready` -> used to derive FIFO-not-full condition
+- `tx_fifo.rd_data` -> `uart_tx.data_i`
+- `tx_fifo.rd_valid` -> `uart_tx.data_valid_i`
 **Important Ready Polarity Note**
 The CDC FIFO documentation states that read ready is active-low:
-
-    - `rd_ready` = 0 means ready
-
+- `rd_ready` = 0 means ready
 The UART transmitter uses a normal active-high ready signal:
-
-    - `data_ready_o` = 1 means ready
-
+- `data_ready_o` = 1 means ready
 Therefore, a polarity adaptation is required:
-
-    ``tx_fifo.rd_ready` = `~uart_tx`.`data_ready_o`
+- tx_fifo.rd_ready` = `~uart_tx`.`data_ready_o`
 
 This is a necessary glue connection between the FIFO and UART TX.
 
@@ -297,16 +292,16 @@ rx_fifo.wr_ready -> uart_rx.data_ready_i
 ## 4.8 Clock Divider Chain
 
 **The requested three divider blocks**:
-    - Prescaler divider
-    - TX divider
-    - RX divider
+- Prescaler divider
+- TX divider
+- RX divider
 **Divider Roles**
-    - Prescaler divider
-    - Reduces the main system clock to a lower timing base for UART
+- Prescaler divider
+- Reduces the main system clock to a lower timing base for UART
 **TX divider**
-    - Generates the transmitter baud clock used by uart_tx
+- Generates the transmitter baud clock used by uart_tx
 **RX divider**
-    - Generates the receiver timing clock
+- Generates the receiver timing clock
 
 ---
 
