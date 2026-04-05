@@ -28,6 +28,13 @@ module cdc_fifo_tb;
     logic [DATA_WIDTH-1:0]       rd_data_o;
     logic [$clog2(FIFO_DEPTH):0] rd_count_o;
 
+    int total_pass = 0;
+    int total_fail = 0;
+
+    
+
+
+
     // ---------------------------------------------------------------------------------------------
     // DUT INSTANTIATION
     // ---------------------------------------------------------------------------------------------
@@ -106,35 +113,179 @@ module cdc_fifo_tb;
         end
     endtask
 
-    task automatic wait_sync();
+    task automatic wait_sync_rd();
         begin
-            repeat (SYNC_STAGES) @(posedge wr_clk_i);
-            repeat (SYNC_STAGES) @(posedge rd_clk_i);
+            repeat (SYNC_STAGES + 1) @(posedge rd_clk_i);
         end
     endtask 
 
-    task automatic wait_empty();
+    task automatic wait_sync_wr();
         begin
-            do @(posedge wr_clk_i); while (wr_count_o != 0);
-            do @(posedge rd_clk_i); while (rd_count_o != 0);
-        end
-    endtask
-
-    task automatic wait_full();
-        begin
-            do @(posedge wr_clk_i); while (wr_count_o != FIFO_DEPTH);
-            do @(posedge rd_clk_i); while (rd_count_o != FIFO_DEPTH);
+            repeat (SYNC_STAGES + 1) @(posedge wr_clk_i);
         end
     endtask
 
     task automatic after_reset_check();
         begin
-            if (wr_ready_o !== 1) $error("WR_READY should be 1 after reset");
-            if (rd_valid_o !== 0) $error("RD_VALID should be 0 after reset");
-            if (wr_count_o !== 0) $error("WR_COUNT should be 0 after reset");
-            if (rd_count_o !== 0) $error("RD_COUNT should be 0 after reset");
+            $display("Checking FIFO state after reset...");
+            if (wr_ready_o !== 1 && rd_valid_o !== 0 && wr_count_o !== 0 && rd_count_o !== 0) $error("After reset, FIFO should be empty and ready for writes");
+             else begin 
+                $display("[TC0] After reset check passed");
+                total_pass++;
+             end
         end
     endtask 
+
+    task automatic TC1(); // single write read test
+        begin
+            $display("TC1: Single write read test...");
+            write(8'hA5);
+            wait_sync_rd();
+            read();
+            wait_sync_wr();
+            if (read_data !== 8'hA5) $error("TC1 Failed: Expected 0xA5, got %0h", read_data);
+             else begin
+                $display("[TC1] Single write read test passed");
+                total_pass++;
+             end
+        end
+    endtask 
+
+    task automatic TC2(); // Fill FIFO with multiple writes and read them back, checking for full condition and data integrity 
+        begin
+            $display("TC2: Multiple write read test...");
+            for (int i = 0; i < FIFO_DEPTH; i++) begin
+                write(i);
+                wait_sync_rd();
+            end
+            if (wr_ready_o !== 0) $error("TC2 Failed: FIFO should be full and not ready for writes");
+            else begin
+                $display("[TC2] FIFO full condition check passed");
+                total_pass++;
+            end
+            for (int i = 0; i < FIFO_DEPTH; i++) begin
+                read();
+                wait_sync_wr();
+                if (read_data !== i) $error("TC2 Failed: Expected %0h, got %0h", i, read_data);
+            end
+                if(rd_valid_o !== 0) $error("TC2 Failed: FIFO should be empty and not valid for reads");
+                else begin 
+                $display("[TC2] Multiple write read test passed");
+                total_pass++;
+             end
+        end
+    endtask 
+
+    task automatic TC3(); // Test reset behavior during operation
+        begin
+            $display("TC3: Reset behavior test...");
+            write(8'h55);
+            wait_sync_rd();
+            arst_ni = 0; // Assert reset during operation
+            repeat (10) @(posedge wr_clk_i);
+            arst_ni = 1; // Deassert reset
+            wait_sync_rd();
+            if (wr_ready_o !== 1 && rd_valid_o !== 0 && wr_count_o !== 0 && rd_count_o !== 0) $error("TC3 Failed: After reset, FIFO should be empty and ready for writes");
+             else begin 
+                $display("[TC3] Reset behavior test passed");
+                total_pass++;
+             end
+        end
+    endtask
+
+    task automatic TC4();
+        logic [DATA_WIDTH-1:0] expected;
+        logic [DATA_WIDTH-1:0] next_wr_data;
+        int                    bytes_written;
+        int                    bytes_read;
+
+    begin
+        $display("TC7: Simultaneous read + write test...");
+
+        scoreboard.delete();
+        bytes_written = 0;
+        bytes_read    = 0;
+        next_wr_data  = 8'hA0;
+
+        // ── Phase 1: Pre-fill 8 bytes ─────────────────────────────
+        $display("      Phase 1: Pre-filling...");
+        for (int i = 0; i < 8; i++) begin
+            write(next_wr_data);
+            scoreboard.push_back(next_wr_data);
+            next_wr_data++;
+            bytes_written++;
+        end
+        wait_sync_rd();
+
+        // ── Phase 2: Simultaneous — write one, read one ───────────
+        // For every write → immediately read one back
+        // This keeps FIFO count stable
+        $display("      Phase 2: Simultaneous...");
+        for (int i = 0; i < 16; i++) begin
+            // write new byte
+            write(next_wr_data);
+            scoreboard.push_back(next_wr_data);
+            next_wr_data++;
+            bytes_written++;
+            wait_sync_rd();
+
+            // read one byte back
+            read();
+            wait_sync_wr();
+            expected = scoreboard.pop_front();
+            if (read_data !== expected) begin
+                $error("TC7 MISMATCH: got 0x%02h expected 0x%02h",
+                       read_data, expected);
+                total_fail++;
+            end
+            bytes_read++;
+        end
+
+        // ── Phase 3: Drain remaining ──────────────────────────────
+        $display("      Phase 3: Draining...");
+        wait_sync_rd();
+        while (rd_valid_o) begin
+            read();
+            wait_sync_wr();
+            expected = scoreboard.pop_front();
+            if (read_data !== expected) begin
+                $error("TC7 Drain MISMATCH: got 0x%02h expected 0x%02h",
+                       read_data, expected);
+                total_fail++;
+            end
+            bytes_read++;
+        end
+
+        // ── Checks ────────────────────────────────────────────────
+        if (scoreboard.size() !== 0) begin
+            $error("TC7 FAIL: %0d bytes lost", scoreboard.size());
+            total_fail++;
+        end
+
+        if (rd_valid_o !== 0) begin
+            $error("TC7 FAIL: FIFO not empty after drain");
+            total_fail++;
+        end
+
+        $display("      bytes_written=%0d bytes_read=%0d",
+                 bytes_written, bytes_read);
+
+        if (bytes_written !== bytes_read) begin
+            $error("TC7 FAIL: wrote %0d but read %0d",
+                   bytes_written, bytes_read);
+            total_fail++;
+        end else begin
+            $display("[TC7] PASS");
+            total_pass++;
+        end
+
+    end
+endtask
+
+
+
+
+
 
 
     // ---------------------------------------------------------------------------------------------
@@ -142,26 +293,15 @@ module cdc_fifo_tb;
     // ---------------------------------------------------------------------------------------------
 
     initial begin
-      reset_dut();
-      repeat (10) @(posedge rd_clk_i);
+        reset_dut(); // TC0: Reset the DUT and check initial conditions
+        after_reset_check();
+
+      
         // Write some data into the FIFO
-        write(8'hA5);
-        wait_sync();
-        write(8'h5A);
-        wait_sync();
-        write(8'hFF);
-        wait_sync();
-        // Read the data back
-        
-        read();
-        wait_sync();
-        read();
-        wait_sync();
-        read();
-        wait_sync();
-        read();
-        wait_sync();
-        read();
+        TC1(); // TC1: Single write read test
+        TC2(); // TC2: Multiple write read test
+        TC3(); // TC3: Reset behavior test
+        TC4(); // TC4: Asynchronous behavior test
 
         repeat (10) @(posedge rd_clk_i);
         $finish;
