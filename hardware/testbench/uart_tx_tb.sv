@@ -32,26 +32,41 @@ module uart_tx_tb;
        .data_ready_o (data_ready_o)
    );
 
-// --- Clock Generation ---
+   // --- Clock Generation ---
    initial clk_i = 0;
    always #5 clk_i = ~clk_i; 
 
-   // IMPROVED MONITOR: Handles Back-to-Back without hanging
-   task automatic monitor_and_check(input [7:0] expected_val, input string tc_name);
+   // --- UPDATED MONITOR: Handles Data and Parity with your specific style ---
+   task automatic monitor_and_check(
+       input [7:0] expected_val, 
+       input string tc_name,
+       input bit parity_en = 0,
+       input bit parity_type = 0 // 0: Even, 1: Odd
+   );
+       logic captured_parity;
+       logic expected_parity;
        captured_byte = 8'h00;
        
        // 1. Wait for Start Bit
        wait(tx_o == 0); 
        
-       // 2. Sample bits on the Falling Edge for stability
+       // 2. Sample Data bits
        @(negedge clk_i); 
        for (int i = 0; i < 8; i++) begin
            @(negedge clk_i);
            captured_byte[i] = tx_o;
        end
        
-       // 3. Compare Results
-       if (captured_byte === expected_val) begin
+       // 3. Sample Parity bit if enabled
+       if (parity_en) begin
+           @(negedge clk_i);
+           captured_parity = tx_o;
+           // Even: XOR of all bits | Odd: Inverse XOR
+           expected_parity = (parity_type == 0) ? (^expected_val) : ~(^expected_val);
+       end
+       
+       // 4. Comparison Logic
+       if (captured_byte === expected_val && (!parity_en || (captured_parity === expected_parity))) begin
            $display("[PASS] %s | Expected: 0x%h, Got: 0x%h", tc_name, expected_val, captured_byte);
            pass_count++;
        end else begin
@@ -59,7 +74,6 @@ module uart_tx_tb;
            fail_count++;
        end
        
-       // 4. FIX: Wait only 1 cycle for the Stop bit, don't wait for "Idle"
        @(posedge clk_i); 
    endtask
 
@@ -78,10 +92,10 @@ module uart_tx_tb;
        data_valid_i = 0;
    endtask
 
-   // --- Watchdog Timer (Prevents infinite hanging) ---
+   // --- Watchdog Timer ---
    initial begin
-       #5000; // If simulation takes longer than this, kill it
-       $display("\n[ERROR] Simulation Timeout! Check for deadlocks.");
+       #20000;
+       $display("\n[ERROR] Simulation Timeout!");
        $finish;
    end
 
@@ -90,11 +104,13 @@ module uart_tx_tb;
        $dumpfile("uart_tx_tb.vcd");
        $dumpvars(0, uart_tx_tb);
        reset_dut();
+       
+       // Default Config: 8-bit, No Parity
        data_bits_i = 3; parity_en_i = 0; extra_stop_i = 0;
 
-       $display("Starting UART TX Full 9-Test Verification...");
+       $display("Starting UART TX Full 13-Test Verification...");
 
-       // TC-01 to TC-06
+       // TC-01 to TC-06: Standard Data Integrity
        fork send_byte(8'h00); monitor_and_check(8'h00, "TC-01: All Zeros"); join
        #20; fork send_byte(8'hFF); monitor_and_check(8'hFF, "TC-02: All Ones"); join
        #20; fork send_byte(8'hAA); monitor_and_check(8'hAA, "TC-03: Inverse Checkerboard"); join
@@ -102,7 +118,7 @@ module uart_tx_tb;
        #20; fork send_byte(8'h80); monitor_and_check(8'h80, "TC-05: Walking One - MSB"); join
        #20; fork send_byte(8'hF0); monitor_and_check(8'hF0, "TC-06: Nibble Swap"); join
 
-       // TC-07: Back-to-Back (The problematic one)
+       // TC-07: Back-to-Back
        $display("\nTC-07: Testing Back-to-Back...");
        fork
            begin 
@@ -119,8 +135,7 @@ module uart_tx_tb;
        $display("\nTC-08: Reset Mid-Send Safety Test");
        send_byte(8'h55);
        repeat(5) @(posedge clk_i);
-       arst_ni = 0;
-       #15;
+       arst_ni = 0; #15;
        if (tx_o == 1) begin
            $display("[PASS] TC-08: Reset Safety | Line returned to IDLE (1).");
            pass_count++;
@@ -128,8 +143,7 @@ module uart_tx_tb;
            $display("[FAIL] TC-08: Reset Safety | Line stuck at 0!");
            fail_count++;
        end
-       arst_ni = 1;
-       repeat(5) @(posedge clk_i);
+       arst_ni = 1; repeat(5) @(posedge clk_i);
 
        // TC-09: 8-Bit Integrity
        $display("\nTC-09: 8-Bit Data Integrity Test");
@@ -138,9 +152,40 @@ module uart_tx_tb;
            monitor_and_check(8'hC3, "TC-09: 8-Bit Integrity"); 
        join
 
+       // --- PARITY TEST CASES --- 
+       $display("\nStarting Parity Tests...");
+
+       // TC-10: Even Parity (Data 0x03 -> Even ones -> Parity bit 0)
+       parity_en_i = 1; parity_type_i = 0; 
+       fork 
+           send_byte(8'h03); 
+           monitor_and_check(8'h03, "TC-10: Even Parity (0)", 1, 0); 
+       join
+
+       // TC-11: Even Parity (Data 0x07 -> Odd ones -> Parity bit 1)
+       #20;
+       fork 
+           send_byte(8'h07); 
+           monitor_and_check(8'h07, "TC-11: Even Parity (1)", 1, 0); 
+       join
+
+       // TC-12: Odd Parity (Data 0x03 -> Even ones -> Parity bit 1)
+       #20; parity_en_i = 1; parity_type_i = 1;
+       fork 
+           send_byte(8'h03); 
+           monitor_and_check(8'h03, "TC-12: Odd Parity (1)", 1, 1); 
+       join
+
+       // TC-13: Odd Parity (Data 0x07 -> Odd ones -> Parity bit 0)
+       #20;
+       fork 
+           send_byte(8'h07); 
+           monitor_and_check(8'h07, "TC-13: Odd Parity (0)", 1, 1); 
+       join
+
        $display("\n-------------------------------------------");
        $display("FINAL TEST REPORT");
-       $display("PASSED: %0d / 9", pass_count);
+       $display("PASSED: %0d / 13", pass_count);
        $display("-------------------------------------------");
        $finish;
    end
