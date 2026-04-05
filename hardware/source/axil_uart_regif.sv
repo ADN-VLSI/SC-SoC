@@ -1,16 +1,3 @@
-// Module: axil_uart_regif
-//
-// AXI4-Lite UART Register Interface for SC-SoC project.
-// Follows S1 reference design pattern with packed structs.
-//
-// Internal structure:
-//   1. axi4l_fifo  — buffers all 5 AXI channels (like S1 axi_fifo)
-//   2. Write logic — combinational, fires when aw_valid+w_valid+b_ready
-//   3. Read  logic — combinational, fires when ar_valid+r_ready
-//   4. always_ff  — updates CTRL/CFG/INT only when b.resp==OKAY
-//   5. TX ID queue — fifo.sv for TXR/TXGP/TXG arbitration
-//   6. RX ID queue — fifo.sv for RXR/RXGP/RXG arbitration
-
 `include "axi4l/typedef.svh"
 
 module axil_uart_regif
@@ -41,48 +28,41 @@ module axil_uart_regif
     input  logic clk_i,
     input  logic arst_ni,
 
-    // ── AXI4-Lite interface (struct ports) ───────────────────
-    input  uart_axil_req_t       req_i,
-    output uart_axil_rsp_t       resp_o,
+    input  uart_axil_req_t  req_i,
+    output uart_axil_rsp_t  resp_o,
 
-    // ── UART control register outputs ────────────────────────
-    output uart_ctrl_reg_t       uart_ctrl_o,  // → clk_div, uart_tx, uart_rx
-    output uart_cfg_reg_t        uart_cfg_o,   // → clk_div, uart_tx, uart_rx
-    output uart_stat_reg_t       uart_stat_o,  // → driven by FIFO hardware
+    output uart_ctrl_reg_t  uart_ctrl_o,
+    output uart_cfg_reg_t   uart_cfg_o,
+    output uart_stat_reg_t  uart_stat_o,
 
-    // ── TX data path ─────────────────────────────────────────
-    output uart_data_t           tx_data_o,
-    output logic                 tx_data_valid_o,
-    input  logic                 tx_data_ready_i,  // TX FIFO not full
+    output uart_data_t      tx_data_o,
+    output logic            tx_data_valid_o,
+    input  logic            tx_data_ready_i,
 
-    // ── RX data path ─────────────────────────────────────────
-    input  uart_data_t           rx_data_i,
-    input  logic                 rx_data_valid_i,  // RX FIFO not empty
-    output logic                 rx_data_ready_o,  // pop RX FIFO
+    input  uart_data_t      rx_data_i,
+    input  logic            rx_data_valid_i,
+    output logic            rx_data_ready_o,
 
-    // ── FIFO count inputs — for UART_STAT and CFG gate ───────
-    input  uart_count_t          tx_data_cnt_i,
-    input  uart_count_t          rx_data_cnt_i,
-    // ── Interrupt enable register output ─────────────────────
-    output uart_int_reg_t        uart_int_en_o
+    input  uart_count_t     tx_data_cnt_i,
+    input  uart_count_t     rx_data_cnt_i,
+
+    output uart_int_reg_t   uart_int_en_o
 );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // AXI4L FIFO — buffered request/response
-  // CPU → req_i/resp_o (slave side)
-  // Register logic ← fifo_req/fifo_resp (master side)
+  // AXI4L FIFO
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   uart_axil_req_t fifo_req;
   uart_axil_rsp_t fifo_resp;
 
   axi4l_fifo #(
-      .axi4l_req_t(uart_axil_req_t),
-      .axi4l_rsp_t(uart_axil_rsp_t),
-      .FIFO_SIZE  (2)
+      .axi4l_req_t (uart_axil_req_t),
+      .axi4l_rsp_t (uart_axil_rsp_t),
+      .FIFO_SIZE   (2)
   ) u_axi4l_fifo (
       .clk_i    (clk_i),
-      .rst_ni   (arst_ni),
+      .arst_ni  (arst_ni),
       .slv_req_i(req_i),
       .slv_rsp_o(resp_o),
       .mst_req_o(fifo_req),
@@ -93,27 +73,25 @@ module axil_uart_regif
   // INTERNAL SIGNALS
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  logic wr_en;
-  logic rd_en;
+  logic     wr_en;
+  logic     rd_en;
 
-  // TX ID queue signals
-  uart_id_t  tx_id_in;
-  logic      tx_id_in_valid;
-  logic      tx_id_in_ready;
-  uart_id_t  tx_id_out;
-  logic      tx_id_out_valid;
-  logic      tx_id_out_ready;
+  uart_id_t tx_id_in;
+  logic     tx_id_in_valid;
+  logic     tx_id_in_ready;
+  uart_id_t tx_id_out;
+  logic     tx_id_out_valid;
+  logic     tx_id_out_ready;
 
-  // RX ID queue signals
-  uart_id_t  rx_id_in;
-  logic      rx_id_in_valid;
-  logic      rx_id_in_ready;
-  uart_id_t  rx_id_out;
-  logic      rx_id_out_valid;
-  logic      rx_id_out_ready;
+  uart_id_t rx_id_in;
+  logic     rx_id_in_valid;
+  logic     rx_id_in_ready;
+  uart_id_t rx_id_out;
+  logic     rx_id_out_valid;
+  logic     rx_id_out_ready;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // WRITE / READ FIRE — purely combinational, S1 style
+  // WRITE / READ FIRE — combinational
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
@@ -129,22 +107,18 @@ module axil_uart_regif
     fifo_resp.r_valid  = rd_en;
   end
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  // WO COMBINATIONAL OUTPUTS — wired directly from write data
-  ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  always_comb tx_data_o = fifo_req.w.data;   // full 32-bit word; only [7:0] used
-  always_comb tx_id_in  = fifo_req.w.data;   // [7:0] is master ID
-  always_comb rx_id_in  = fifo_req.w.data;   // [7:0] is master ID
+  always_comb tx_data_o = fifo_req.w.data;
+  always_comb tx_id_in  = fifo_req.w.data;
+  always_comb rx_id_in  = fifo_req.w.data;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // READ DATA MUX — combinational
-  // Uses packed struct fields directly — cleaner than bit indexing
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
     fifo_resp.r.data  = '0;
-    fifo_resp.r.resp  = 2'b10;    // default SLVERR
+    fifo_resp.r.resp  = 2'b10;   // default SLVERR
     rx_data_ready_o   = 1'b0;
     tx_id_out_ready   = 1'b0;
     rx_id_out_ready   = 1'b0;
@@ -152,17 +126,17 @@ module axil_uart_regif
     case (fifo_req.ar.addr[5:0])
 
       UART_CTRL_OFFSET: begin
-        fifo_resp.r.data = {'0, uart_ctrl_o};
+        fifo_resp.r.data = uart_ctrl_o;   
         fifo_resp.r.resp = 2'b00;
       end
 
       UART_CFG_OFFSET: begin
-        fifo_resp.r.data = {'0, uart_cfg_o};
+        fifo_resp.r.data = uart_cfg_o;
         fifo_resp.r.resp = 2'b00;
       end
 
       UART_STAT_OFFSET: begin
-        fifo_resp.r.data = {'0, uart_stat_o};
+        fifo_resp.r.data = uart_stat_o;
         fifo_resp.r.resp = 2'b00;
       end
 
@@ -173,8 +147,9 @@ module axil_uart_regif
 
       UART_TXGP_OFFSET: begin
         if (tx_id_out_valid) begin
-          fifo_resp.r.data = {'0, tx_id_out};
+          fifo_resp.r.data = {'0, tx_id_out};  // 8-bit ID → 32-bit
           fifo_resp.r.resp = 2'b00;
+          // tx_id_out_ready stays 0 — peek, no pop
         end
       end
 
@@ -182,7 +157,7 @@ module axil_uart_regif
         if (tx_id_out_valid) begin
           fifo_resp.r.data = {'0, tx_id_out};
           fifo_resp.r.resp = 2'b00;
-          tx_id_out_ready  = rd_en;   // consuming — pop TX ID queue
+          tx_id_out_ready  = rd_en;   // consuming read — pop TXQ
         end
       end
 
@@ -200,6 +175,7 @@ module axil_uart_regif
         if (rx_id_out_valid) begin
           fifo_resp.r.data = {'0, rx_id_out};
           fifo_resp.r.resp = 2'b00;
+          // rx_id_out_ready stays 0 — peek, no pop
         end
       end
 
@@ -207,20 +183,20 @@ module axil_uart_regif
         if (rx_id_out_valid) begin
           fifo_resp.r.data = {'0, rx_id_out};
           fifo_resp.r.resp = 2'b00;
-          rx_id_out_ready  = rd_en;   // consuming — pop RX ID queue
+          rx_id_out_ready  = rd_en;   // consuming read — pop RXQ
         end
       end
 
       UART_RXD_OFFSET: begin
         if (rx_data_valid_i) begin
-          fifo_resp.r.data = {'0, rx_data_i};
+          fifo_resp.r.data = {'0, rx_data_i};  // 8-bit byte → 32-bit
           fifo_resp.r.resp = 2'b00;
-          rx_data_ready_o  = rd_en;   // pop RX data FIFO
+          rx_data_ready_o  = rd_en;   // pop RX CDC FIFO
         end
       end
 
       UART_INT_EN_OFFSET: begin
-        fifo_resp.r.data = {'0, uart_int_en_o};
+        fifo_resp.r.data = uart_int_en_o;
         fifo_resp.r.resp = 2'b00;
       end
 
@@ -231,9 +207,7 @@ module axil_uart_regif
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // WRITE RESPONSE + WO PULSES — combinational
-  // Only full-word writes (strb==4'b1111) accepted
-  // CFG only when both FIFOs empty — prevent mid-transfer baud change
-  // TXD only when TX FIFO has space
+  // strb must be 4'b1111 — partial writes rejected
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
@@ -250,7 +224,6 @@ module axil_uart_regif
         end
 
         UART_CFG_OFFSET: begin
-          // CFG only writable when both FIFOs are empty
           if (tx_data_cnt_i == '0 && rx_data_cnt_i == '0)
             fifo_resp.b.resp = 2'b00;
         end
@@ -287,16 +260,15 @@ module axil_uart_regif
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // SEQUENTIAL — RW register updates
-  // S1 pattern: only update when fifo_resp.b.resp == OKAY
-  // uart_stat_o is driven by hardware inputs — not stored here
+  // SEQUENTIAL — CTRL CFG INT registers
+  // Updates only when b.resp == OKAY (S1 pattern)
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_ff @(posedge clk_i or negedge arst_ni) begin
     if (!arst_ni) begin
-      uart_ctrl_o   <= '0;                   // reset = 0x00000000
-      uart_cfg_o    <= 32'h0003_405B;        // reset = 0x0003405B
-      uart_int_en_o <= '0;                   // reset = 0x00000000
+      uart_ctrl_o   <= '0;
+      uart_cfg_o    <= 32'h0003_405B;
+      uart_int_en_o <= '0;
     end else if (fifo_resp.b.resp == 2'b00) begin
       case (fifo_req.aw.addr[5:0])
         UART_CTRL_OFFSET:   uart_ctrl_o   <= fifo_req.w.data;
@@ -308,22 +280,21 @@ module axil_uart_regif
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // UART_STAT — driven combinationally from hardware inputs
-  // Not stored — always reflects live FIFO state
+  // UART_STAT — combinational from FIFO counts (not stored)
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
     uart_stat_o.reserved = '0;
-    uart_stat_o.rx_full  = rx_data_cnt_i.count == 10'd512; // approximated
-    uart_stat_o.rx_empty = (rx_data_cnt_i == '0);
-    uart_stat_o.tx_full  = tx_data_cnt_i.count == 10'd512; // approximated
-    uart_stat_o.tx_empty = (tx_data_cnt_i == '0);
-    uart_stat_o.rx_cnt   = rx_data_cnt_i.count;
     uart_stat_o.tx_cnt   = tx_data_cnt_i.count;
+    uart_stat_o.tx_empty = (tx_data_cnt_i == '0);
+    uart_stat_o.tx_full  = (tx_data_cnt_i.count == 10'd512);
+    uart_stat_o.rx_cnt   = rx_data_cnt_i.count;
+    uart_stat_o.rx_empty = (rx_data_cnt_i == '0);
+    uart_stat_o.rx_full  = (rx_data_cnt_i.count == 10'd512);
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // TX ID QUEUE — TXR write pushes, TXGP peeks, TXG pops
+  // TXQ_fifo — TX arbitration (TXR push / TXGP peek / TXG pop)
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   fifo #(
@@ -343,7 +314,7 @@ module axil_uart_regif
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // RX ID QUEUE — RXR write pushes, RXGP peeks, RXG pops
+  // RXQ_fifo — RX arbitration (RXR push / RXGP peek / RXG pop)
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   fifo #(
