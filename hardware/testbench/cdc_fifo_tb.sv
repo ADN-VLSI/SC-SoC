@@ -19,6 +19,7 @@
 //
 // TC3    Reset during operation test              Write 0x55 → assert reset mid-operation
 //                                                 → deassert → check FIFO clean state
+//                                                Fill FIFO → read half → assert reset
 //
 // TC4    Simultaneous write and read test         Pre-fill 8 bytes → write one read one
 //                                                 for 16 cycles → drain → check scoreboard
