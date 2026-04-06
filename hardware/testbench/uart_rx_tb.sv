@@ -16,8 +16,6 @@
 
 `timescale 1ns/1ps
 
-import std::*;
-
 // ---------------------------------------------------------------------------
 //  STUB DUT — behavioural reference model (correct, timing-accurate)
 //  Replace this with your own RTL file when compiling for real verification.
@@ -57,28 +55,28 @@ module uart_rx (
     always_ff @(posedge clk_i or negedge arst_ni) begin
         if (!arst_ni) begin
             state          <= IDLE;
-            shift_reg      <= '0;
-            bit_cnt        <= '0;
-            calc_parity    <= '0;
-            latched_perr   <= '0;
-            data_o         <= '0;
-            data_valid_o   <= '0;
-            parity_error_o <= '0;
+            shift_reg      <= 8'b0;
+            bit_cnt        <= 4'b0;
+            calc_parity    <= 1'b0;
+            latched_perr   <= 1'b0;
+            data_o         <= 8'b0;
+            data_valid_o   <= 1'b0;
+            parity_error_o <= 1'b0;
         end else begin
             // Default strobes
-            data_valid_o   <= '0;
+            data_valid_o   <= 1'b0;
             parity_error_o <= latched_perr; // hold until new frame
             latched_perr   <= latched_perr;
 
             unique case (state)
                 // ── IDLE ─────────────────────────────────────────────────
                 IDLE: begin
-                    parity_error_o <= '0;
-                    latched_perr   <= '0;
+                    parity_error_o <= 1'b0;
+                    latched_perr   <= 1'b0;
                     if (rx_i == 1'b0) begin    // START bit detected
-                        bit_cnt     <= '0;
-                        calc_parity <= '0;
-                        shift_reg   <= '0;
+                        bit_cnt     <= 4'b0;
+                        calc_parity <= 1'b0;
+                        shift_reg   <= 8'b0;
                         state       <= DATA;
                     end
                 end
