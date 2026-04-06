@@ -129,8 +129,6 @@ module axil_uart_regif_tb;
 
   //////////////////////////////////////////////////////////////////////////////////////
   // HELPER TASKS
-  // NOTE: Vivado xvlog does not support default task argument values.
-  //       Every argument must be supplied explicitly at every call site.
   //////////////////////////////////////////////////////////////////////////////////////
 
   task automatic recv_b_with_timeout(output logic [1:0] resp, input int timeout_cycles);
