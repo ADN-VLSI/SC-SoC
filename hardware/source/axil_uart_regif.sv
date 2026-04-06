@@ -1,4 +1,4 @@
-`include "axi4l/typedef.svh"
+`include "package/uart_pkg.sv"
 
 module axil_uart_regif
 

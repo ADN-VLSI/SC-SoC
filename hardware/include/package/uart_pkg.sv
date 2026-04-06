@@ -1,3 +1,5 @@
+`ifndef UART_PKG_SV
+`define UART_PKG_SV
 `include "axi4l/typedef.svh"
 
 package uart_pkg;
@@ -70,3 +72,4 @@ package uart_pkg;
   typedef struct packed { logic [9:0] count; } uart_count_t;
 
 endpackage
+`endif
