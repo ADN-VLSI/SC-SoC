@@ -1,5 +1,5 @@
 // tc0.sv - Reset & defaults
-// Driver NOT running for TEST=0 — uses direct intf tasks only.
+// uses direct intf tasks only.
 task automatic tc0(inout int p, inout int f);
   logic [31:0] data32;
   p = 0; f = 0;

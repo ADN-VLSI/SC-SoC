@@ -1,7 +1,7 @@
 // tc6.sv - Partial write should be rejected (SLVERR)
-// Uses write_32 indirectly — but we need the raw bresp, so drive intf directly.
-// Driver IS running; use write_32 and rely on DUT returning SLVERR in B.
-// To capture bresp we use a low-level fork inside this task.
+// Uses write_32 indirectly.
+// Driver IS running; Uses write_32 and rely on DUT returning SLVERR in B.
+// To capture bresp uses a low-level fork inside this task.
 task automatic tc6(inout int p, inout int f);
   logic [31:0] wdata;
   logic [3:0]  wstrb;

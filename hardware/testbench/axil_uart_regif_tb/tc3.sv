@@ -1,5 +1,5 @@
 // tc3.sv - Inject RX byte and read RXD offset
-// rx_data_valid_i must remain high during the read cycle so DUT returns data.
+// rx_data_valid_i remain high during the read cycle so DUT returns data.
 task automatic tc3(inout int p, inout int f);
   logic [7:0]  inject;
   logic [31:0] read_back;

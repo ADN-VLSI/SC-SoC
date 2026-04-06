@@ -1,6 +1,6 @@
 // tc2.sv - Write TXD and check tx_data signals
 // tx_data_valid_o is combinational and pulse-only (high only during write-fire).
-// Sample it concurrently with the write using a fork.
+
 task automatic tc2(inout int p, inout int f);
   logic [7:0] exp_val;
   logic       captured_valid;
