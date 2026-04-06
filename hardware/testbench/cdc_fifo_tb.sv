@@ -1,3 +1,41 @@
+// ============================================================================
+// Module   : cdc_fifo_tb
+// DUT      : cdc_fifo
+// Author   : Adnan Sami Anirban && Shuparna Haque
+//
+// Test Cases:
+//
+// TC     Name                                     Description
+// ----------------------------------------------------------------------------
+// TC0    Reset and initial conditions check       Assert reset → check wr_ready_o=1,
+//                                                 rd_valid_o=0, wr_count_o=0, rd_count_o=0
+//
+// TC1    Single write read test                   Write 0xA5 → wait_sync_rd → read
+//                                                 → check read_data=0xA5
+//
+// TC2    Fill FIFO full and drain test            Write FIFO_DEPTH bytes → check
+//                                                 wr_ready_o=0 (full) → read all
+//                                                 → check rd_valid_o=0 and data integrity
+//
+// TC3    Reset during operation test              Write 0x55 → assert reset mid-operation
+//                                                 → deassert → check FIFO clean state
+//
+// TC4    Simultaneous write and read test         Pre-fill 8 bytes → write one read one
+//                                                 for 16 cycles → drain → check scoreboard
+//
+// TC5    Read faster than write test              Speed up rd_clk → write 8 bytes
+//                                                 → read continuously → check data integrity
+//                                                 and rd_valid_o=0 after empty
+//
+// TC6    Pointer wraparound test                  Fill FIFO → drain half → write more
+//                                                 to force pointer wraparound → drain all
+//                                                 → check data integrity
+//
+// TC7    Count check test                         Write 4 → check wr_count_o=rd_count_o=4
+//                                                 → read 1 → check counts=3
+//                                                 → drain → check counts=0
+// ============================================================================
+
 module cdc_fifo_tb;
 
     // ---------------------------------------------------------------------------------------------
@@ -159,17 +197,17 @@ module cdc_fifo_tb;
 
     task automatic TC2(); // Fill FIFO with multiple writes and read them back, checking for full condition and data integrity 
         begin
-            $display("TC2: Multiple write read test...");
+            //$display("TC2: Multiple write read test...");
             for (int i = 0; i < FIFO_DEPTH; i++) begin
                 write(i);
-                wait_sync_rd();
             end
+            wait_sync_rd();
             if (wr_ready_o !== 0) begin 
                 $error("[TC2] \033[31m[FAILED]\033[0m:: FIFO should be full and not ready for writes");
                 total_fail++;
             end
             else begin
-                $display("[TC2] FIFO full condition check \033[32m[PASSED]\033[0m");
+                $display("[TC2] \033[32m[PASSED]\033[0m: FIFO full condition check");
                 total_pass++;
             end
             for (int i = 0; i < FIFO_DEPTH; i++) begin
@@ -198,7 +236,6 @@ module cdc_fifo_tb;
             arst_ni = 0; // Assert reset during operation
             repeat (10) @(posedge wr_clk_i);
             arst_ni = 1; // Deassert reset
-            wait_sync_rd();
             after_reset_check("TC3");
         end
     endtask
@@ -369,6 +406,67 @@ module cdc_fifo_tb;
             end
         end
     endtask
+
+    task automatic TC7();
+        begin
+
+            // ── Step 1: check count at reset ──────────────────────────
+            reset_dut();
+            if (wr_count_o !== 0 || rd_count_o !== 0) begin
+                $error("[TC7] \033[31m[FAILED]\033[0m:: counts should be 0 at start, wr=%0d rd=%0d",
+                    wr_count_o, rd_count_o);
+                total_fail++;
+            end
+
+            // ── Step 2: write 4 bytes ─────────────────────────────────
+            write(8'h01);
+            write(8'h02);
+            write(8'h03);
+            write(8'h04);
+            wait_sync_rd();
+            //wait_sync_wr();
+
+            if (wr_count_o !== 4) begin
+                $error("[TC7] \033[31m[FAILED]\033[0m:: wr_count_o expected 4 got %0d", wr_count_o);
+                total_fail++;
+            end
+            if (rd_count_o !== 4) begin
+                $error("[TC7] \033[31m[FAILED]\033[0m:: rd_count_o expected 4 got %0d", rd_count_o);
+                total_fail++;
+            end
+
+            // ── Step 3: read 1 byte — count should drop to 3 ─────────
+            read();
+            wait_sync_wr();
+
+            if (wr_count_o !== 3) begin
+                $error("[TC7] \033[31m[FAILED]\033[0m:: wr_count_o expected 3 got %0d", wr_count_o);
+                total_fail++;
+            end
+            if (rd_count_o !== 3) begin
+                $error("[TC7] \033[31m[FAILED]\033[0m:: rd_count_o expected 3 got %0d", rd_count_o);
+                total_fail++;
+            end
+
+            // ── Step 4: drain remaining 3 bytes ───────────────────────
+            read();
+            read();
+            read();
+            wait_sync_wr();
+
+            if (wr_count_o !== 0) begin
+                $error("[TC7] \033[31m[FAILED]\033[0m:: wr_count_o expected 0 got %0d", wr_count_o);
+                total_fail++;
+            end else if (rd_count_o !== 0) begin
+                $error("[TC7] \033[31m[FAILED]\033[0m:: rd_count_o expected 0 got %0d", rd_count_o);
+                total_fail++;
+            end else begin
+                $display("[TC7] \033[32m[PASSED]\033[0m: Count check test");
+                total_pass++;
+            end
+
+        end
+    endtask
     // ---------------------------------------------------------------------------------------------
     // TEST SEQUENCE
     // ---------------------------------------------------------------------------------------------
@@ -396,6 +494,8 @@ module cdc_fifo_tb;
         TC5();
         $display("\033[1;35m[TC6]: Pointer wraparound test...\033[0m");
         TC6();
+        $display("\033[1;35m[TC7]: Count check test...\033[0m");
+        TC7();
 
         repeat (10) @(posedge rd_clk_i);
         $display("---------------------TEST SUMMARY-----------------------------");
