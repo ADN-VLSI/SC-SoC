@@ -1,5 +1,5 @@
+`include "axi4l/typedef.svh"
 `include "package/uart_pkg.sv"
-
 // AXI4-Lite channel buffer — one fifo.sv per channel
 // AW W AR : CPU pushes, register logic pops
 // B  R    : register logic pushes, CPU pops (reversed)
