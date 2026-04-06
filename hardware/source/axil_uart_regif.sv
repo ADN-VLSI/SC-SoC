@@ -1,5 +1,5 @@
-`include "axi4l/typedef.svh"
 `include "package/uart_pkg.sv"
+
 module axil_uart_regif
 
   import uart_pkg::uart_axil_req_t;
