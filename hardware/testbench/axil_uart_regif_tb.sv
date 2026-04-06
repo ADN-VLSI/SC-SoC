@@ -328,25 +328,27 @@ module axil_uart_regif_tb;
       mon.run();
     end
 
-    case (test_number)
-      0:  tc0 (p, f);
-      1:  tc1 (p, f);
-      2:  tc2 (p, f);
-      3:  tc3 (p, f);
-      4:  tc4 (p, f);
-      5:  tc5 (p, f);
-      6:  tc6 (p, f);
-      7:  tc7 (p, f);
-      8:  tc8 (p, f);
-      9:  tc9 (p, f);
-      10: tc10(p, f);
-      11: tc11(p, f);
-      default: $fatal(1, "Invalid test number %0d. Valid range is 0-11.", test_number);
-    endcase
+    repeat (5) begin
+      case (test_number)
+        0:  tc0 (p, f);
+        1:  tc1 (p, f);
+        2:  tc2 (p, f);
+        3:  tc3 (p, f);
+        4:  tc4 (p, f);
+        5:  tc5 (p, f);
+        6:  tc6 (p, f);
+        7:  tc7 (p, f);
+        8:  tc8 (p, f);
+        9:  tc9 (p, f);
+        10: tc10(p, f);
+        11: tc11(p, f);
+        default: $fatal(1, "Invalid test number %0d. Valid range is 0-11.", test_number);
+      endcase
 
     $display("SELECTED TEST %0d RESULT: PASS=%0d FAIL=%0d", test_number, p, f);
     total_p += p;
     total_f += f;
+    end
 
     $display("\n==== FINAL RESULT ====");
     $display("TOTAL PASS = %0d", total_p);
