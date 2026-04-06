@@ -230,6 +230,7 @@ module cdc_fifo_tb;
     endtask 
 
     task automatic TC3(); // Test reset behavior during operation
+        logic [DATA_WIDTH-1:0] expected;
         begin
             write(8'h55);
             wait_sync_rd();
@@ -238,6 +239,39 @@ module cdc_fifo_tb;
             arst_ni = 1; // Deassert reset
             after_reset_check("TC3");
         end
+        // Phase 2: Reset during read
+        // Fill FIFO
+        for (int i = 0; i < FIFO_DEPTH; i++) begin
+            write(i);
+        end
+        wait_sync_rd();
+
+        // Start draining half
+        for (int i = 0; i < FIFO_DEPTH/2; i++) begin
+            read();
+            expected = i;
+            if (read_data !== expected) begin
+                $error("[TC3-Read] \033[31m[FAILED]\033[0m: Expected %0h, got %0h before reset", expected, read_data);
+                total_fail++;
+            end
+        end
+
+        // Assert reset mid-read
+        $display("[TC3-Read] Asserting reset during read...");
+        arst_ni = 0;
+        repeat (10) @(posedge wr_clk_i);
+        arst_ni = 1;
+        wait_sync_rd();
+
+        // Check FIFO state after reset
+        if (wr_ready_o !== 1 || rd_valid_o !== 0 || wr_count_o !== 0 || rd_count_o !== 0) begin
+            $error("[TC3-Read] \033[31m[FAILED]\033[0m: FIFO not cleared correctly after reset during read");
+            total_fail++;
+        end else begin
+            $display("[TC3-Read] \033[32m[PASSED]\033[0m: Reset during read handled correctly");
+            total_pass++;
+        end
+    
     endtask
 
     task automatic TC4();
