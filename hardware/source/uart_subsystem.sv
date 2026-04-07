@@ -135,20 +135,20 @@ module uart_subsystem #(
 
   clk_div #(
       .DIV_WIDTH(12)
-  ) u_tx_clk_div (
-      .arst_ni (arst_ni),
-      .clk_i   (prescale_clk),
-      .div_i   (uart_cfg.clk_div),
-      .clk_o   (tx_clk)
-  );
-
-  clk_div #(
-      .DIV_WIDTH(12)
   ) u_rx_clk_div (
       .arst_ni (arst_ni),
       .clk_i   (prescale_clk),
-      .div_i   (uart_cfg.clk_div),
+      .div_i   (uart_cfg.clk_div >> 3),
       .clk_o   (rx_clk)
+  );
+
+  clk_div #(
+      .DIV_WIDTH(4)
+  ) u_tx_clk_div (
+      .arst_ni (arst_ni),
+      .clk_i   (rx_clk),
+      .div_i   ('d4),
+      .clk_o   (tx_clk)
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
