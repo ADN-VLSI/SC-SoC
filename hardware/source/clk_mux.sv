@@ -64,4 +64,3 @@ module clk_mux (
   assign clk_o = (clk0_i & en0) | (clk1_i & en1);
 
 endmodule
-

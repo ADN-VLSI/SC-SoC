@@ -32,4 +32,3 @@ module bin_2_gray #(
   always_comb gray_o[WIDTH-2:0] = bin_i[WIDTH-2:0] ^ bin_i[WIDTH-1:1];
 
 endmodule
-
