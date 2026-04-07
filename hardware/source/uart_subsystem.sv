@@ -99,7 +99,7 @@ module uart_subsystem #(
   // Only instance naming uses axi4l wording.
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  axil_uart_regif #(
+  axi4l_uart_regif #(
       
   ) u_axi4l_regif (
       .clk_i           (clk_i),
