@@ -84,7 +84,14 @@ module uart_subsystem #(
     rx_data_cnt.count = rx_fifo_rd_count;
   end
 
-  assign rx_data_to_regif.data = rx_fifo_rd_data;
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  // REGIF OUTPUTS
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+
+  always_comb begin
+    rx_data_to_regif.data = rx_fifo_rd_data;
+    rx_data_valid_to_regif = rx_fifo_rd_valid;
+  end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // AXI4-LITE UART REGIF
@@ -93,7 +100,7 @@ module uart_subsystem #(
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   axil_uart_regif #(
-      .FIFO_DEPTH (FIFO_DEPTH)
+      
   ) u_axi4l_regif (
       .clk_i           (clk_i),
       .arst_ni         (arst_ni),
@@ -165,7 +172,6 @@ module uart_subsystem #(
       .rd_count_o (tx_fifo_rd_count)
   );
 
-  assign tx_fifo_rd_ready = tx_data_ready_from_uart;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // UART TRANSMITTER
@@ -221,23 +227,30 @@ module uart_subsystem #(
       .rd_count_o (rx_fifo_rd_count)
   );
 
-  assign rx_data_valid_to_regif = rx_fifo_rd_valid;
-  assign rx_fifo_rd_ready       = rx_data_ready_from_regif;
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  // FIFO READY SIGNALS
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+
+  always_comb begin
+    tx_fifo_rd_ready = tx_data_ready_from_uart;
+    rx_fifo_rd_ready = rx_data_ready_from_regif;
+  end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // INTERRUPT OUTPUT
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  wire tx_empty_irq;
-  wire tx_full_irq;
-  wire rx_empty_irq;
-  wire rx_full_irq;
+  logic tx_empty_irq;
+  logic tx_full_irq;
+  logic rx_empty_irq;
+  logic rx_full_irq;
 
-  assign tx_empty_irq = uart_int_en.tx_empty_en & (tx_fifo_wr_count == '0);
-  assign tx_full_irq  = uart_int_en.tx_full_en  & (tx_fifo_wr_count == FIFO_DEPTH);
-  assign rx_empty_irq = uart_int_en.rx_empty_en & (rx_fifo_rd_count == '0);
-  assign rx_full_irq  = uart_int_en.rx_full_en  & (rx_fifo_wr_count == FIFO_DEPTH);
-
-  assign int_en_o = tx_empty_irq | tx_full_irq | rx_empty_irq | rx_full_irq;
+  always_comb begin
+    tx_empty_irq = uart_int_en.tx_empty_en & (tx_fifo_wr_count == '0);
+    tx_full_irq  = uart_int_en.tx_full_en  & (tx_fifo_wr_count == FIFO_DEPTH);
+    rx_empty_irq = uart_int_en.rx_empty_en & (rx_fifo_rd_count == '0);
+    rx_full_irq  = uart_int_en.rx_full_en  & (rx_fifo_wr_count == FIFO_DEPTH);
+    int_en_o     = tx_empty_irq | tx_full_irq | rx_empty_irq | rx_full_irq;
+  end
 
 endmodule
