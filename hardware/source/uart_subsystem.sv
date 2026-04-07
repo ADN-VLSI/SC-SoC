@@ -159,10 +159,10 @@ module uart_subsystem #(
       .DATA_WIDTH (8),
       .FIFO_DEPTH (FIFO_DEPTH)
   ) u_tx_cdc_fifo (
-      .arst_ni    (arst_ni),
+      .arst_ni    (arst_ni & ~uart_ctrl.tx_flush),
       .wr_clk_i   (clk_i),
       .wr_data_i  (tx_data_from_regif.data),
-      .wr_valid_i (tx_data_valid_from_regif & uart_ctrl.tx_en),
+      .wr_valid_i (tx_data_valid_from_regif),
       .wr_ready_o (tx_data_ready_to_regif),
       .wr_count_o (tx_fifo_wr_count),
       .rd_clk_i   (tx_clk),
@@ -179,7 +179,7 @@ module uart_subsystem #(
 
   uart_tx u_uart_tx (
       .clk_i         (tx_clk),
-      .arst_ni       (arst_ni),
+      .arst_ni       (arst_ni & ~uart_ctrl.tx_flush),
       .data_i        (tx_fifo_rd_data),
       .data_valid_i  (tx_fifo_rd_valid & uart_ctrl.tx_en),
       .data_bits_i   (uart_cfg.db),
@@ -196,8 +196,8 @@ module uart_subsystem #(
 
   uart_rx u_uart_rx (
       .clk_i          (rx_clk),
-      .arst_ni        (arst_ni),
-      .rx_i           (rx_i),
+      .arst_ni        (arst_ni & ~uart_ctrl.rx_flush),
+      .rx_i           (rx_i | ~uart_ctrl.rx_en),
       .data_bits_i    (uart_cfg.db),
       .parity_en_i    (uart_cfg.pen),
       .parity_type_i  (uart_cfg.ptp),
@@ -214,10 +214,10 @@ module uart_subsystem #(
       .DATA_WIDTH (8),
       .FIFO_DEPTH (FIFO_DEPTH)
   ) u_rx_cdc_fifo (
-      .arst_ni    (arst_ni),
+      .arst_ni    (arst_ni & ~uart_ctrl.rx_flush),
       .wr_clk_i   (rx_clk),
       .wr_data_i  (rx_data_from_uart),
-      .wr_valid_i (rx_data_valid_from_uart & uart_ctrl.rx_en),
+      .wr_valid_i (rx_data_valid_from_uart),
       .wr_ready_o (),
       .wr_count_o (rx_fifo_wr_count),
       .rd_clk_i   (clk_i),
@@ -232,7 +232,7 @@ module uart_subsystem #(
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
-    tx_fifo_rd_ready = tx_data_ready_from_uart;
+    tx_fifo_rd_ready = tx_data_ready_from_uart & uart_ctrl.tx_en;
     rx_fifo_rd_ready = rx_data_ready_from_regif;
   end
 
