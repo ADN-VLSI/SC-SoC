@@ -35,6 +35,3 @@ module gray_2_bin #(
   end
 
 endmodule
-
-
-
