@@ -285,7 +285,7 @@ module axi4l_uart_regif_tb;
 
     $timeformat(-9, 1, " ns", 20);
     $dumpfile("axil_uart_regif_tb.vcd");
-    $dumpvars(0, axil_uart_regif_tb);
+    $dumpvars(0, axi4l_uart_regif_tb);
 
     // BUILD
     cfg     = new();
@@ -360,4 +360,4 @@ module axi4l_uart_regif_tb;
     $finish;
   end
 
-endmodule // axil_uart_regif_tb
+endmodule // axi4l_uart_regif_tb
