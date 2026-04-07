@@ -46,7 +46,7 @@ module cdc_fifo #(
     // MEMORY
     // ---------------------------------------------------------------------------------------------
 
-    logic [DATA_WIDTH-1:0] mem [0:FIFO_DEPTH-1];
+    logic [DATA_WIDTH-1:0] mem [FIFO_DEPTH];
 
     // ---------------------------------------------------------------------------------------------
     // POINTERS
@@ -65,8 +65,8 @@ module cdc_fifo #(
     // SYNC POINTERS
     // ---------------------------------------------------------------------------------------------
 
-    logic [COUNT_WIDTH-1:0] wr_ptr_gray_sync [0:SYNC_STAGES-1];
-    logic [COUNT_WIDTH-1:0] rd_ptr_gray_sync [0:SYNC_STAGES-1];
+    logic [COUNT_WIDTH-1:0] wr_ptr_gray_sync [SYNC_STAGES];
+    logic [COUNT_WIDTH-1:0] rd_ptr_gray_sync [SYNC_STAGES];
 
     logic [COUNT_WIDTH-1:0] sync_wr_ptr_gray;
     logic [COUNT_WIDTH-1:0] sync_rd_ptr_gray;
