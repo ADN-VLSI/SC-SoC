@@ -1,7 +1,7 @@
 `include "package/uart_pkg.sv"
 `include "vip/axi4l.svh"
 
-module axil_uart_regif_tb;
+module axi4l_uart_regif_tb;
 
   //////////////////////////////////////////////////////////////////////////////////////
   // IMPORTS
@@ -254,18 +254,18 @@ module axil_uart_regif_tb;
   //////////////////////////////////////////////////////////////////////////////////////
   // INCLUDE TESTCASES
   //////////////////////////////////////////////////////////////////////////////////////
-  `include "axil_uart_regif_tb/tc0.sv"
-  `include "axil_uart_regif_tb/tc1.sv"
-  `include "axil_uart_regif_tb/tc2.sv"
-  `include "axil_uart_regif_tb/tc3.sv"
-  `include "axil_uart_regif_tb/tc4.sv"
-  `include "axil_uart_regif_tb/tc5.sv"
-  `include "axil_uart_regif_tb/tc6.sv"
-  `include "axil_uart_regif_tb/tc7.sv"
-  `include "axil_uart_regif_tb/tc8.sv"
-  `include "axil_uart_regif_tb/tc9.sv"
-  `include "axil_uart_regif_tb/tc10.sv"
-  `include "axil_uart_regif_tb/tc11.sv"
+  `include "axi4l_uart_regif_tb/tc0.sv"
+  `include "axi4l_uart_regif_tb/tc1.sv"
+  `include "axi4l_uart_regif_tb/tc2.sv"
+  `include "axi4l_uart_regif_tb/tc3.sv"
+  `include "axi4l_uart_regif_tb/tc4.sv"
+  `include "axi4l_uart_regif_tb/tc5.sv"
+  `include "axi4l_uart_regif_tb/tc6.sv"
+  `include "axi4l_uart_regif_tb/tc7.sv"
+  `include "axi4l_uart_regif_tb/tc8.sv"
+  `include "axi4l_uart_regif_tb/tc9.sv"
+  `include "axi4l_uart_regif_tb/tc10.sv"
+  `include "axi4l_uart_regif_tb/tc11.sv"
 
   //////////////////////////////////////////////////////////////////////////////////////
   // MAIN INITIAL
