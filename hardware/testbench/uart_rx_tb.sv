@@ -14,13 +14,13 @@
 //                                    data_valid_o fires here
 // =============================================================================
 
-`timescale 1ns/1ps
+
 
 // ---------------------------------------------------------------------------
 //  STUB DUT — behavioural reference model (correct, timing-accurate)
 //  Replace this with your own RTL file when compiling for real verification.
 // ---------------------------------------------------------------------------
-module uart_rx (
+module uart_rx_tb (
     input  logic        clk_i,
     input  logic        arst_ni,       // active-low async reset
     input  logic        rx_i,
