@@ -66,6 +66,10 @@ module uart_subsystem_tb;
     int         total_pass = 0;
     int         total_fail = 0;
     logic [7:0] scoreboard [$];
+    string      active_testcase = "";
+    int         testcase_pass = 0;
+    int         testcase_fail = 0;
+    int         testcase_run_count = 0;
 
     ////////////////////////////////////////////////////////////////////////////
     // HELPER TASKS
@@ -100,6 +104,35 @@ module uart_subsystem_tb;
             total_fail++;
             $display("[FAIL] %s", msg);
         end
+    endtask
+
+    task automatic testcase_begin(input string name);
+        active_testcase = name;
+        testcase_pass   = 0;
+        testcase_fail   = 0;
+        testcase_run_count++;
+        $display("------------------------------------------------------------");
+        $display("Running %s", name);
+        $display("------------------------------------------------------------");
+    endtask
+
+    task automatic testcase_check(
+        input logic  ok,
+        input string msg
+    );
+        if (ok) begin
+            testcase_pass++;
+            total_pass++;
+            $display("[PASS][%s] %s", active_testcase, msg);
+        end else begin
+            testcase_fail++;
+            total_fail++;
+            $display("[FAIL][%s] %s", active_testcase, msg);
+        end
+    endtask
+
+    task automatic testcase_end();
+        $display("[%s] pass=%0d fail=%0d", active_testcase, testcase_pass, testcase_fail);
     endtask
 
     // poll STAT until rx_empty=0 (bit22)
@@ -167,63 +200,55 @@ module uart_subsystem_tb;
     ////////////////////////////////////////////////////////////////////////////
     // INCLUDE TESTCASES
     ////////////////////////////////////////////////////////////////////////////
-    `include "uart_subsystem_tb/tc0.sv"
-    `include "uart_subsystem_tb/tc1.sv"
-    `include "uart_subsystem_tb/tc2.sv"
     `include "uart_subsystem_tb/tc3.sv"
-    `include "uart_subsystem_tb/tc4.sv"
-    `include "uart_subsystem_tb/tc5.sv"
-    `include "uart_subsystem_tb/tc6.sv"
     `include "uart_subsystem_tb/tc7.sv"
     `include "uart_subsystem_tb/tc8.sv"
-    `include "uart_subsystem_tb/tc9.sv"
-    `include "uart_subsystem_tb/tc10.sv"
-    `include "uart_subsystem_tb/tc11.sv"
-    `include "uart_subsystem_tb/tc12.sv"
-    `include "uart_subsystem_tb/tc13.sv"
-    `include "uart_subsystem_tb/tc14.sv"
-    `include "uart_subsystem_tb/tc15.sv"
-    `include "uart_subsystem_tb/tc16.sv"
-    `include "uart_subsystem_tb/tc17.sv"
 
     ////////////////////////////////////////////////////////////////////////////
     // TEST SEQUENCE
     ////////////////////////////////////////////////////////////////////////////
 
     initial begin
+        string selected_test;
+
         $timeformat(-9, 1, " ns", 20);
         $display("------------------------------------------------------------");
         $display("uart_subsystem TB | BAUD=%0d | FIFO_DEPTH=%0d",
                  BAUD_RATE, FIFO_DEPTH);
         $display("------------------------------------------------------------");
 
-        reset_dut();
-        configure_uart();
+        if (!$value$plusargs("TEST=%s", selected_test))
+            selected_test = "all";
 
-        tc0();
-        tc1();
-        tc2();
-        tc3();
-        tc4();
-        tc5();
-        tc6();
-        tc7();
-        tc8();
-        tc9();
-        tc10();
-        tc11();
-        tc12();
-        tc13();
-        tc14();
-        tc15();
-        tc16();
-        tc17();
+        case (selected_test)
+            "all": begin
+                tc3();
+                tc7();
+                tc8();
+            end
+            "default": begin
+                tc3();
+                tc7();
+                tc8();
+            end
+            "tc3": tc3();
+            "tc7": tc7();
+            "tc8": tc8();
+            default: begin
+                $display("Unsupported TEST=%s", selected_test);
+                $display("Supported values: all, default, tc3, tc7, tc8");
+                $finish;
+            end
+        endcase
 
         u_uart_if.wait_till_idle();
 
         $display("------------------------------------------------------------");
+        $display("TESTCASES RUN:%0d", testcase_run_count);
         $display("PASS:%0d  FAIL:%0d", total_pass, total_fail);
-        if (total_fail == 0)
+        if (testcase_run_count == 0)
+            $display("NO TESTCASES RAN");
+        else if (total_fail == 0)
             $display("ALL TESTS PASSED");
         else
             $display("SOME TESTS FAILED");

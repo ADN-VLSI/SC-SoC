@@ -34,6 +34,7 @@ task automatic tc3_read_32(
 endtask
 
 task automatic tc3_check_snapshot(
+  input string       label,
   input logic [31:0] ctrl_exp,
   input logic [31:0] cfg_exp,
   input logic [31:0] int_en_exp,
@@ -47,24 +48,24 @@ task automatic tc3_check_snapshot(
 
   begin
     tc3_read_32(UART_CTRL_OFFSET, ctrl_rd, rresp);
-    if ((rresp !== 2'b00) || (ctrl_rd !== ctrl_exp))
-      $fatal(1, "TC3 CTRL changed unexpectedly: resp=%0b got=0x%08h expected=0x%08h",
-             rresp, ctrl_rd, ctrl_exp);
+    testcase_check((rresp === 2'b00) && (ctrl_rd === ctrl_exp),
+                   $sformatf("%s CTRL unchanged (resp=%0b got=0x%08h exp=0x%08h)",
+                             label, rresp, ctrl_rd, ctrl_exp));
 
     tc3_read_32(UART_CFG_OFFSET, cfg_rd, rresp);
-    if ((rresp !== 2'b00) || (cfg_rd !== cfg_exp))
-      $fatal(1, "TC3 CFG changed unexpectedly: resp=%0b got=0x%08h expected=0x%08h",
-             rresp, cfg_rd, cfg_exp);
+    testcase_check((rresp === 2'b00) && (cfg_rd === cfg_exp),
+                   $sformatf("%s CFG unchanged (resp=%0b got=0x%08h exp=0x%08h)",
+                             label, rresp, cfg_rd, cfg_exp));
 
     tc3_read_32(UART_INT_EN_OFFSET, int_en_rd, rresp);
-    if ((rresp !== 2'b00) || (int_en_rd !== int_en_exp))
-      $fatal(1, "TC3 INT_EN changed unexpectedly: resp=%0b got=0x%08h expected=0x%08h",
-             rresp, int_en_rd, int_en_exp);
+    testcase_check((rresp === 2'b00) && (int_en_rd === int_en_exp),
+                   $sformatf("%s INT_EN unchanged (resp=%0b got=0x%08h exp=0x%08h)",
+                             label, rresp, int_en_rd, int_en_exp));
 
     tc3_read_32(UART_STAT_OFFSET, stat_rd, rresp);
-    if ((rresp !== 2'b00) || (stat_rd !== stat_exp))
-      $fatal(1, "TC3 STATUS changed unexpectedly: resp=%0b got=0x%08h expected=0x%08h",
-             rresp, stat_rd, stat_exp);
+    testcase_check((rresp === 2'b00) && (stat_rd === stat_exp),
+                   $sformatf("%s STATUS unchanged (resp=%0b got=0x%08h exp=0x%08h)",
+                             label, rresp, stat_rd, stat_exp));
   end
 endtask
 
@@ -77,64 +78,83 @@ task automatic tc3(); // AXI Invalid Address
   logic [1:0]  bresp;
   logic [1:0]  rresp;
   logic [31:0] invalid_addrs[4];
-  begin
-    $display("TC3: AXI Invalid Address");
+  bit          snapshot_valid;
+  string       addr_label;
 
+  begin
+    testcase_begin("TC3");
     reset_dut();
 
     invalid_addrs = '{32'h0000_0FF0, 32'h0000_0100, 32'h0000_0200, 32'h0000_0FFC};
+    snapshot_valid = 1'b1;
 
     tc3_read_32(UART_CTRL_OFFSET, ctrl_before, rresp);
-    if (rresp !== 2'b00) $fatal(1, "TC3 failed to read CTRL snapshot, RRESP=%0b", rresp);
+    testcase_check(rresp === 2'b00,
+                   $sformatf("CTRL snapshot read returned OKAY (RRESP=%0b)", rresp));
+    if (rresp !== 2'b00) snapshot_valid = 1'b0;
 
     tc3_read_32(UART_CFG_OFFSET, cfg_before, rresp);
-    if (rresp !== 2'b00) $fatal(1, "TC3 failed to read CFG snapshot, RRESP=%0b", rresp);
+    testcase_check(rresp === 2'b00,
+                   $sformatf("CFG snapshot read returned OKAY (RRESP=%0b)", rresp));
+    if (rresp !== 2'b00) snapshot_valid = 1'b0;
 
     tc3_read_32(UART_INT_EN_OFFSET, int_en_before, rresp);
-    if (rresp !== 2'b00) $fatal(1, "TC3 failed to read INT_EN snapshot, RRESP=%0b", rresp);
+    testcase_check(rresp === 2'b00,
+                   $sformatf("INT_EN snapshot read returned OKAY (RRESP=%0b)", rresp));
+    if (rresp !== 2'b00) snapshot_valid = 1'b0;
 
     tc3_read_32(UART_STAT_OFFSET, stat_before, rresp);
-    if (rresp !== 2'b00) $fatal(1, "TC3 failed to read STATUS snapshot, RRESP=%0b", rresp);
+    testcase_check(rresp === 2'b00,
+                   $sformatf("STATUS snapshot read returned OKAY (RRESP=%0b)", rresp));
+    if (rresp !== 2'b00) snapshot_valid = 1'b0;
 
-    foreach (invalid_addrs[i]) begin
-      $display("  Invalid AXI address 0x%08h", invalid_addrs[i]);
+    if (snapshot_valid) begin
+      foreach (invalid_addrs[i]) begin
+        addr_label = $sformatf("addr 0x%08h", invalid_addrs[i]);
 
-      tc3_write_32_strb(invalid_addrs[i], 32'h1234_5678, 4'hF, bresp);
-      if (bresp !== 2'b10)
-        $fatal(1, "TC3 invalid write with WSTRB=0xF returned BRESP=%0b at 0x%08h",
-               bresp, invalid_addrs[i]);
+        tc3_write_32_strb(invalid_addrs[i], 32'h1234_5678, 4'hF, bresp);
+        testcase_check(bresp === 2'b10,
+                       $sformatf("%s invalid write with WSTRB=0xF returned SLVERR (BRESP=%0b)",
+                                 addr_label, bresp));
 
-      tc3_write_32_strb(invalid_addrs[i], 32'h89AB_CDEF, 4'h0, bresp);
-      if (bresp !== 2'b10)
-        $fatal(1, "TC3 invalid write with WSTRB=0x0 returned BRESP=%0b at 0x%08h",
-               bresp, invalid_addrs[i]);
+        tc3_write_32_strb(invalid_addrs[i], 32'h89AB_CDEF, 4'h0, bresp);
+        testcase_check(bresp === 2'b10,
+                       $sformatf("%s invalid write with WSTRB=0x0 returned SLVERR (BRESP=%0b)",
+                                 addr_label, bresp));
 
-      tc3_read_32(invalid_addrs[i], rdata, rresp);
-      if (rresp !== 2'b10)
-        $fatal(1, "TC3 invalid read returned RRESP=%0b at 0x%08h", rresp, invalid_addrs[i]);
-      if ((rdata !== 32'h0000_0000) && (rdata !== 32'hDEAD_BEEF))
-        $fatal(1, "TC3 invalid read data was 0x%08h at 0x%08h; expected 0 or 0xDEADBEEF",
-               rdata, invalid_addrs[i]);
+        tc3_read_32(invalid_addrs[i], rdata, rresp);
+        testcase_check(rresp === 2'b10,
+                       $sformatf("%s invalid read returned SLVERR (RRESP=%0b)", addr_label, rresp));
+        testcase_check((rdata === 32'h0000_0000) || (rdata === 32'hDEAD_BEEF),
+                       $sformatf("%s invalid read data allowed don't-care value 0x%08h",
+                                 addr_label, rdata));
 
-      tc3_check_snapshot(ctrl_before, cfg_before, int_en_before, stat_before);
+        tc3_check_snapshot({addr_label, " post-invalid"}, ctrl_before, cfg_before,
+                           int_en_before, stat_before);
 
-      tc3_write_32(UART_CTRL_OFFSET, ctrl_before, bresp);
-      if (bresp !== 2'b00)
-        $fatal(1, "TC3 recovery CTRL write failed after 0x%08h, BRESP=%0b", invalid_addrs[i], bresp);
+        tc3_write_32(UART_CTRL_OFFSET, ctrl_before, bresp);
+        testcase_check(bresp === 2'b00,
+                       $sformatf("%s recovery CTRL write succeeded (BRESP=%0b)",
+                                 addr_label, bresp));
 
-      tc3_read_32(UART_CTRL_OFFSET, rdata, rresp);
-      if ((rresp !== 2'b00) || (rdata !== ctrl_before))
-        $fatal(1, "TC3 recovery CTRL readback failed after 0x%08h: resp=%0b data=0x%08h",
-               invalid_addrs[i], rresp, rdata);
+        tc3_read_32(UART_CTRL_OFFSET, rdata, rresp);
+        testcase_check((rresp === 2'b00) && (rdata === ctrl_before),
+                       $sformatf("%s recovery CTRL readback matched snapshot (RRESP=%0b DATA=0x%08h)",
+                                 addr_label, rresp, rdata));
 
-      tc3_check_snapshot(ctrl_before, cfg_before, int_en_before, stat_before);
+        tc3_check_snapshot({addr_label, " post-recovery"}, ctrl_before, cfg_before,
+                           int_en_before, stat_before);
+      end
+    end else begin
+      testcase_check(1'b0, "Snapshot setup failed, skipping invalid-address body checks");
     end
 
     repeat (2) @(posedge clk_i);
-    if (req_i.aw_valid || req_i.w_valid || req_i.b_ready ||
-        req_i.ar_valid || req_i.r_ready)
-      $fatal(1, "TC3 detected a hung AXI handshake signal after completion");
+    testcase_check(!(req_i.aw_valid || req_i.w_valid || req_i.b_ready ||
+                     req_i.ar_valid || req_i.r_ready),
+                   $sformatf("AXI handshake signals returned idle (aw=%0b w=%0b b_ready=%0b ar=%0b r_ready=%0b)",
+                             req_i.aw_valid, req_i.w_valid, req_i.b_ready, req_i.ar_valid, req_i.r_ready));
 
-    $display("TC3 completed successfully");
+    testcase_end();
   end
 endtask
