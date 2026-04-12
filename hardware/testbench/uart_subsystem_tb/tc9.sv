@@ -1,36 +1,63 @@
-// -----------------------------------------------------------------------------
-// TC9: TX Configuration Sweep
-// -----------------------------------------------------------------------------
-
 task automatic tc9();
-    logic [31:0] read_data;
-    
-    $display("\n[tc9] TX Configuration Sweep");
+    // Registers
+    logic [31:0] ctrl0, cfg0, cfg, rd;
+    logic [1:0]  bresp, rresp;
+    int bitcy;
 
-   
-    axi_write(UART_CTRL_OFFSET, 32'h0);
-    repeat(20) @(posedge clk_i);
+    // Desired baud rate
+    int unsigned BAUD = 115200; // change as needed
+    int unsigned CLK_FREQ = 100_000_000; // 100 MHz
+    int unsigned baud_div;
 
-    // Test writing different CFG values
-    axi_write(UART_CFG_OFFSET, 32'h0004_405B);  // 8E1
-    repeat(10) @(posedge clk_i);
-    axi_read(UART_CFG_OFFSET, read_data);
-    check((read_data == 32'h0004_405B), "CFG 8E1");
+    $display("------------------------------------------------------------");
+    $display("TC9: TX CONFIG SWEEP");
+    $display("------------------------------------------------------------");
 
-    axi_write(UART_CFG_OFFSET, 32'h0006_405B);  // 8O1
-    repeat(10) @(posedge clk_i);
-    axi_read(UART_CFG_OFFSET, read_data);
-    check((read_data == 32'h0006_405B), "CFG 8O1");
+    // Save current configuration
+    cpu_read_32(UART_CTRL_OFFSET, ctrl0, rresp);
+    cpu_read_32(UART_CFG_OFFSET,  cfg0,  rresp);
 
-    axi_write(UART_CFG_OFFSET, 32'h0013_405B);  // 8N2
-    repeat(10) @(posedge clk_i);
-    axi_read(UART_CFG_OFFSET, read_data);
-    check((read_data == 32'h0013_405B), "CFG 8N2");
+    // Compute bit cycles (for simulation delay)
+    bitcy = CLK_FREQ / BAUD; // approximate cycles per bit
 
-    // Restore default
-    axi_write(UART_CFG_OFFSET, 32'h0003_41B0);
-    repeat(10) @(posedge clk_i);
-    check(1, "CFG restored");
+    // Sweep configurations
+    for (int c = 0; c < 6; c++) begin
+        // Base config: parity, stop bits, data bits
+        case (c)
+            0: cfg = 32'h0000_0000; // 8N1 placeholder
+            1: cfg = 32'h0000_1000; // 8E1
+            2: cfg = 32'h0000_2000; // 8O1
+            3: cfg = 32'h0000_3000; // 8N2
+            4: cfg = 32'h0000_4000; // 7E1
+            5: cfg = 32'h0000_5000; // 7O2
+        endcase
 
-    $display("[tc9] Completed");
+        // Add baud divisor
+        baud_div = CLK_FREQ / BAUD;
+        cfg[15:0] = baud_div[15:0]; // assume lower 16 bits hold baud divisor
+
+        // Disable, flush, configure, enable
+        cpu_write_32(UART_CTRL_OFFSET, 32'h0, bresp);   // disable
+        repeat (10) @(posedge clk_i);
+        cpu_write_32(UART_CTRL_OFFSET, 32'h6, bresp);   // flush
+        repeat (10) @(posedge clk_i);
+        cpu_write_32(UART_CFG_OFFSET, cfg, bresp);      // write config
+        repeat (10) @(posedge clk_i);
+        cpu_write_32(UART_CTRL_OFFSET, 32'h18, bresp);  // enable
+        repeat (bitcy * 4) @(posedge clk_i);            // wait
+
+        // Verify config
+        cpu_read_32(UART_CFG_OFFSET, rd, rresp);
+        check(rd == cfg, $sformatf("cfg%0d accepted: 0x%08h", c, rd));
+
+        // Test TX write
+        cpu_write_32(UART_TXR_OFFSET, 32'h55, bresp);
+        check(bresp == 2'b00, $sformatf("cfg%0d TXR write BRESP=OK", c));
+
+        repeat (bitcy * 4) @(posedge clk_i); // allow TX to finish
+    end
+
+    // Restore original config
+    cpu_write_32(UART_CTRL_OFFSET, ctrl0, bresp);
+    cpu_write_32(UART_CFG_OFFSET,  cfg0,  bresp);
 endtask
