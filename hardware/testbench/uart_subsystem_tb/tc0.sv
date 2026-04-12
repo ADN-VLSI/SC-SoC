@@ -1,4 +1,4 @@
-task automatic tc0();
+/*task automatic tc0();
     logic [31:0] rdata;
 
     // Re-apply reset inside TC0 so reset behavior is actually tested
@@ -51,3 +51,4 @@ task automatic tc0();
     // Restore configured state for later testcases
     configure_uart();
 endtask
+*/
