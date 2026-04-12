@@ -1,4 +1,3 @@
-/*
 task automatic tc0();
     logic [31:0] rdata;
     int i;
@@ -66,4 +65,3 @@ task automatic tc0();
     // Restore normal post-reset configuration for any later tests.
     configure_uart();
 endtask
-*/
