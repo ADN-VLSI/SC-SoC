@@ -1,4 +1,5 @@
 `include "package/uart_pkg.sv"
+`include "package/uart_subsystem_pkg.sv"
 
 module axi4l_uart_regif
 
@@ -123,7 +124,7 @@ module axi4l_uart_regif
     tx_id_out_ready   = 1'b0;
     rx_id_out_ready   = 1'b0;
 
-    case (fifo_req.ar.addr[5:0])
+    case (fifo_req.ar.addr)
 
       UART_CTRL_OFFSET: begin
         fifo_resp.r.data = uart_ctrl_o;   
@@ -217,7 +218,7 @@ module axi4l_uart_regif
     rx_id_in_valid   = 1'b0;
 
     if (fifo_req.w.strb == 4'b1111) begin
-      case (fifo_req.aw.addr[5:0])
+      case (fifo_req.aw.addr)
 
         UART_CTRL_OFFSET: begin
           fifo_resp.b.resp = 2'b00;
@@ -270,7 +271,7 @@ module axi4l_uart_regif
       uart_cfg_o    <= 32'h0003_405B;
       uart_int_en_o <= '0;
     end else if (fifo_resp.b.resp == 2'b00) begin
-      case (fifo_req.aw.addr[5:0])
+      case (fifo_req.aw.addr)
         UART_CTRL_OFFSET:   uart_ctrl_o   <= fifo_req.w.data;
         UART_CFG_OFFSET:    uart_cfg_o    <= fifo_req.w.data;
         UART_INT_EN_OFFSET: uart_int_en_o <= fifo_req.w.data;
@@ -287,10 +288,10 @@ module axi4l_uart_regif
     uart_stat_o.reserved = '0;
     uart_stat_o.tx_cnt   = tx_data_cnt_i.count;
     uart_stat_o.tx_empty = (tx_data_cnt_i == '0);
-    uart_stat_o.tx_full  = (tx_data_cnt_i.count == 10'd512);
+    uart_stat_o.tx_full  = (tx_data_cnt_i.count == uart_subsystem_pkg::UART_FIFO_DEPTH);
     uart_stat_o.rx_cnt   = rx_data_cnt_i.count;
     uart_stat_o.rx_empty = (rx_data_cnt_i == '0);
-    uart_stat_o.rx_full  = (rx_data_cnt_i.count == 10'd512);
+    uart_stat_o.rx_full  = (rx_data_cnt_i.count == uart_subsystem_pkg::UART_FIFO_DEPTH);
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////

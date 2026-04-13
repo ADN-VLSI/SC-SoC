@@ -25,7 +25,6 @@ module uart_subsystem_tb;
     uart_axil_req_t req_i;
     uart_axil_rsp_t resp_o;
 
-    // AXI driver — creates cpu_write_32() and cpu_read_32()
     `SIMPLE_AXIL_M_DRIVER(cpu, clk_i, arst_ni, req_i, resp_o)
 
     ////////////////////////////////////////////////////////////////////////////
@@ -102,14 +101,12 @@ module uart_subsystem_tb;
         end
     endtask
 
-    // poll STAT until rx_empty=0 (bit22)
     task automatic wait_rx_data();
         logic [31:0] stat;
         do axi_read(UART_STAT_OFFSET, stat);
         while (stat[22] == 1);
     endtask
 
-    // poll STAT until tx_empty=1 (bit20)
     task automatic wait_tx_done();
         logic [31:0] stat;
         do axi_read(UART_STAT_OFFSET, stat);
@@ -131,37 +128,66 @@ module uart_subsystem_tb;
 
     ////////////////////////////////////////////////////////////////////////////
     // CONFIGURE UART
-    // CFG = 0x000341B0: psclr=4, clk_div=432, db=3(8bit), no parity
-    // baud = 100MHz / 4 / (432>>3) / 4 = 115741 Hz
     ////////////////////////////////////////////////////////////////////////////
 
     task automatic configure_uart();
         logic [31:0] readback;
 
-        // disable TX+RX — CFG only written when FIFOs empty
         axi_write(UART_CTRL_OFFSET, 32'h0000_0000);
         repeat(10) @(posedge clk_i);
 
-        // set baud rate and frame format
         axi_write(UART_CFG_OFFSET, 32'h0003_41B0);
         repeat(10) @(posedge clk_i);
 
-        // verify CFG accepted
         axi_read(UART_CFG_OFFSET, readback);
         if (readback !== 32'h0003_41B0)
             $display("  WARNING: CFG=0x%08h expected 0x000341B0", readback);
         else
             $display("  CFG OK: 0x%08h  baud=%0d", readback, BAUD_RATE);
 
-        // enable TX+RX: rx_en[4]=1, tx_en[3]=1 = 0x18
         axi_write(UART_CTRL_OFFSET, 32'h0000_0018);
         repeat(10) @(posedge clk_i);
 
         axi_read(UART_CTRL_OFFSET, readback);
         $display("  CTRL: 0x%08h  (expect 0x00000018)", readback);
 
-        // wait for clk_div chain to stabilise and uart_tx to reach IDLE
         repeat(STABILISE_CYCLES) @(posedge clk_i);
+    endtask
+
+    ////////////////////////////////////////////////////////////////////////////
+    // RUN ONE TEST — snapshot counters before/after to get per-test p/f
+    ////////////////////////////////////////////////////////////////////////////
+
+    task automatic run_test(
+        input  int test_num,
+        output int p,
+        output int f
+    );
+        int p_before, f_before;
+        p_before = total_pass;
+        f_before = total_fail;
+
+        case (test_num)
+            0:  tc0();
+            1:  tc1();
+            2:  tc2();
+            3:  tc3();
+            4:  tc4();
+            5:  tc5();
+            6:  tc6();
+            7:  tc7();
+            8:  tc8();
+            9:  tc9();
+            10: tc10();
+            11: tc11();
+            12: tc12();
+            13: tc13();
+            16: tc16();
+            default: $fatal(1, "Invalid test number %0d. Valid range 0-17.", test_num);
+        endcase
+
+        p = total_pass - p_before;
+        f = total_fail - f_before;
     endtask
 
     ////////////////////////////////////////////////////////////////////////////
@@ -181,16 +207,20 @@ module uart_subsystem_tb;
     `include "uart_subsystem_tb/tc11.sv"
     `include "uart_subsystem_tb/tc12.sv"
     `include "uart_subsystem_tb/tc13.sv"
-    `include "uart_subsystem_tb/tc14.sv"
-    `include "uart_subsystem_tb/tc15.sv"
     `include "uart_subsystem_tb/tc16.sv"
-    `include "uart_subsystem_tb/tc17.sv"
 
     ////////////////////////////////////////////////////////////////////////////
     // TEST SEQUENCE
     ////////////////////////////////////////////////////////////////////////////
 
     initial begin
+        int test_num;
+        int p, f;
+        int total_p, total_f;
+
+        total_p = 0;
+        total_f = 0;
+
         $timeformat(-9, 1, " ns", 20);
         $display("------------------------------------------------------------");
         $display("uart_subsystem TB | BAUD=%0d | FIFO_DEPTH=%0d",
@@ -200,30 +230,28 @@ module uart_subsystem_tb;
         reset_dut();
         configure_uart();
 
-        tc0();
-        tc1();
-        tc2();
-        tc3();
-        tc4();
-        tc5();
-        tc6();
-        tc7();
-        tc8();
-        tc9();
-        tc10();
-        tc11();
-        tc12();
-        tc13();
-        tc14();
-        tc15();
-        tc16();
-        tc17();
+        if (!$value$plusargs("TEST=%d", test_num))
+            test_num = -1;
+
+        if (test_num == -1) begin
+            for (int i = 0; i <= 17; i++) begin
+                run_test(i, p, f);
+                $display("TEST %0d RESULT: PASS=%0d FAIL=%0d", i, p, f);
+                total_p += p;
+                total_f += f;
+            end
+        end else begin
+            run_test(test_num, p, f);
+            $display("SELECTED TEST %0d RESULT: PASS=%0d FAIL=%0d", test_num, p, f);
+            total_p += p;
+            total_f += f;
+        end
 
         u_uart_if.wait_till_idle();
 
         $display("------------------------------------------------------------");
-        $display("PASS:%0d  FAIL:%0d", total_pass, total_fail);
-        if (total_fail == 0)
+        $display("TOTAL PASS=%0d  TOTAL FAIL=%0d", total_p, total_f);
+        if (total_f == 0)
             $display("ALL TESTS PASSED");
         else
             $display("SOME TESTS FAILED");

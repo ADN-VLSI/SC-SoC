@@ -106,18 +106,11 @@ task automatic tc3(); // AXI Invalid Address
 
   begin
     testcase_begin("TC3");
-
-    $dumpfile("tc3_debug.vcd");
-    $dumpvars(0, uart_subsystem_tb);
-
-    // Reset and reconfigure so registers are in a known stable state.
     reset_dut();
-    configure_uart();
 
     invalid_addrs = '{32'h0000_0FF0, 32'h0000_0100, 32'h0000_0200, 32'h0000_0FFC};
     snapshot_valid = 1'b1;
 
-    // ---------- take register snapshot ----------
     tc3_read_32(UART_CTRL_OFFSET, ctrl_before, rresp);
     testcase_check(rresp === 2'b00,
                    $sformatf("CTRL snapshot read returned OKAY (RRESP=%0b)", rresp));
@@ -138,12 +131,10 @@ task automatic tc3(); // AXI Invalid Address
                    $sformatf("STATUS snapshot read returned OKAY (RRESP=%0b)", rresp));
     if (rresp !== 2'b00) snapshot_valid = 1'b0;
 
-    // ---------- invalid-address stimulus ----------
     if (snapshot_valid) begin
       foreach (invalid_addrs[i]) begin
         addr_label = $sformatf("addr 0x%08h", invalid_addrs[i]);
 
-        // write with full strobe — expect SLVERR
         tc3_write_32_strb(invalid_addrs[i], 32'h1234_5678, 4'hF, bresp);
         testcase_check(bresp === 2'b10,
                        $sformatf("%s invalid write with WSTRB=0xF returned SLVERR (BRESP=%0b)",
