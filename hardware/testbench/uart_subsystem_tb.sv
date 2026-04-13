@@ -1,7 +1,7 @@
 `include "package/uart_pkg.sv"
 `include "package/uart_subsystem_pkg.sv"
 `include "vip/simple_axil_m_driver.svh"
-
+`include "uart_subsystem_tb/methods/motasim.sv"
 module uart_subsystem_tb;
 
     import uart_pkg::*;

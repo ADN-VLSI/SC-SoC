@@ -1,3 +1,5 @@
+//`include "methods/motasim.sv"
+
 task automatic tc8_write_32(
   input  logic [31:0] addr,
   input  logic [31:0] data,

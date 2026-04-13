@@ -21,18 +21,9 @@ The subsystem is intended to provide a memory-mapped UART peripheral with buffer
 
 ## 1. Subsystem Overview
 
-The UART subsystem is controlled through an **AXI4-Lite slave register interface**. Software configures UART operation through memory-mapped registers such as:
+The UART subsystem is controlled through an **AXI4-Lite slave register interface**. Software configures UART operation through memory-mapped registers: `UART_CTRL`, `UART_CFG`, `UART_STAT`, `UART_TXD`, `UART_RXD`, and `UART_INT`.
 
-- `UART_CTRL`
-- `UART_CFG`
-- `UART_STAT`
-- `UART_TXD`
-- `UART_RXD`
-- `UART_INT`
-
-The register interface drives UART configuration and exchanges data with TX/RX FIFOs. The FIFOs isolate software-side accesses from serial line timing and also support safe transfer between different clock domains. The transmit path serializes outgoing bytes to `tx_o`, while the receive path deserializes incoming serial data from `rx_i`. :contentReference[oaicite:1]{index=1} :contentReference[oaicite:2]{index=2}
-
----
+The register interface drives UART configuration and exchanges data with TX/RX FIFOs. The FIFOs isolate software-side accesses from serial line timing and support safe transfer between different clock domains. The transmit path serializes outgoing bytes to `tx_o`, while the receive path deserializes incoming serial data from `rx_i`.
 
 ---
 
@@ -48,434 +39,430 @@ The design intent is to create a UART block that is:
 - **Modular**, with clearly separated register, FIFO, clocking, TX, and RX blocks
 - **SoC-friendly**, so it can be directly integrated into an AXI4-Lite-based system
 
-In operation, software writes transmit data through the register interface, and the subsystem forwards it through the TX FIFO to the UART transmitter. Received serial data follows the reverse path through the UART receiver and RX FIFO back to the register interface. The subsystem also provides status, control, and interrupt support for reliable software interaction.
 ---
 
-## 3. Functional Data Paths
+## 3. External Port Declarations
 
-## 3.1 Transmit Path
+### 3.1 Module Parameters
 
-Transmit data moves through the subsystem as follows:
+| Parameter    | Default                               | Description                       |
+|--------------|---------------------------------------|-----------------------------------|
+| `FIFO_DEPTH` | `uart_subsystem_pkg::UART_FIFO_DEPTH` | Depth of both TX and RX CDC FIFOs |
 
-1. Software writes a byte to `UART_TXD`
-2. AXI-Lite register interface generates:
--tx_data_o[7:0]
--tx_data_valid_o
-3. TX CDC FIFO stores the byte in the system clock domain
-4. TX CDC FIFO transfers the byte into the TX baud clock domain
-5. UART transmitter consumes the byte through valid/ready handshake
-6. UART transmitter serializes the byte to tx_o
+### 3.2 Clock and Reset
 
-This matches the intended register-to-FIFO-to-transmitter structure documented by the UART register interface and UART TX module docs.
+| Port      | Direction | Width | Description                   |
+|-----------|-----------|-------|-------------------------------|
+| `clk_i`   | input     | 1     | System clock                  |
+| `arst_ni` | input     | 1     | Asynchronous active-low reset |
 
-## 3.2 Receive Path 
+### 3.3 AXI4-Lite Slave Interface
 
-Receive data moves through the subsystem as follows:
+| Port             | Direction | Width | AXI Channel    | Description                      |
+|------------------|-----------|-------|----------------|----------------------------------|
+| `req_i.awaddr`   | input     | 32    | Write Address  | Write address                    |
+| `req_i.awvalid`  | input     | 1     | Write Address  | Write address valid              |
+| `resp_o.awready` | output    | 1     | Write Address  | Write address ready              |
+| `req_i.wdata`    | input     | 32    | Write Data     | Write data                       |
+| `req_i.wstrb`    | input     | 4     | Write Data     | Write byte strobes               |
+| `req_i.wvalid`   | input     | 1     | Write Data     | Write data valid                 |
+| `resp_o.wready`  | output    | 1     | Write Data     | Write data ready                 |
+| `resp_o.bresp`   | output    | 2     | Write Response | Write response (`OKAY`/`SLVERR`) |
+| `resp_o.bvalid`  | output    | 1     | Write Response | Write response valid             |
+| `req_i.bready`   | input     | 1     | Write Response | Write response ready             |
+| `req_i.araddr`   | input     | 32    | Read Address   | Read address                     |
+| `req_i.arvalid`  | input     | 1     | Read Address   | Read address valid               |
+| `resp_o.arready` | output    | 1     | Read Address   | Read address ready               |
+| `resp_o.rdata`   | output    | 32    | Read Data      | Read data                        |
+| `resp_o.rresp`   | output    | 2     | Read Data      | Read response (`OKAY`/`SLVERR`)  |
+| `resp_o.rvalid`  | output    | 1     | Read Data      | Read data valid                  |
+| `req_i.rready`   | input     | 1     | Read Data      | Read data ready                  |
 
-1. Serial data enters through rx_i
-2. UART receiver samples and reconstructs the frame
-3. RX CDC FIFO stores the received byte in the RX clock domain
-4. RX CDC FIFO transfers the byte into the AXI/system clock domain
-5. AXI-Lite register interface receives:
-    - rx_data_i[7:0]
-    - rx_data_valid_i
-6.Software reads the byte from UART_RXD
-7. Register interface asserts rx_pop_o to consume the FIFO entry
+> `req_i` and `resp_o` are packed structs of types `uart_pkg::uart_axil_req_t` and `uart_pkg::uart_axil_rsp_t` respectively. A transfer completes on a channel only when both `VALID` and `READY` are asserted simultaneously.
 
-This matches the RX-side datapath described by the register interface and register map doc
+### 3.4 UART Serial Interface
 
----
+| Port   | Direction | Width | Description               |
+|--------|-----------|-------|---------------------------|
+| `rx_i` | input     | 1     | UART serial receive line  |
+| `tx_o` | output    | 1     | UART serial transmit line |
 
-## 4. AXI4-Lite UART Register Interface
+### 3.5 Interrupt
 
-## 4.1 Purpose
+| Port       | Direction | Width | Description                                             |
+|------------|-----------|-------|---------------------------------------------------------|
+| `int_en_o` | output    | 1     | Active-high interrupt; OR of all enabled FIFO event sources |
 
-The AXI-Lite UART register interface is the bus-facing slave module. It converts AXI-Lite reads and writes into control, configuration, and data movement inside the UART subsystem. Its documented interface includes AXI-Lite slave ports, UART configuration outputs, TX/RX FIFO datapath ports, and interrupt outputs. 
+### 3.6 Top-Level Module Declaration
 
-## 4.2 AXI4-Lite Slave Signals
+```systemverilog
+module uart_subsystem #(
+    parameter int FIFO_DEPTH = uart_subsystem_pkg::UART_FIFO_DEPTH
+)(
+    input  logic                       clk_i,
+    input  logic                       arst_ni,
 
-`awaddr_i`, `awvalid_i`, `awready_o`
-`wdata_i`, `wstrb_i`, `wvalid_i`, `wready_o`
-`bresp_o`, `bvalid_o`, `bready_i`
-`araddr_i`, `arvalid_i`, `arready_o`
-`rdata_o`, `rresp_o`, `rvalid_o`, `rready_i`
+    input  uart_pkg::uart_axil_req_t   req_i,
+    output uart_pkg::uart_axil_rsp_t   resp_o,
 
-These match the AXI handshake mechanism where each channel transfers data only when both VALID and READY are asserted.
-
-## 4.3 UART Control Outputs
-
-The register interface drives the UART core through these outputs:
-
-`uart_tx_en_o`
-`uart_rx_en_o`
-`uart_clk_div_o[11:0]`
-`uart_psclr_o[3:0]`
-`uart_db_o[1:0]`
-`uart_pen_o`
-`uart_ptp_o`
-`uart_sb_o`
-`uart_int_en_o[3:0]`
-
-These outputs come directly from the register interface documentation and map to the UART configuration register fields.
-
-## 4.4 TX CDC FIFO
-
-The TX CDC FIFO transfers outgoing data from the AXI/system clock domain into the transmitter baud clock domain. The FIFO documentation defines a dual-clock structure with:
-
-- write clock : `wr_clk`
-- read clock  : `rd_clk`
-- write-side valid/ready handshake
-- read-side valid/ready handshake
-- occupancy counters
-- full/empty detection
-
-Important FIFO interface signals:
-
-- `wr_clk`
-- `wr_data`
-- `wr_valid`
-- `wr_ready`
-- `wr_count`
-- `rd_clk`
-- `rd_ready`
-- `rd_valid`
-- `rd_data`
-- `rd_count`
-
-The FIFO is explicitly documented as supporting asynchronous clock crossing and using Gray-code-safe synchronization internally.
-
-### TX FIFO Role in This Subsystem
--Write side clock domain: clk_i (AXI/system clock)
--Read side clock domain: tx_baud_clk
--Input source: AXI-Lite register interface
--Output destination: UART transmitter
-### TX FIFO Connection Summary
-- `tx_data_o` -> `tx_fifo.wr_data`
-- `tx_data_valid_o` -> `tx_fifo.wr_valid`
-- `tx_fifo.wr_ready` -> used to derive FIFO-not-full condition
-- `tx_fifo.rd_data` -> `uart_tx.data_i`
-- `tx_fifo.rd_valid` -> `uart_tx.data_valid_i`
-**Important Ready Polarity Note**
-The CDC FIFO documentation states that read ready is active-low:
-- `rd_ready` = 0 means ready
-The UART transmitter uses a normal active-high ready signal:
-- `data_ready_o` = 1 means ready
-Therefore, a polarity adaptation is required:
-- tx_fifo.rd_ready` = `~uart_tx`.`data_ready_o`
-
-This is a necessary glue connection between the FIFO and UART TX.
-
----
-
-## 4.5 RX CDC FIFO
-
-The RX CDC FIFO transfers received bytes from the UART receiver clock domain back into the AXI/system clock domain. It uses the same FIFO architecture and port behavior as the TX FIFO.
-
-#### RX FIFO Role in This Subsystem
-
-- **Write side clock domain:** `rx_clk` or `rx_sample_clk`
-- **Read side clock domain:** `clk_i`
-- **Input source:** UART receiver
-- **Output destination:** AXI-Lite register interface
-
-### RX FIFO Connection Summary
-
-- `uart_rx.data_o` -> `rx_fifo.wr_data`
-- `uart_rx.data_valid_o` -> `rx_fifo.wr_valid`
-- `rx_fifo.rd_data` -> `rx_data_i`
-- `rx_fifo.rd_valid` -> `rx_data_valid_i`
-- `rx_fifo` empty status -> `rx_fifo_empty_i`
-
-### RX FIFO Pop Control
-
-The register interface provides:
-
-- `rx_pop_o`
-
-This is the pop pulse used when software reads `UART_RXD`. Since FIFO read-ready is active-low, the connection should be:
-
-```
-rx_fifo.rd_ready = ~rx_pop_o;
-
+    input  logic                       rx_i,
+    output logic                       tx_o,
+    output logic                       int_en_o
+);
 ```
 
 ---
 
-## 4.6 UART Transmitter
+## 4. Functional Data Paths
 
-The UART transmitter serializes bytes into UART frames and drives the output line `tx_o`.
+### 4.1 Transmit Path
 
-### UART TX Ports
+| Step | Description                                                        |
+|------|--------------------------------------------------------------------|
+| 1    | Software writes a byte to `UART_TXD`                              |
+| 2    | Register interface asserts `tx_data_o[7:0]` and `tx_data_valid_o` |
+| 3    | TX CDC FIFO stores the byte in the system clock domain (`clk_i`)  |
+| 4    | TX CDC FIFO transfers the byte into the TX baud clock domain       |
+| 5    | UART transmitter consumes the byte via valid/ready handshake       |
+| 6    | UART transmitter serializes the byte to `tx_o`                    |
 
-- `arst_ni`
-- `clk_i`
-- `data_i[7:0]`
-- `data_valid_i`
-- `data_ready_o`
-- `data_bits_i[1:0]`
-- `parity_en_i`
-- `parity_type_i`
-- `extra_stop_i`
-- `tx_o`
+### 4.2 Receive Path
 
-### TX Configuration Mapping
+| Step | Description                                                             |
+|------|-------------------------------------------------------------------------|
+| 1    | Serial data enters through `rx_i`                                       |
+| 2    | UART receiver samples and reconstructs the frame                        |
+| 3    | RX CDC FIFO stores the received byte in the `rx_clk` domain             |
+| 4    | RX CDC FIFO transfers the byte into the system clock domain (`clk_i`)   |
+| 5    | Register interface receives `rx_data_i[7:0]` and `rx_data_valid_i`     |
+| 6    | Software reads the byte from `UART_RXD`                                 |
+| 7    | Register interface asserts `rx_data_ready_o` to consume the FIFO entry  |
 
-- `uart_db_o` -> `uart_tx.data_bits_i`
-- `uart_pen_o` -> `uart_tx.parity_en_i`
-- `uart_ptp_o` -> `uart_tx.parity_type_i`
-- `uart_sb_o` -> `uart_tx.extra_stop_i`
+---
 
-### TX FIFO to UART TX
+## 5. Internal Architecture
 
-- `tx_fifo.rd_data` -> `uart_tx.data_i`
-- `tx_fifo.rd_valid` -> `uart_tx.data_valid_i`
-- `~uart_tx.data_ready_o` -> `tx_fifo.rd_ready`
-- `tx_baud_clk` -> `tx_fifo.rd_clk`
-- `tx_baud_clk` -> `uart_tx.clk_i`
-- `rst_ni` -> `uart_tx.arst_ni`
+### 5.1 Sub-Module Instances
 
-### Important Note
+| Instance          | Module             | Description                                                  |
+|-------------------|--------------------|--------------------------------------------------------------|
+| `u_axi4l_regif`   | `axi4l_uart_regif` | AXI4-Lite register interface                                 |
+| `u_prescaler_div` | `clk_div`          | Prescaler: divides `clk_i` by `uart_cfg.psclr` (4-bit div)  |
+| `u_rx_clk_div`    | `clk_div`          | RX clock: divides `prescale_clk` by `clk_div >> 3` (12-bit) |
+| `u_tx_clk_div`    | `clk_div`          | TX clock: divides `rx_clk` by fixed 4 (4-bit div)           |
+| `u_tx_cdc_fifo`   | `cdc_fifo`         | TX CDC FIFO — crosses data from `clk_i` to `tx_clk`         |
+| `u_uart_tx`       | `uart_tx`          | UART transmitter, clocked by `tx_clk`                        |
+| `u_uart_rx`       | `uart_rx`          | UART receiver, clocked by `rx_clk`                           |
+| `u_rx_cdc_fifo`   | `cdc_fifo`         | RX CDC FIFO — crosses data from `rx_clk` to `clk_i`         |
 
-The CDC FIFO uses active-low `rd_ready`, while `uart_tx.data_ready_o` is active-high.  
-Therefore:
+### 5.2 Clock Domain Chain
 
 ```
-tx_fifo.rd_ready = ~uart_tx.data_ready_o;
+clk_i  →  [u_prescaler_div ÷ psclr]  →  prescale_clk
+                                               ↓
+                                  [u_rx_clk_div ÷ (clk_div >> 3)]  →  rx_clk
+                                                                            ↓
+                                                                   [u_tx_clk_div ÷ 4]  →  tx_clk
+```
 
+The RX clock oversamples at 8× the baud rate (the `>> 3` shift). The TX clock divides `rx_clk` by a fixed 4 to yield the baud-rate clock for transmission.
+
+---
+
+## 6. AXI4-Lite Register Interface (`axi4l_uart_regif`)
+
+### 6.1 Purpose
+
+Converts AXI4-Lite reads and writes into control, configuration, and data movement inside the UART subsystem. It is the only bus-facing slave in this subsystem.
+
+### 6.2 UART Control Outputs
+
+| Signal                  | Width  | Description                                         |
+|-------------------------|--------|-----------------------------------------------------|
+| `uart_ctrl_o`           | struct | Control register fields (tx_en, rx_en, tx_fifo_flush, rx_fifo_flush)|
+| `uart_cfg_o`            | struct | Configuration register fields                       |
+| `uart_int_en_o`         | struct | Interrupt enable bits                               |
+| `tx_data_o`             | 8      | TX byte forwarded to TX FIFO                        |
+| `tx_data_valid_o`       | 1      | TX data valid handshake                             |
+| `tx_data_ready_i`       | 1      | TX FIFO not-full feedback to register interface     |
+| `rx_data_i`             | 8      | RX byte from RX FIFO                               |
+| `rx_data_valid_i`       | 1      | RX data available flag                              |
+| `rx_data_ready_o`       | 1      | RX FIFO pop/consume control                        |
+| `tx_data_cnt_i`         | count  | TX FIFO fill level reported in `UART_STAT`          |
+| `rx_data_cnt_i`         | count  | RX FIFO fill level reported in `UART_STAT`          |
+
+---
+
+## 7. TX CDC FIFO (`u_tx_cdc_fifo`)
+
+Transfers outgoing data from `clk_i` into `tx_clk`. Uses Gray-code-safe synchronization internally.
+
+### 7.1 Configuration
+
+| Parameter    | Value        |
+|--------------|--------------|
+| `DATA_WIDTH` | 8            |
+| `FIFO_DEPTH` | `FIFO_DEPTH` |
+| Write clock  | `clk_i`      |
+| Read clock   | `tx_clk`     |
+| Reset        | `arst_ni & ~uart_ctrl.tx_fifo_flush` |
+
+### 7.2 Signal Connections
+
+| FIFO Port    | Connected To                    | Direction |
+|--------------|---------------------------------|-----------|
+| `wr_clk_i`   | `clk_i`                         | →         |
+| `wr_data_i`  | `tx_data_from_regif.data`       | →         |
+| `wr_valid_i` | `tx_data_valid_from_regif`      | →         |
+| `wr_ready_o` | `tx_data_ready_to_regif`        | ←         |
+| `wr_count_o` | `tx_fifo_wr_count`              | ←         |
+| `rd_clk_i`   | `tx_clk`                        | →         |
+| `rd_ready_i` | `tx_fifo_rd_ready`              | →         |
+| `rd_valid_o` | `tx_fifo_rd_valid`              | ←         |
+| `rd_data_o`  | `tx_fifo_rd_data`               | ←         |
+| `rd_count_o` | `tx_fifo_rd_count`              | ←         |
+
+```
+tx_fifo_rd_ready = tx_data_ready_from_uart & uart_ctrl.tx_en
 ```
 
 ---
 
-## 4.7 UART Receiver
+## 8. UART Transmitter (`u_uart_tx`)
 
-The UART receiver performs the reverse operation of the transmitter.
+Serializes bytes from the TX FIFO into UART frames and drives `tx_o`. Clocked by `tx_clk`.
 
-### UART RX Responsibilities
+### 8.1 Port Connections
 
-- detect start bit
-- sample incoming serial data from `rx_i`
-- reconstruct 5/6/7/8-bit data frames
-- optionally check parity
-- verify stop bit(s)
-- generate received byte output
-- generate data-valid pulse for RX FIFO write
-
-### Recommended UART RX Interface
-
-``text
-- `input  arst_ni`
-- `input  clk_i`
-- `input  rx_i`
-- `input  [1:0] data_bits_i`
-- `input  parity_en_i`
-- `input  parity_type_i`
-- `input  extra_stop_i`
-- `output [7:0] data_o`
-- `output data_valid_o`
-- `input  data_ready_i`
-- `output parity_err_o`
-- `output frame_err_o`
-
-**RX Configuration Mapping**
-
-- `uart_db_o -> uart_rx.data_bits_i`
-- `uart_pen_o -> uart_rx.parity_en_i`
-- `uart_ptp_o -> uart_rx.parity_type_i`
-- `uart_sb_o -> uart_rx.extra_stop_i`
-
-**If receiver backpressure is supported:**
-
-rx_fifo.wr_ready -> uart_rx.data_ready_i
+| Port            | Connected To                         |
+|-----------------|--------------------------------------|
+| `clk_i`         | `tx_clk`                             |
+| `arst_ni`       | `arst_ni & ~uart_ctrl.tx_fifo_flush` |
+| `data_i`        | `tx_fifo_rd_data`                    |
+| `data_valid_i`  | `tx_fifo_rd_valid & uart_ctrl.tx_en` |
+| `data_bits_i`   | `uart_cfg.db`                        |
+| `parity_en_i`   | `uart_cfg.pen`                       |
+| `parity_type_i` | `uart_cfg.ptp`                       |
+| `extra_stop_i`  | `uart_cfg.sb`                        |
+| `tx_o`          | `tx_o` (top-level output)            |
+| `data_ready_o`  | `tx_data_ready_from_uart`            |
 
 ---
 
-## 4.8 Clock Divider Chain
+## 9. UART Receiver (`u_uart_rx`)
 
-**The requested three divider blocks**:
-- Prescaler divider
-- TX divider
-- RX divider
-**Divider Roles**
-- Prescaler divider
-- Reduces the main system clock to a lower timing base for UART
-**TX divider**
-- Generates the transmitter baud clock used by uart_tx
-**RX divider**
-- Generates the receiver timing clock
+Samples `rx_i`, reconstructs frames, optionally checks parity, and outputs a valid byte with a data-valid pulse. Clocked by `rx_clk`.
+
+### 9.1 Responsibilities
+
+- Detect start bit
+- Sample and reconstruct 5/6/7/8-bit data frames
+- Optionally check parity
+- Verify stop bit(s)
+- Generate received byte output and `data_valid_o` pulse
+
+### 9.2 Port Connections
+
+| Port             | Connected To                            |
+|------------------|-----------------------------------------|
+| `clk_i`          | `rx_clk`                                |
+| `arst_ni`        | `arst_ni & ~uart_ctrl.rx_fifo_flush`    |
+| `rx_i`           | `rx_i \| ~uart_ctrl.rx_en`              |
+| `data_bits_i`    | `uart_cfg.db`                           |
+| `parity_en_i`    | `uart_cfg.pen`                          |
+| `parity_type_i`  | `uart_cfg.ptp`                          |
+| `data_o`         | `rx_data_from_uart`                     |
+| `data_valid_o`   | `rx_data_valid_from_uart`               |
+| `parity_error_o` | `rx_parity_error`                       |
+
+> When `rx_en` is deasserted, `rx_i` is forced high (idle line), disabling the receiver without requiring a reset.
 
 ---
 
-## 5. Block Diagram
+## 10. RX CDC FIFO (`u_rx_cdc_fifo`)
+
+Transfers received bytes from `rx_clk` into `clk_i`. Uses the same dual-clock CDC architecture as the TX FIFO.
+
+### 10.1 Configuration
+
+| Parameter    | Value                                |
+|--------------|--------------------------------------|
+| `DATA_WIDTH` | 8                                    |
+| `FIFO_DEPTH` | `FIFO_DEPTH`                         |
+| Write clock  | `rx_clk`                             |
+| Read clock   | `clk_i`                              |
+| Reset        | `arst_ni & ~uart_ctrl.rx_fifo_flush` |
+
+### 10.2 Signal Connections
+
+| FIFO Port    | Connected To                    | Direction |
+|--------------|---------------------------------|-----------|
+| `wr_clk_i`   | `rx_clk`                        | →         |
+| `wr_data_i`  | `rx_data_from_uart`             | →         |
+| `wr_valid_i` | `rx_data_valid_from_uart`       | →         |
+| `wr_ready_o` | *(unconnected)*                 | —         |
+| `wr_count_o` | `rx_fifo_wr_count`              | ←         |
+| `rd_clk_i`   | `clk_i`                         | →         |
+| `rd_ready_i` | `rx_fifo_rd_ready`              | →         |
+| `rd_valid_o` | `rx_fifo_rd_valid`              | ←         |
+| `rd_data_o`  | `rx_fifo_rd_data`               | ←         |
+| `rd_count_o` | `rx_fifo_rd_count`              | ←         |
+
+```
+rx_fifo_rd_ready = rx_data_ready_from_regif
+```
+
+---
+
+## 11. Interrupt Logic
+
+Four interrupt sources are ORed to form `int_en_o`. Each source is individually maskable via `UART_INT`.
+
+| Signal         | Condition                          | Enable Bit    |
+|----------------|------------------------------------|---------------|
+| `tx_empty_irq` | `tx_fifo_wr_count == 0`           | `tx_empty_en` |
+| `tx_full_irq`  | `tx_fifo_wr_count == FIFO_DEPTH`  | `tx_full_en`  |
+| `rx_empty_irq` | `rx_fifo_rd_count == 0`           | `rx_empty_en` |
+| `rx_full_irq`  | `rx_fifo_wr_count == FIFO_DEPTH`  | `rx_full_en`  |
+
+```
+int_en_o = tx_empty_irq | tx_full_irq | rx_empty_irq | rx_full_irq
+```
+
+> TX fill level uses the write-side count (`tx_fifo_wr_count`). RX empty uses the read-side count (`rx_fifo_rd_count`); RX full uses the write-side count (`rx_fifo_wr_count`).
+
+---
+
+## 12. Control Behavior
+
+| Control Bit  | Effect                                                              |
+|--------------|---------------------------------------------------------------------|
+| `tx_en`      | Gates TX FIFO read-ready and `data_valid_i` to the transmitter     |
+| `rx_en`      | When deasserted, forces `rx_i` high (idle), disabling the receiver |
+| `tx_fifo_flush`   | Asserts reset on TX CDC FIFO and `uart_tx` simultaneously          |
+| `rx_fifo_flush`   | Asserts reset on RX CDC FIFO and `uart_rx` simultaneously          |
+
+---
+
+## 13. Block Diagram
 
 ![UART Subsystem Top View](./uart_subsystem_topview.svg)
 
 ---
 
-## 6. Register Map Summary
+## 14. Register Map Summary
 
 See [UART Register Map and Bit Fields](./uart_reg.md).
 
 ---
 
-## 7. Register Descriptions
+## 15. Register Descriptions
 
 See [UART Register Map and Bit Fields](./uart_reg.md).
 
 ---
 
-## 8. Detailed Interconnection
+## 16. Detailed Interconnection Summary
 
-### 8.1 Register Interface to TX FIFO
+### 16.1 Register Interface → TX FIFO
 
-- `axil_uart_regif.tx_data_o`        -> `tx_fifo.wr_data`
-- `axil_uart_regif.tx_data_valid_o`  -> `tx_fifo.wr_valid`
-- `tx_fifo.wr_ready` / `full logic`    -> `axil_uart_regif.tx_fifo_full_i`
--`clk_i`                           ->`tx_fifo.clk`
-- `rst_ni`                         ->`tx_fifo.arst_ni`
+| Source                     | Destination                |
+|----------------------------|----------------------------|
+| `tx_data_from_regif.data`  | `u_tx_cdc_fifo.wr_data_i`  |
+| `tx_data_valid_from_regif` | `u_tx_cdc_fifo.wr_valid_i` |
+| `u_tx_cdc_fifo.wr_ready_o` | `tx_data_ready_to_regif`   |
+| `clk_i`                    | `u_tx_cdc_fifo.wr_clk_i`   |
 
+### 16.2 TX FIFO → UART TX
 
-### 8.2 TX FIFO TO UART TX
+| Source                          | Destination                                   |
+|---------------------------------|-----------------------------------------------|
+| `tx_fifo_rd_data`               | `u_uart_tx.data_i`                            |
+| `tx_fifo_rd_valid & tx_en`      | `u_uart_tx.data_valid_i`                      |
+| `u_uart_tx.data_ready_o & tx_en`| `tx_fifo_rd_ready`                            |
+| `tx_clk`                        | `u_tx_cdc_fifo.rd_clk_i`, `u_uart_tx.clk_i`  |
 
-- `tx_fifo.rd_data`          -> `uart_tx.data_i`
-- `tx_fifo.rd_valid`         -> `uart_tx.data_valid_i`
-- `~uart_tx.data_ready_o`    -> `tx_fifo.rd_ready`
-- `tx_baud_clk`              -> `tx_fifo.rd_clk`
-- `tx_baud_clk`              -> `uart_tx.clk_i`
-- `rst_ni `                  -> `uart_tx.arst_ni`
+### 16.3 Register Interface → Clock Dividers
 
-### 8.3 Register Interface to Clock Dividers
+| Source                   | Destination              |
+|--------------------------|--------------------------|
+| `uart_cfg.psclr`         | `u_prescaler_div.div_i`  |
+| `uart_cfg.clk_div >> 3`  | `u_rx_clk_div.div_i`     |
+| *(fixed `'d4`)*          | `u_tx_clk_div.div_i`     |
 
-- uart_psclr_o     -> prescaler divider control
-- uart_clk_div_o   -> tx divider control
-- uart_clk_div_o   -> rx divider control
+### 16.4 Register Interface → UART TX/RX Configuration
 
-### 8.4 Register Interface to UART TX/RX Config
+| Source        | TX Destination            | RX Destination            |
+|---------------|---------------------------|---------------------------|
+| `uart_cfg.db` | `u_uart_tx.data_bits_i`   | `u_uart_rx.data_bits_i`   |
+| `uart_cfg.pen`| `u_uart_tx.parity_en_i`   | `u_uart_rx.parity_en_i`   |
+| `uart_cfg.ptp`| `u_uart_tx.parity_type_i` | `u_uart_rx.parity_type_i` |
+| `uart_cfg.sb` | `u_uart_tx.extra_stop_i`  | *(not connected)*         |
 
-- `uart_db_o`   -> `uart_tx.data_bits_i`, `uart_rx.data_bits_i`
-- `uart_pen_o`  -> `uart_tx.parity_en_i`, `uart_rx.parity_en_i`
-- `uart_ptp_o`  -> `uart_tx.parity_type_i`, `uart_rx.parity_type_i`
-- `uart_sb_o`   -> `uart_tx.extra_stop_i`, `uart_rx.extra_stop_i`
+### 16.5 UART RX → RX FIFO
 
-### 8.5 UART RX to RX FIFO
+| Source                    | Destination                                  |
+|---------------------------|----------------------------------------------|
+| `rx_data_from_uart`       | `u_rx_cdc_fifo.wr_data_i`                    |
+| `rx_data_valid_from_uart` | `u_rx_cdc_fifo.wr_valid_i`                   |
+| `rx_clk`                  | `u_rx_cdc_fifo.wr_clk_i`, `u_uart_rx.clk_i` |
 
-- `uart_rx.data_o`        -> `rx_fifo.wr_data`
-- `uart_rx.data_valid_o`  -> `rx_fifo.wr_valid`
-- `rx_clk/sample_clk `    -> `rx_fifo.wr_clk`
-- `rx_clk/sample_clk`     -> `uart_rx.clk_i`
-- `rst_ni`                -> `uart_rx.arst_ni`
+### 16.6 RX FIFO → Register Interface
 
-**If receiver backpressure is supported:**
-
-- `rx_fifo.wr_ready` -> `uart_rx.data_ready_i`
-
-### 8.6 RX FIFO to Register Interface
-
-- `rx_fifo.rd_data`           -> `axil_uart_regif.rx_data_i`
-- `rx_fifo.rd_valid`          -> `axil_uart_regif.rx_data_valid_i`
-- `rx_fifo empty logic`       -> `axil_uart_regif.rx_fifo_empty_i`
-- `~axil_uart_regif.rx_pop_o` -> `rx_fifo.rd_ready`
-- `clk_i`                     -> `rx_fifo.rd_clk`
-- `rst_ni`                    -> `rx_fifo.arst_ni`
-
-## 9. Interrupt Logic
-
-**A minimal interrupt output can be generated as**:
-
-```
-irq_tx_empty = uart_int_en_o[0] & tx_fifo_empty
-irq_tx_full  = uart_int_en_o[1] & tx_fifo_full
-irq_rx_empty = uart_int_en_o[2] & rx_fifo_empty
-irq_rx_full  = uart_int_en_o[3] & rx_fifo_full
-
-irq_o = irq_tx_empty | irq_tx_full | irq_rx_empty | irq_rx_full
-```
----
-
-## 10. AXI4-Lite Compliance Notes
-
-The subsystem register interface must obey AXI4-Lite protocol rules:
-
-- write address and write data use separate handshake channels
-- read address and read data use separate handshake channels
-- transfer occurs only when both `VALID` and `READY` are asserted
-- write response must be returned after accepting write transaction information
-- read response must be returned only after a valid read address handshake
-- `WSTRB` controls which bytes of the 32-bit write data are valid
+| Source                     | Destination                   |
+|----------------------------|-------------------------------|
+| `rx_fifo_rd_data`          | `rx_data_to_regif.data`       |
+| `rx_fifo_rd_valid`         | `rx_data_valid_to_regif`      |
+| `rx_data_ready_from_regif` | `rx_fifo_rd_ready`            |
+| `clk_i`                    | `u_rx_cdc_fifo.rd_clk_i`     |
 
 ---
 
-## 11. Reset Behavior
+## 17. AXI4-Lite Compliance Notes
 
-**On reset**:
+- Write address and write data channels use separate independent handshakes
+- Read address and read data channels use separate independent handshakes
+- A transfer completes only when both `VALID` and `READY` are asserted
+- Write response (`BRESP`) must be returned after accepting a write transaction
+- Read response (`RRESP`) must be returned only after a valid read address handshake
+- `WSTRB` controls which bytes of the 32-bit write data are active
 
-- UART control registers return to documented defaults
-- FIFOs are cleared
-- TX becomes idle
-- RX state machine resets
+---
+
+## 18. Reset Behavior
+
+On assertion of `arst_ni = 0`:
+
+- UART control registers return to documented reset defaults
+- TX and RX FIFOs are cleared
+- UART TX goes idle (`tx_o` held high)
+- UART RX state machine resets
 - Interrupts are disabled
-- AXI response-valid outputs are driven inactive during reset
+- AXI response-valid outputs are driven inactive
+
+`tx_fifo_flush` and `rx_fifo_flush` bits can independently reset the TX and RX paths without a full system reset.
 
 ---
 
-## 12. Recommended Top-Level Port List
-```systemverilog
-module axi4l_uart_subsystem #(
-    parameter int ADDR_WIDTH = 6,
-    parameter int DATA_WIDTH = 32,
-    parameter int FIFO_DEPTH = 16
-)(
-    input  logic                    clk_i,
-    input  logic                    rst_ni,
-
-    // AXI4-Lite slave interface
-    input  logic [ADDR_WIDTH-1:0]   awaddr_i,
-    input  logic                    awvalid_i,
-    output logic                    awready_o,
-    input  logic [DATA_WIDTH-1:0]   wdata_i,
-    input  logic [DATA_WIDTH/8-1:0] wstrb_i,
-    input  logic                    wvalid_i,
-    output logic                    wready_o,
-    output logic [1:0]              bresp_o,
-    output logic                    bvalid_o,
-    input  logic                    bready_i,
-
-    input  logic [ADDR_WIDTH-1:0]   araddr_i,
-    input  logic                    arvalid_i,
-    output logic                    arready_o,
-    output logic [DATA_WIDTH-1:0]   rdata_o,
-    output logic [1:0]              rresp_o,
-    output logic                    rvalid_o,
-    input  logic                    rready_i,
-
-    // UART serial pins
-    input  logic                    rx_i,
-    output logic                    tx_o,
-
-    // Interrupt
-    output logic                    irq_o
-);
-```
----
-
-### 13. Recommended Internal Instances
-
-- `u_axil_uart_regif`
-- `u_prescaler_div`
-- `u_tx_clk_div`
-- `u_rx_clk_div`
-- `u_tx_cdc_fifo`
-- `u_rx_cdc_fifo`
-- `u_uart_tx`
-- `u_uart_rx`
+## 19. Dependencies
+| Package / Module     | Description                                                    |
+|----------------------|----------------------------------------------------------------|
+| `uart_pkg`           | AXI-Lite bus struct types and UART data type definitions       |
+| `uart_subsystem_pkg` | Subsystem-level parameters (e.g. `UART_FIFO_DEPTH`)           |
+| `axi4l_uart_regif`   | AXI4-Lite register interface                                   |
+| `clk_div`            | Parameterizable clock divider                                  |
+| `cdc_fifo`           | Dual-clock CDC FIFO with Gray-code synchronization             |
+| `uart_tx`            | UART transmitter                                               |
+| `uart_rx`            | UART receiver                                                  |
 
 ---
 
-## 14. Final Subsystem Summary
+## 20. Final Subsystem Summary
 
 **This UART subsystem should be connected as follows**:
 
 -The AXI4-Lite register interface is the only bus-facing slave
--The TX CDC FIFO bridges `clk_i` to `tx_baud_clk`
+-The TX CDC FIFO bridges `clk_i` to `tx_clk`
 -The RX CDC FIFO bridges `rx_clk` to `clk_i`
 -The UART transmitter reads from TX CDC FIFO and drives `tx_o`
 -The UART receiver samples `rx_i` and writes into RX CDC FIFO
@@ -484,6 +471,6 @@ module axi4l_uart_subsystem #(
 -The RX divider generates the receiver timing clock
 -UART configuration fields from `UART_CFG` drive both TX and RX formatting
 -FIFO status feeds `UART_STAT`
-- Interrupt enables from UART_INT combine with FIFO status to generate `irq_o`
+- Interrupt enables from `UART_INT` combine with FIFO status to generate `int_en_o`
 
 ---
