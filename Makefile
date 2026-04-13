@@ -200,7 +200,7 @@ __COMPILE__:
 # simulation snapshot, then the empty stamp file is written so subsequent runs skip this step.
 build/build_$(TOP):
 	@echo -e "\033[3;35mElaborating $(TOP)...\033[0m"
-	@cd build; $(XELAB) $(TOP) --O0 $(XELAB_FLAGS) --nolog $(EWHL)
+	@cd build; $(XELAB) $(TOP) -debug all --O3 $(XELAB_FLAGS) --nolog $(EWHL) -s $(TOP)
 	@echo "" > build/build_$(TOP)
 	@echo -e "\033[3;35mElaborated $(TOP)\033[0m"
 
