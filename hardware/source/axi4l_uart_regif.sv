@@ -24,6 +24,8 @@ module axi4l_uart_regif
   import uart_pkg::UART_RXG_OFFSET;
   import uart_pkg::UART_RXD_OFFSET;
   import uart_pkg::UART_INT_EN_OFFSET;
+  import uart_subsystem_pkg::UART_FIFO_DEPTH;
+  import uart_subsystem_pkg::UART_FIFO_COUNT_W;
 
 (
     input  logic clk_i,
