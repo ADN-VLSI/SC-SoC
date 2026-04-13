@@ -65,7 +65,6 @@ module uart_subsystem_tb;
 
     int         total_pass = 0;
     int         total_fail = 0;
-    string      current_testcase = "";
     logic [7:0] scoreboard [$];
 
     ////////////////////////////////////////////////////////////////////////////
@@ -101,27 +100,6 @@ module uart_subsystem_tb;
             total_fail++;
             $display("[FAIL] %s", msg);
         end
-    endtask
-
-    task automatic testcase_begin(input string name);
-        current_testcase = name;
-        $display("\n[%s] Starting...", current_testcase);
-    endtask
-
-    task automatic testcase_check(
-        input logic  ok,
-        input string msg
-    );
-        string scoped_msg;
-
-        scoped_msg = (current_testcase == "") ? msg : $sformatf("%s | %s", current_testcase, msg);
-        check(ok, scoped_msg);
-    endtask
-
-    task automatic testcase_end();
-        if (current_testcase != "")
-            $display("[%s] Completed.\n", current_testcase);
-        current_testcase = "";
     endtask
 
     // poll STAT until rx_empty=0 (bit22)
@@ -186,20 +164,6 @@ module uart_subsystem_tb;
         repeat(STABILISE_CYCLES) @(posedge clk_i);
     endtask
 
-    task automatic tc0();  $display("[SKIP] tc0 is not implemented in this workspace.");  endtask
-    task automatic tc1();  $display("[SKIP] tc1 is not implemented in this workspace.");  endtask
-    task automatic tc4();  $display("[SKIP] tc4 is not implemented in this workspace.");  endtask
-    task automatic tc5();  $display("[SKIP] tc5 is not implemented in this workspace.");  endtask
-    task automatic tc6();  $display("[SKIP] tc6 is not implemented in this workspace.");  endtask
-    task automatic tc10(); $display("[SKIP] tc10 is not implemented in this workspace."); endtask
-    task automatic tc11(); $display("[SKIP] tc11 is not implemented in this workspace."); endtask
-    task automatic tc12(); $display("[SKIP] tc12 is not implemented in this workspace."); endtask
-    task automatic tc13(); $display("[SKIP] tc13 is not implemented in this workspace."); endtask
-    task automatic tc14(); $display("[SKIP] tc14 is not implemented in this workspace."); endtask
-    task automatic tc15(); $display("[SKIP] tc15 is not implemented in this workspace."); endtask
-    task automatic tc16(); $display("[SKIP] tc16 is not implemented in this workspace."); endtask
-    task automatic tc17(); $display("[SKIP] tc17 is not implemented in this workspace."); endtask
-
     ////////////////////////////////////////////////////////////////////////////
     // INCLUDE TESTCASES
     ////////////////////////////////////////////////////////////////////////////
@@ -227,8 +191,6 @@ module uart_subsystem_tb;
     ////////////////////////////////////////////////////////////////////////////
 
     initial begin
-        string selected_test;
-
         $timeformat(-9, 1, " ns", 20);
         $display("------------------------------------------------------------");
         $display("uart_subsystem TB | BAUD=%0d | FIFO_DEPTH=%0d",
@@ -238,48 +200,24 @@ module uart_subsystem_tb;
         reset_dut();
         configure_uart();
 
-        if (!$value$plusargs("TEST=%s", selected_test) || (selected_test == "") ||
-            (selected_test == "default") || (selected_test == "all")) begin
-            tc0();
-            tc1();
-            tc2();
-            tc3();
-            tc4();
-            tc5();
-            tc6();
-            tc7();
-            tc8();
-            tc9();
-            tc10();
-            tc11();
-            tc12();
-            tc13();
-            tc14();
-            tc15();
-            tc16();
-            tc17();
-        end else if (selected_test == "tc0")  tc0();
-        else if (selected_test == "tc1")  tc1();
-        else if (selected_test == "tc2")  tc2();
-        else if (selected_test == "tc3")  tc3();
-        else if (selected_test == "tc4")  tc4();
-        else if (selected_test == "tc5")  tc5();
-        else if (selected_test == "tc6")  tc6();
-        else if (selected_test == "tc7")  tc7();
-        else if (selected_test == "tc8")  tc8();
-        else if (selected_test == "tc9")  tc9();
-        else if (selected_test == "tc10") tc10();
-        else if (selected_test == "tc11") tc11();
-        else if (selected_test == "tc12") tc12();
-        else if (selected_test == "tc13") tc13();
-        else if (selected_test == "tc14") tc14();
-        else if (selected_test == "tc15") tc15();
-        else if (selected_test == "tc16") tc16();
-        else if (selected_test == "tc17") tc17();
-        else begin
-            total_fail++;
-            $display("[FAIL] Unknown TEST plusarg '%s'", selected_test);
-        end
+        tc0();
+        tc1();
+        tc2();
+        tc3();
+        tc4();
+        tc5();
+        tc6();
+        tc7();
+        tc8();
+        tc9();
+        tc10();
+        tc11();
+        tc12();
+        tc13();
+        tc14();
+        tc15();
+        tc16();
+        tc17();
 
         u_uart_if.wait_till_idle();
 
