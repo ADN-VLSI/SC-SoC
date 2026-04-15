@@ -19,8 +19,6 @@
 // value.  The flushing read result is not checked against the snapshot —
 // it is only used to drain the pipeline.
 
-//`include "methods/motasim.sv"
-
 task automatic tc3_write_32(
   input  logic [31:0] addr,
   input  logic [31:0] data,
@@ -105,12 +103,19 @@ task automatic tc3(); // AXI Invalid Address
   string       addr_label;
 
   begin
-    testcase_begin("TC3");
+    testcase_begin("TC3: AXI Invalid Address");
+
+    $dumpfile("tc3_debug.vcd");
+    $dumpvars(0, uart_subsystem_tb);
+
+    // Reset and reconfigure so registers are in a known stable state.
     reset_dut();
+    configure_uart();
 
     invalid_addrs = '{32'h0000_0FF0, 32'h0000_0100, 32'h0000_0200, 32'h0000_0FFC};
     snapshot_valid = 1'b1;
 
+    // ---------- take register snapshot ----------
     tc3_read_32(UART_CTRL_OFFSET, ctrl_before, rresp);
     testcase_check(rresp === 2'b00,
                    $sformatf("CTRL snapshot read returned OKAY (RRESP=%0b)", rresp));
@@ -131,10 +136,12 @@ task automatic tc3(); // AXI Invalid Address
                    $sformatf("STATUS snapshot read returned OKAY (RRESP=%0b)", rresp));
     if (rresp !== 2'b00) snapshot_valid = 1'b0;
 
+    // ---------- invalid-address stimulus ----------
     if (snapshot_valid) begin
       foreach (invalid_addrs[i]) begin
         addr_label = $sformatf("addr 0x%08h", invalid_addrs[i]);
 
+        // write with full strobe — expect SLVERR
         tc3_write_32_strb(invalid_addrs[i], 32'h1234_5678, 4'hF, bresp);
         testcase_check(bresp === 2'b10,
                        $sformatf("%s invalid write with WSTRB=0xF returned SLVERR (BRESP=%0b)",
@@ -161,7 +168,7 @@ task automatic tc3(); // AXI Invalid Address
         // The returned value is intentionally not compared against ctrl_before
         // here — it is only used for pipeline drainage.
         tc3_read_32(UART_CTRL_OFFSET, rdata, rresp);
-          repeat (67) @(posedge clk_i);
+
         // verify no valid register was corrupted
         tc3_check_snapshot({addr_label, " post-invalid"}, ctrl_before, cfg_before,
                            int_en_before, stat_before);
@@ -191,6 +198,9 @@ task automatic tc3(); // AXI Invalid Address
                    $sformatf("AXI handshake signals returned idle (aw=%0b w=%0b b_ready=%0b ar=%0b r_ready=%0b)",
                              req_i.aw_valid, req_i.w_valid, req_i.b_ready, req_i.ar_valid, req_i.r_ready));
 
-    testcase_end();
+    testcase_end("TC3: AXI Invalid Address");
+        // ---- SYNC counters with main TB ----
+    total_pass += total_p;
+    total_fail += total_f;
   end
 endtask
