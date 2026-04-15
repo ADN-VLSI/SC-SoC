@@ -1,3 +1,30 @@
+// ============================================================================
+// TC10 : Parity Flag Check
+// Assigned : Adnan
+//
+// Objective:
+//   Verify uart_tx generates correct parity bit on tx_o for both even and
+//   odd parity modes across 4 data patterns: 0x55, 0xAA, 0xFF, 0x00.
+//
+// How:
+//   Part A — Even parity (CFG_EVEN = 0x000741B0, pen=1 ptp=0):
+//     1. Flush FIFOs, write CFG, enable TX+RX
+//     2. Write byte to TXD
+//     3. Wait for TX_EMPTY=1 (frame transmitted)
+//     4. Wait for start bit on tx_o
+//     5. Skip start + 8 data bits (8 * BITCY cycles)
+//     6. Sample parity bit — check against ^tx_pat[i] (even XOR)
+//
+//   Part B — Odd parity (CFG_ODD = 0x000F41B0, pen=1 ptp=1):
+//     Same flow, parity expected = ~(^tx_pat[i])
+//
+//   Restore original CFG and CTRL at end.
+//
+// Parity bit timing (at BITCY=864 cycles per bit):
+//   start(1) + data(8) + parity(1) + stop(1) = 11 bits total
+//   Parity bit sampled at: BITCY/2 + 8*BITCY after start bit negedge
+// ============================================================================
+
 task automatic tc10();
   logic [31:0] ctrl0, cfg0, stat, rdata;
   logic [1:0]  bresp, rresp;

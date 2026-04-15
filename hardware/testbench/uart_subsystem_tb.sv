@@ -118,11 +118,11 @@ module uart_subsystem_tb;
     ////////////////////////////////////////////////////////////////////////////
 
     task automatic reset_dut();
-        arst_ni = 0;
-        req_i   = '0;
+        arst_ni <= 0;
+        req_i   <= '0;
         scoreboard.delete();
-        repeat(20) @(posedge clk_i);
-        arst_ni = 1;
+        #220; // hold reset for a few cycles, plus margin
+        arst_ni <= 1;
         repeat(10) @(posedge clk_i);
     endtask
 
