@@ -1,6 +1,6 @@
 // ============================================================================
 // TC10 : Parity Flag Check
-// Assigned : Suporna
+// Assigned : Adnan
 //
 // Objective:
 //   Verify uart_tx generates correct parity bit on tx_o for both even and
