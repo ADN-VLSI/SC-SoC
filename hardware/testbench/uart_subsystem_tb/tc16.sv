@@ -15,20 +15,6 @@
 //
 /////////////////////////////////////////////////////////////////////////
 //
-// Coverage:
-//   CFG     - Single configuration written before loopback enable.
-//             Encodes baud divisor in the lower bytes.
-//
-//   CTRL    - Reset / disable sequence applied before configuration.
-//             Loopback and enable bits set together in a single write.
-//
-//   TXD     - One write per pattern byte; BRESP checked for each.
-//
-//   RXD     - Polled up to RX_TIMEOUT_CYCLES per byte; RRESP used
-//             as the data-valid indicator.
-//
-/////////////////////////////////////////////////////////////////////////
-//
 // Restore:
 //   CTRL and CFG are restored to their baseline values captured
 //   at the start of the task.

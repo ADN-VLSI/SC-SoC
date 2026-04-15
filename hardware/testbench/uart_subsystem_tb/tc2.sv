@@ -13,25 +13,6 @@
 //
 /////////////////////////////////////////////////////////////////////////
 //
-// Coverage:
-//   CTRL    - Write/read BRESP/RRESP protocol checks only.
-//             DUT does not mirror CTRL writes cleanly, so no
-//             readback data check is performed. Includes a
-//             zero-write and 10 back-to-back pattern writes
-//             (values 1-10) to stress the interface.
-//
-//   CFG     - Full write + readback check.
-//             Writes 0x0000_0271 and verifies exact readback.
-//
-//   INT_EN  - Full write + readback check.
-//             Writes 0x0000_000F and verifies exact readback.
-//
-//   STATUS  - Read-only register verification.
-//             Captures baseline, attempts a write of
-//             0xFFFF_FFFF, then confirms value is unchanged.
-//
-/////////////////////////////////////////////////////////////////////////
-//
 // Restore:
 //   CTRL, CFG, and INT_EN are restored to their baseline
 //   values captured at the start of the task.

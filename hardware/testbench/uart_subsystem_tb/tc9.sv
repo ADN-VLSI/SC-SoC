@@ -14,22 +14,6 @@
 //
 /////////////////////////////////////////////////////////////////////////
 //
-// Coverage:
-//   CFG     - Six frame configurations written and read back.
-//             Each config encodes parity mode, stop bits, and
-//             data width in the upper nibble; the lower 16 bits
-//             carry the computed baud divisor.
-//
-//   CTRL    - Disable / flush / enable sequence applied before
-//             each configuration change to guarantee a clean
-//             transmitter state.
-//
-//   TXR     - One 0x55 write issued per configuration.
-//             Only BRESP is checked; data-path correctness is
-//             out of scope for this test case.
-//
-/////////////////////////////////////////////////////////////////////////
-//
 // Restore:
 //   CTRL and CFG are restored to their baseline values captured
 //   at the start of the task.
