@@ -1,3 +1,20 @@
+// ============================================================================
+// TC6  : Single Byte TX
+// Assigned : Adnan
+//
+// Objective:
+//   Verify a byte written to UART_TXD appears correctly on tx_o as a valid
+//   UART frame. Tested with 4 patterns: 0x55, 0xAA, 0xFF, 0x00.
+//
+// How:
+//   1. Save and reconfigure CFG/CTRL (baud=115741, TX+RX enable)
+//   2. Write byte to TXD — retry until FIFO accepts (BRESP=OKAY)
+//   3. Wait for start bit (negedge on tx_o) with timeout guard
+//   4. Capture full frame using recv_rx
+//   5. Check received data, TX_EMPTY=1, tx_cnt=0
+//   6. Restore original CFG and CTRL
+// ============================================================================
+
 task automatic tc6();
     logic [31:0] ctrl0, cfg0, stat;
     logic [1:0]  bresp, rresp;
