@@ -1,6 +1,5 @@
-# 📘 uart_subsystem_tb
+# UART Subsystem Testbench
 
----
 
 ## 1. Overview
 
