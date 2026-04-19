@@ -19,7 +19,6 @@ This testbench covers:
 
 A total of 15 structured test cases ensure comprehensive verification.
 
----
 
 ## 2. Test Categories
 
@@ -48,8 +47,6 @@ A total of 15 structured test cases ensure comprehensive verification.
 ### Integration
 - TC16: Loopback Test  
 
----
-
 ## 3. Registers
 
 | Offset  | Register                | Type | Reset Value | Description                                                          |
@@ -67,11 +64,11 @@ A total of 15 structured test cases ensure comprehensive verification.
 | `0x02C` | [UART_RXD](#uart_rxd)   | RO   | 0x00000000  | RX Data. Receive data byte                                           |
 | `0x030` | [UART_INT](#uart_int)   | RW   | 0x00000000  | Interrupt Control. Interrupt enable bits                             |
 
----
+
 
 ## 4. Test Cases
 
----
+
 
 ### TC0: Power-On Reset
 
@@ -95,7 +92,7 @@ Fresh DUT, clocks running
 | Registers | Default values |
 | FIFO | Empty |
 
----
+
 
 ### TC1: Mid-Operation Reset
 
@@ -119,7 +116,7 @@ Ongoing transmission
 | FIFO | Cleared |
 | TX restart | Works |
 
----
+
 
 ### TC2: AXI Basic Read/Write
 
@@ -141,7 +138,7 @@ DUT initialized
 | BRESP/RRESP | OKAY |
 | Readback | Matches |
 
----
+
 
 ### TC3: AXI Invalid Address
 
@@ -162,7 +159,7 @@ DUT initialized
 | Response | SLVERR |
 | Registers | Unchanged |
 
----
+
 
 ### TC4: Back-to-Back AXI Transactions
 
@@ -183,7 +180,7 @@ AXI ready
 | Transactions | Complete |
 | Order | Preserved |
 
----
+
 
 ### TC5: Concurrent AXI Access
 
@@ -204,7 +201,7 @@ RX FIFO preloaded
 | Deadlock | None |
 | Data | Correct |
 
----
+
 
 ### TC6: Single Byte Transmission
 
@@ -225,7 +222,7 @@ UART configured
 | Frame | Correct |
 | Timing | Accurate |
 
----
+
 
 ### TC7: Continuous Stream
 
@@ -246,7 +243,7 @@ FIFO maintained
 | Gaps | None |
 | Data | No loss |
 
----
+
 
 ### TC8: TX FIFO Full
 
@@ -270,7 +267,7 @@ Known FIFO depth
 | Overflow | No corruption |
 | Order | Preserved |
 
----
+
 
 ### TC9: Configuration Sweep
 
@@ -291,7 +288,7 @@ Configurable UART
 | Frame | Matches config |
 | Parity | Correct |
 
----
+
 
 ### TC10: Parity Flag Check
 
@@ -310,7 +307,7 @@ Parity enabled
 |------|--------|
 | Parity flag | Asserted |
 
----
+
 
 ### TC11: Continuous RX
 
@@ -331,7 +328,7 @@ RX active
 | Data | Correct |
 | Order | Preserved |
 
----
+
 
 ### TC12: RX FIFO Overflow
 
@@ -352,7 +349,7 @@ FIFO depth known
 | Overflow flag | Asserted |
 | Data | Valid |
 
----
+
 
 ### TC13: Backpressure Handling
 
@@ -373,7 +370,7 @@ AXI active
 | VALID | Held |
 | Transactions | Resume |
 
----
+
 
 ### TC16: Loopback Test
 
@@ -395,4 +392,3 @@ tx_o connected to rx_i
 | Data | Match |
 | Order | Correct |
 | Errors | None |
-
