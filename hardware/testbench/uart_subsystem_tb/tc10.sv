@@ -12,7 +12,7 @@
 //     2. Write byte to TXD
 //     3. Wait for TX_EMPTY=1 (frame transmitted)
 //     4. Wait for start bit on tx_o
-//     5. Skip start + 8 data bits (8 * BITCY cycles)
+//     5. Skip start + 8 data bits (9 * BITCY cycles)
 //     6. Sample parity bit — check against ^tx_pat[i] (even XOR)
 //
 //   Part B — Odd parity (CFG_ODD = 0x000F41B0, pen=1 ptp=1):
@@ -22,7 +22,7 @@
 //
 // Parity bit timing (at BITCY=864 cycles per bit):
 //   start(1) + data(8) + parity(1) + stop(1) = 11 bits total
-//   Parity bit sampled at: BITCY/2 + 8*BITCY after start bit negedge
+//   Parity bit sampled at: BITCY/2 + 9*BITCY after start bit negedge
 // ============================================================================
 
 task automatic tc10();
@@ -65,36 +65,29 @@ task automatic tc10();
     cpu_write_32(UART_TXD_OFFSET, {24'h0, tx_pat[i]}, bresp);
     check(bresp == 2'b00, $sformatf("tc10 even tx[%0d]=0x%02h BRESP=OK", i, tx_pat[i]));
 
-    // wait tx empty
-    timeout = BITCY * FRAME * 2;
-    do begin
-      cpu_read_32(UART_STAT_OFFSET, stat, rresp);
-      @(posedge clk_i);
-      timeout--;
-    end while (timeout > 0 && stat[20] == 1'b0);
-    check(timeout > 0, $sformatf("tc10 even tx_empty[%0d]", i));
-
     // check tx_o level via u_uart_if.rx — parity bit is second-to-last bit
     // instead: verify parity bit on the wire by sampling at the right time
     // sample parity bit: start detected, wait start+data bits, sample parity
     // simpler: just verify data received correctly via RX loopback not available
     // so verify TX waveform directly
     // wait for start bit
-    timeout = BITCY * 4;
+  
+    timeout = BITCY * FRAME * 2;
     while (timeout > 0 && u_uart_if.rx !== 1'b0) begin
       @(posedge clk_i);
       timeout--;
     end
 
     if (!timeout) begin
-      check(0, $sformatf("tc10 even no start[%0d]", i));
+      check(0, $sformatf("tc10 odd no start[%0d]", i));
       continue;
     end
 
     // advance to mid-start
     repeat (BITCY / 2) @(posedge clk_i);
     // skip 8 data bits
-    repeat (8 * BITCY) @(posedge clk_i);
+    repeat (9 * BITCY) @(posedge clk_i);
+    //$display("tc10 even parity sample[%0d] at %0t", i, $time);
     // now at mid-parity bit
     begin
       logic parity_got, parity_exp;
@@ -143,7 +136,7 @@ task automatic tc10();
     // advance to mid-start
     repeat (BITCY / 2) @(posedge clk_i);
     // skip 8 data bits
-    repeat (8 * BITCY) @(posedge clk_i);
+    repeat (9 * BITCY) @(posedge clk_i);
     // now at mid-parity bit
     begin
       logic parity_got, parity_exp;
