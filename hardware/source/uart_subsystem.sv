@@ -17,7 +17,7 @@ module uart_subsystem #(
 
   import uart_pkg::*;
 
-  localparam int FIFO_COUNT_W = $clog2(FIFO_DEPTH) + 1;
+  localparam int FIFO_COUNT_W = $clog2(FIFO_DEPTH + 1);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // REGIF <-> CORE SIGNALS

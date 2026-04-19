@@ -94,6 +94,8 @@ task automatic tc6();
         end
 
     end
+    
+    $display(">>>>>>>>>>>>>> %0d %0t" , `__LINE__, $realtime);
 
     cpu_write_32(UART_CFG_OFFSET,  cfg0,  bresp); check(bresp == 2'b00, "tc6: restore CFG");
     cpu_write_32(UART_CTRL_OFFSET, ctrl0, bresp); check(bresp == 2'b00, "tc6: restore CTRL");
