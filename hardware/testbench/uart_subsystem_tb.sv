@@ -218,6 +218,9 @@ module uart_subsystem_tb;
         int p, f;
         int total_p, total_f;
 
+        $dumpfile("uart_subsystem_tb.vcd");
+        $dumpvars(0, uart_subsystem_tb);
+
         total_p = 0;
         total_f = 0;
 
