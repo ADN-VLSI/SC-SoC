@@ -1,3 +1,42 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    Module      : Testbench for Mid-Operation Reset Handling (TC1)
+//
+//    Description : This testbench verifies the UART subsystem’s robustness when an asynchronous
+//                  reset is asserted during an active transmission. It ensures that the transmitter
+//                  halts immediately, the TX line returns to idle, all FIFOs are cleared, and the
+//                  system recovers to a clean state after reset deassertion. It also validates that
+//                  normal operation resumes correctly with a fresh transmission.
+//
+//    Test Flow   :
+//                  1. Preload TX FIFO with multiple data bytes via AXI writes.
+//                  2. Monitor UART TX line (rx signal in loopback) and wait for start bit detection,
+//                     confirming that transmission has begun.
+//                  3. Assert asynchronous reset (arst_ni = 0) during active transmission.
+//                  4. On the next clock cycle, verify that TX immediately returns to idle (logic HIGH).
+//                  5. Hold reset for a fixed number of clock cycles.
+//                  6. Deassert reset (arst_ni = 1) and allow the system to stabilize.
+//                  7. Read STATUS register and verify:
+//                     - TX FIFO is empty
+//                     - RX FIFO is empty
+//                     - FIFO counters are cleared
+//                  8. Reconfigure UART settings after reset.
+//                  9. Perform new AXI writes to initiate a fresh transmission.
+//                 10. Verify that transmission starts correctly within a timeout period.
+//
+//    Key Focus   :
+//                  - Asynchronous reset behavior during active UART transmission
+//                  - Immediate TX line recovery to idle state
+//                  - FIFO and status register reset integrity
+//                  - System recovery and reconfiguration after reset
+//                  - Clean restart of transmission without residual state
+//
+//    Author      : Sheikh Shuparna Haque
+//
+//    Date        : April 15, 2026
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 task automatic tc1();
     logic [31:0] status;
     int timeout;
@@ -17,7 +56,6 @@ task automatic tc1();
     check((timeout < 5000), "TC1: start bit detected before timeout");
 
     // Assert reset mid-frame
-    @(posedge clk_i);
     arst_ni = 1'b0;
     req_i   = '0;
     resp_o  = '0; 
@@ -27,12 +65,11 @@ task automatic tc1();
     check((u_uart_if.rx === 1'b1), "TC1: TX returns to idle immediately after reset");
 
     // Hold reset
-    repeat (5) @(posedge clk_i);
-
+    #5ns; // Hold reset for a fixed duration
     // Deassert reset
     arst_ni = 1'b1;
-    repeat (20) @(posedge clk_i);
-
+    
+    #20ns; // Allow time for system to stabilize after reset deassertion
     // Check reset state
     axi_read(UART_STAT_OFFSET, status);
     check((status[20] == 1'b1), "TC1: TX_EMPTY after reset");
