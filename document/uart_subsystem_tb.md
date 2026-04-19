@@ -17,48 +17,55 @@ This testbench covers:
 - Error detection (parity, framing)  
 - End-to-end validation using loopback  
 
-A total of **18 structured test cases** ensure comprehensive verification.
+A total of 15 structured test cases ensure comprehensive verification.
 
 ---
 
 ## 2. Test Categories
 
-### 🔹 Reset & Initialization
+### Reset & Initialization
 - TC0: Power-On Reset  
 - TC1: Mid-Operation Reset  
 
-### 🔹 AXI Interface
+### AXI Interface
 - TC2: Basic Read/Write  
 - TC3: Invalid Address Handling  
 - TC4: Back-to-Back Transactions  
 - TC5: Concurrent Access  
 - TC13: Backpressure Handling  
 
-### 🔹 Transmitter (TX)
+### Transmitter (TX)
 - TC6: Single Byte Transmission  
 - TC7: Continuous Stream  
 - TC8: TX FIFO Full  
 - TC9: Configuration Sweep  
 
-### 🔹 Receiver (RX)
+### Receiver (RX)
 - TC10: Parity Flag Check  
 - TC11: Continuous RX  
 - TC12: RX FIFO Overflow  
 
-### 🔹 Integration
+### Integration
 - TC16: Loopback Test  
 
 ---
 
-## 3. Important Registers
+## 3. Registers
 
-| Register  | Offset | Description |
-|----------|--------|------------|
-| CTRL     | 0x00   | UART configuration (TX enable, parity, stop bits, etc.) |
-| BAUD_DIV | 0x04   | Baud rate divisor |
-| STATUS   | 0x08   | Status flags (TX_EMPTY, RX_FULL, errors) |
-| TX_DATA  | 0x10   | Transmit FIFO input |
-| RX_DATA  | —      | Receive FIFO output |
+| Offset  | Register                | Type | Reset Value | Description                                                          |
+| ------- | ----------------------- | ---- | ----------- | -------------------------------------------------------------------- |
+| `0x000` | [UART_CTRL](#uart_ctrl) | RW   | 0x00000000  | Control Register. UART reset, FIFO flush, and enable control bits    |
+| `0x004` | [UART_CFG](#uart_cfg)   | RW   | 0x0003405B  | Configuration Register. Baud-rate and frame format configuration     |
+| `0x008` | [UART_STAT](#uart_stat) | RO   | 0x00500000  | Status Register. FIFO fill-level and FIFO state indicators           |
+| `0x010` | [UART_TXR](#uart_txr)   | WO   | -           | TX Access Request ID Queue. Transmit-side access request identifier  |
+| `0x014` | [UART_TXGP](#uart_txgp) | RO   | 0x00000000  | TX Access Grant ID Peek. Non-consuming view of the transmit grant ID |
+| `0x018` | [UART_TXG](#uart_txg)   | RO   | 0x00000000  | TX Access Grant ID. Consuming read of the transmit grant ID          |
+| `0x01C` | [UART_TXD](#uart_txd)   | WO   | -           | TX Data. Transmit data byte                                          |
+| `0x020` | [UART_RXR](#uart_rxr)   | WO   | -           | RX Access Request ID Queue. Receive-side access request identifier   |
+| `0x024` | [UART_RXGP](#uart_rxgp) | RO   | 0x00000000  | RX Access Grant ID Peek. Non-consuming view of the receive grant ID  |
+| `0x028` | [UART_RXG](#uart_rxg)   | RO   | 0x00000000  | RX Access Grant ID. Consuming read of the receive grant ID           |
+| `0x02C` | [UART_RXD](#uart_rxd)   | RO   | 0x00000000  | RX Data. Receive data byte                                           |
+| `0x030` | [UART_INT](#uart_int)   | RW   | 0x00000000  | Interrupt Control. Interrupt enable bits                             |
 
 ---
 
