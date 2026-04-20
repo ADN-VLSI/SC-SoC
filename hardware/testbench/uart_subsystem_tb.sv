@@ -40,14 +40,20 @@ module uart_subsystem_tb;
     uart_subsystem #(
         .FIFO_DEPTH(FIFO_DEPTH)
     ) u_dut (
-        .clk_i    (clk_i),
-        .arst_ni  (arst_ni),
-        .req_i    (req_i),
-        .resp_o   (resp_o),
-        .rx_i     (u_uart_if.tx),
-        .tx_o     (u_uart_if.rx),
-        .int_en_o (int_en_o)
+        .clk_i         (clk_i),
+        .arst_ni       (arst_ni),
+        .req_i         (req_i),
+        .resp_o        (resp_o),
+        .rx_i          (u_uart_if.tx),
+        .tx_o          (u_uart_if.rx),
+        .int_en_o      (int_en_o),
+        .loopback_en_i (u_uart_if.loopback_en)
     );
+
+    ////////////////////////////////////////////////////////////////////////////
+    // LOOPBACK WIRE — controlled via u_uart_if.loopback_en in tc16
+    // The assign lives inside uart_if where tx and rx are in scope.
+    ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
     // CLOCK
