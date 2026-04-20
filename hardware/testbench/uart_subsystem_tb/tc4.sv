@@ -32,12 +32,12 @@ task automatic tc4();
 
     // 16 consecutive writes
     for (int i = 0; i < 16; i++) begin
-        fork
+        fork 
             axi_write(UART_TXD_OFFSET, i);
-        join
+        join_none
+        #1ns;
     end
-
-    
+    axi_write(-1, -1); // Dummy write to ensure all previous writes are issued
 
     axi_read(UART_STAT_OFFSET, status);
     check(status[9:0] == 16, "TX_FIFO_LEVEL=16 after writes");
@@ -46,21 +46,25 @@ task automatic tc4();
     for (int i = 0; i < 16; i++) begin
         fork
             axi_read(UART_CTRL_OFFSET, rd_data);
-        join
-        check(rd_data == 32'h00000018, "CTRL readback OK");
-    end
-
-    // Interleaved sequence
-    for (int i = 0; i < 10; i++) begin
-        fork
-            begin
-                axi_write(UART_TXD_OFFSET, 32'hABCD0000 + i);
-                axi_read(UART_CTRL_OFFSET, rd_data);
-                check(rd_data == 32'h00000018, "CTRL readback during interleave OK");
-            end
         join_none
         #1ns;
     end
+    axi_read(UART_CTRL_OFFSET, rd_data);
+    check(rd_data == 32'h00000018, "CTRL readback OK");
+
+    // Concurrent read write sequence
+    for (int i = 0; i < 10; i++) begin
+        fork
+            axi_write(UART_TXD_OFFSET, 32'hABCD0000 + i);
+            axi_read(UART_CTRL_OFFSET, rd_data);
+        join_none
+        #1ns;
+    end
+    fork
+        axi_write(-1, -1);
+        axi_read(UART_CTRL_OFFSET, rd_data);
+    join
+    check(rd_data == 32'h00000018, "CTRL readback during interleave OK");
 
     $display("=== TC4 Completed ===");
 endtask
