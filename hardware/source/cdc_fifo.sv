@@ -67,8 +67,8 @@ module cdc_fifo #(
 
   assign rd_valid_o = (wr_addr_ != rd_addr);
 
-  assign wr_count_o = wr_addr[FIFO_SIZE-1:0] - rd_addr_[FIFO_SIZE-1:0];
-  assign rd_count_o = wr_addr_[FIFO_SIZE-1:0] - rd_addr[FIFO_SIZE-1:0];
+  assign wr_count_o = wr_addr - rd_addr_;
+  assign rd_count_o = wr_addr_ - rd_addr;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   //-RTLS
