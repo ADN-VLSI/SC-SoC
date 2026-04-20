@@ -22,8 +22,16 @@ rx_state_t state, next_state;
 
 logic [7:0] shift_reg;   // incoming data shift register
 logic [2:0] bit_cnt;     // current bit index (1..N-1 during DATA)
+logic [1:0] counter;     // counts when to sample
 logic       parity_bit;  // received parity bit
 logic       parity_xor;  // computed parity over data width
+logic       sample_now;  // flag: time to sample next bit
+
+////////////////////////////////////////////////////////////
+// SAMPLING LOGIC
+////////////////////////////////////////////////////////////
+
+always_comb sample_now = (state == IDLE) || counter == 'd1;
 
 ////////////////////////////////////////////////////////////
 // Parity calculation — XOR over active data width only.
@@ -71,28 +79,28 @@ always_ff @(posedge clk_i or negedge arst_ni) begin
         state      <= IDLE;
         shift_reg  <= 8'b0;
         bit_cnt    <= 3'b0;
+        counter    <= 3'b0;
         parity_bit <= 1'b0;
     end else begin
-        state <= next_state;
+        
+        if (state == IDLE) counter <= 2'b0; 
+        else counter <= counter + 2'b1;
 
-        if (state == START) begin
-            // D0 is on rx_i right now.
-            shift_reg[0] <= rx_i;   // sample D0 into bit 0
-            bit_cnt      <= 3'd1;   // DATA will continue from D1 onward
+        if (sample_now) begin
+            state <= next_state;
+
+            if (state == START) begin
+                shift_reg[0] <= '0;
+                bit_cnt      <= '0;
+            end
+
+            if (state == DATA) begin
+                bit_cnt <= bit_cnt + 3'd1;   // bit_cnt stops at the last valid index.
+                shift_reg[bit_cnt] <= rx_i;  // capture D(bit_cnt) LSB-first
+            end
+
+            if (state == PARITY) parity_bit <= rx_i;  // latch received parity bit
         end
-
-        if (state == DATA) begin
-            shift_reg[bit_cnt] <= rx_i;   // capture D(bit_cnt) LSB-first
-
-            // bit_cnt stops at the last valid index.
-            if (bit_cnt < (3'(data_bits_i) + 3'd4))
-                bit_cnt <= bit_cnt + 3'd1;
-            else
-                bit_cnt <= 3'd0;           // reset after final bit
-        end
-
-        if (state == PARITY)
-            parity_bit <= rx_i;            // latch received parity bit
     end
 end
 
