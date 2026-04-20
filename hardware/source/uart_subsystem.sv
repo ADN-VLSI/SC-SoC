@@ -12,9 +12,7 @@ module uart_subsystem #(
 
     input  logic                     rx_i,
     output logic                     tx_o,
-    output logic                     int_en_o,
-
-    input  logic                     loopback_en_i
+    output logic                     int_en_o
 );
 
   import uart_pkg::*;
@@ -197,9 +195,9 @@ module uart_subsystem #(
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   uart_rx u_uart_rx (
-      .clk_i          (loopback_en_i ? tx_clk : rx_clk),
+      .clk_i          (rx_clk),
       .arst_ni        (arst_ni & ~uart_ctrl.rx_fifo_flush),
-      .rx_i           ((loopback_en_i ? tx_o : rx_i) | ~uart_ctrl.rx_en),
+      .rx_i           (rx_i | ~uart_ctrl.rx_en),
       .data_bits_i    (uart_cfg.db),
       .parity_en_i    (uart_cfg.pen),
       .parity_type_i  (uart_cfg.ptp),
@@ -217,7 +215,7 @@ module uart_subsystem #(
       .FIFO_DEPTH (FIFO_DEPTH)
   ) u_rx_cdc_fifo (
       .arst_ni    (arst_ni & ~uart_ctrl.rx_fifo_flush),
-      .wr_clk_i   (loopback_en_i ? tx_clk : rx_clk),
+      .wr_clk_i   (rx_clk),
       .wr_data_i  (rx_data_from_uart),
       .wr_valid_i (rx_data_valid_from_uart),
       .wr_ready_o (),

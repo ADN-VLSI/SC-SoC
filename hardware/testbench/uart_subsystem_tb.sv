@@ -46,14 +46,8 @@ module uart_subsystem_tb;
         .resp_o        (resp_o),
         .rx_i          (u_uart_if.tx),
         .tx_o          (u_uart_if.rx),
-        .int_en_o      (int_en_o),
-        .loopback_en_i (u_uart_if.loopback_en)
+        .int_en_o      (int_en_o)
     );
-
-    ////////////////////////////////////////////////////////////////////////////
-    // LOOPBACK WIRE — controlled via u_uart_if.loopback_en in tc16
-    // The assign lives inside uart_if where tx and rx are in scope.
-    ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
     // CLOCK

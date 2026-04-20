@@ -86,7 +86,7 @@ task automatic tc16();
   check(bresp == 2'b00, "tc16: write UART_CFG");                                             // AXI write must succeed
   repeat (20) @(posedge clk_i);                                                              // allow config to settle
 
-  u_uart_if.loopback_en = 1;                                                                 // wire tx_o back to rx_i via uart_if assign; loopback_en_i propagates to RTL clock mux
+  force u_uart_if.tx = u_uart_if.rx;                                                                // wire tx_o back to rx_i via uart_if assign; loopback_en_i propagates to RTL clock mux
 
   cpu_write_32(UART_CTRL_OFFSET, 32'h18, bresp);                                             // enable rx_en[4] and tx_en[3]; no hardware loopback bit in this design
   check(bresp == 2'b00, "tc16: enable UART/loopback");                                       // AXI write must succeed
@@ -128,12 +128,13 @@ task automatic tc16();
 
   // Step 5: drain TX, disable loopback, restore baselines
   wait_tx_done();                                                                            // block until tx_empty set in STAT[20] — CFG write gated on both FIFOs empty
-  u_uart_if.loopback_en = 0;                                                                 // release loopback wire before restoring CTRL
-  cpu_write_32(UART_CFG_OFFSET,  cfg0,  bresp);                                             // restore CFG
-  check(bresp == 2'b00, "tc16: restore UART_CFG");                                          // AXI write must succeed
-  cpu_write_32(UART_CTRL_OFFSET, ctrl0, bresp);                                             // restore CTRL
-  check(bresp == 2'b00, "tc16: restore UART_CTRL");                                         // AXI write must succeed
+  uart_if.wait_till_idle();
+  release u_uart_if.tx;                                                                      // release loopback wire before restoring CTRL
+  cpu_write_32(UART_CFG_OFFSET,  cfg0,  bresp);                                              // restore CFG
+  check(bresp == 2'b00, "tc16: restore UART_CFG");                                           // AXI write must succeed
+  cpu_write_32(UART_CTRL_OFFSET, ctrl0, bresp);                                              // restore CTRL
+  check(bresp == 2'b00, "tc16: restore UART_CTRL");                                          // AXI write must succeed
 
-  $display("TC16 DONE");                                                                    // confirm test case completion in sim log
+  $display("TC16 DONE");                                                                     // confirm test case completion in sim log
 
-endtask                                                                                     // end tc16
+endtask                                                                                      // end tc16
