@@ -157,6 +157,10 @@ interface uart_if;
   // Undefine the macro to avoid conflicts
   `undef SEND_RECV
 
+  // Loopback control — when set, mirrors rx (tx_o from DUT) back onto tx (rx_i to DUT)
+  bit loopback_en = 0;
+  assign tx = loopback_en ? rx : 1'bz;
+
   task automatic wait_till_idle(input int tx_len = 3);
     realtime bit_time;
     int i;
