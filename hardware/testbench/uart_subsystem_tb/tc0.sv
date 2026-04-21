@@ -1,3 +1,37 @@
+systemverilog////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    Module      : Testbench for Power-On Reset (TC0)
+//
+//    Description : This testbench verifies the UART subsystem's behaviour across the full
+//                  power-on reset sequence. It confirms that all output signals are driven to
+//                  known logic values while reset is asserted, that register reset values match
+//                  RTL-specified defaults upon deassertion, and that the TX line maintains the
+//                  UART idle-high (mark) state throughout.
+//
+//    Test Flow   :
+//                  1. Assert arst_ni and hold req_i at zero, then sample 10 consecutive rising
+//                     clock edges to confirm the TX line idles high and all AXI response buses
+//                     carry no unknown (X) bits during reset.
+//                  2. Deassert arst_ni and wait two clock cycles for combinational logic and
+//                     synchroniser stages to settle.
+//                  3. Read the CTRL register and verify the reset value is 0x00000000.
+//                  4. Read the CFG register and verify the reset value matches the RTL default
+//                     of 0x0003405B.
+//                  5. Read the STATUS register and confirm TX_EMPTY and RX_EMPTY are asserted,
+//                     TX_FULL and RX_FULL are deasserted, and both FIFO occupancy counts are zero.
+//                  6. Read the RXD register and confirm it returns 0x00000000 when the RX FIFO
+//                     is empty.
+//                  7. Sample 20 additional rising clock edges to verify the TX line remains
+//                     idle-high once normal operation begins.
+//                  8. Call configure_uart() to restore standard configuration for subsequent
+//                     test cases.
+//
+//    Author      : Dhruba
+//
+//    Date        : April 13, 2026
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 task automatic tc0();
     logic [31:0] rdata;
     int i;
