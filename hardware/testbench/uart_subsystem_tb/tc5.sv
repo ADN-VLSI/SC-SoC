@@ -22,7 +22,7 @@
 //                  5. Wait for the TX FIFO to fully drain and confirm TX_EMPTY is asserted,
 //                     ensuring no deadlock occurred during or after concurrent access.
 //
-//    Author      : Dhruba
+//    Author      : Sheikh Shuparna Haque & Adnan Sami Anirban
 //
 //    Date        : April 21, 2026
 //
@@ -33,14 +33,9 @@ task automatic tc5();
     logic [31:0] status;
     uart_stat_reg_t stat;
 
-    logic [7:0] preload [0:3];
-    logic [7:0] tx_data [0:3];
+    logic [7:0] preload [4] = '{8'h11, 8'h22, 8'h33, 8'h44};
+    logic [7:0] tx_data [4] = '{8'hAA, 8'hBB, 8'hCC, 8'hDD};
 
-    preload[0] = 8'h11; preload[1] = 8'h22;
-    preload[2] = 8'h33; preload[3] = 8'h44;
-
-    tx_data[0] = 8'hAA; tx_data[1] = 8'hBB;
-    tx_data[2] = 8'hCC; tx_data[3] = 8'hDD;
 
     $display("=== TC5: Concurrent AXI Access ===");
 
@@ -67,6 +62,7 @@ task automatic tc5();
         join_none
         #1ns;
     end
+
     fork
         axi_write(-1, -1);
         axi_read(UART_RXD_OFFSET, rd_data);
