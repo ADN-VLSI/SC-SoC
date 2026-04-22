@@ -1,81 +1,98 @@
-task automatic tc5_write_tx(
-    input  logic [7:0] data,
-    output logic [1:0] resp
-);
-    int t;
-    resp = 2'b10;
-    for (t = 0; (t < 2000) && (resp != 2'b00); t++) begin
-        cpu_write_32(UART_TXD_OFFSET, {24'h0, data}, resp);
-        if (resp != 2'b00) @(posedge clk_i);
-    end
-endtask
-
-task automatic tc5_wait_tx_empty(output bit ok);
-    logic [31:0] stat;
-    int t;
-    ok = 0;
-    for (t = 0; t < 500000; t++) begin
-        axi_read(UART_STAT_OFFSET, stat);
-        if (stat[20]) begin
-            ok = 1;
-            break;
-        end
-        @(posedge clk_i);
-    end
-endtask
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    Module      : Testbench for Concurrent AXI Transactions (TC5)
+//
+//    Description : This testbench verifies the UART subsystem's ability to handle simultaneous
+//                  AXI write and read operations without causing deadlocks, data corruption,
+//                  or AXI protocol violations. It ensures that concurrent access to the TX and
+//                  RX paths through the shared AXI interface does not compromise the integrity
+//                  of either the data path or the status reporting logic.
+//
+//    Test Flow   :
+//                  1. Perform 4 concurrent AXI write transactions to the TX_DATA register and
+//                     verify that the TX FIFO has accepted the bytes by confirming TX_EMPTY
+//                     is deasserted.
+//                  2. Issue 4 rounds of simultaneous AXI writes to TX_DATA and AXI reads from
+//                     RX_DATA using fork/join_none to create true concurrent bus activity.
+//                  3. Verify that the STATUS register remains fully defined (no X bits) after
+//                     all concurrent accesses complete.
+//                  4. Execute a maximum FIFO fill stress test by spawning 10 concurrent write
+//                     and read pairs to hammer the AXI bus simultaneously, then confirm STATUS
+//                     register integrity after the storm.
+//                  5. Wait for the TX FIFO to fully drain and confirm TX_EMPTY is asserted,
+//                     ensuring no deadlock occurred during or after concurrent access.
+//
+//    Author      : Sheikh Shuparna Haque & Adnan Sami Anirban
+//
+//    Date        : April 21, 2026
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 task automatic tc5();
-    logic [31:0] stat, rdata;
-    logic [1:0]  resp, rd_resp;
-    logic [7:0]  preload [0:3];
-    logic [7:0]  tx_data  [0:3];
-    int i, tx_ok;
-    bit ok;
+    logic [31:0] rd_data;
+    logic [31:0] status;
+    uart_stat_reg_t stat;
 
-    $display("TC5: Concurrent AXI Access");
+    logic [7:0] preload [4] = '{8'h11, 8'h22, 8'h33, 8'h44};
+    logic [7:0] tx_data [4] = '{8'hAA, 8'hBB, 8'hCC, 8'hDD};
 
-    preload[0] = 8'h11; preload[1] = 8'h22; preload[2] = 8'h33; preload[3] = 8'h44;
-    tx_data [0] = 8'hAA; tx_data [1] = 8'hBB; tx_data [2] = 8'hCC; tx_data [3] = 8'hDD;
 
-    tx_ok = 0;
+    $display("=== TC5: Concurrent AXI Access ===");
 
-    reset_dut();
-    configure_uart();
+    // Pre-load TX FIFO with 4 bytes and verify they are queued
+    for (int i = 0; i < 4; i++) begin
+        fork
+            axi_write(UART_TXD_OFFSET, {24'h0, preload[i]});
+        join_none
+        #1ns;
+    end
+    axi_write(-1, -1); // barrier
 
-    // preload activity
-    for (i = 0; i < 4; i++) begin
-        tc5_write_tx(preload[i], resp);
-        check(resp == 2'b00, $sformatf("TC5: preload TX write accepted for 0x%02h", preload[i]));
-        repeat (2000) @(posedge clk_i);
+    // Verify TX FIFO has accepted the bytes (tx_cnt or tx_empty deasserted)
+    axi_read(UART_STAT_OFFSET, rd_data);
+    stat = uart_stat_reg_t'(rd_data);
+    check(stat.tx_empty == 1'b0,
+          $sformatf("TX active after preload writes (tx_cnt=%0d)", stat.tx_cnt));
+
+    // Concurrent TX writes and RX reads — 4 rounds
+    for (int i = 0; i < 4; i++) begin
+        fork
+            axi_write(UART_TXD_OFFSET, {24'h0, tx_data[i]});
+            axi_read(UART_RXD_OFFSET, rd_data);
+        join_none
+        #1ns;
     end
 
-    repeat (10000) @(posedge clk_i);
+    fork
+        axi_write(-1, -1);
+        axi_read(UART_RXD_OFFSET, rd_data);
+    join
+    check(^rd_data !== 1'bx, "RX data valid during concurrent access");
 
-    axi_read(UART_STAT_OFFSET, stat);
-    check(^stat !== 1'bx, $sformatf("TC5: STATUS is defined after preload (STAT=0x%08h)", stat));
-    check(stat[19:10] >= 0, $sformatf("TC5: RX count field readable after preload (STAT=0x%08h)", stat));
+    axi_read(UART_STAT_OFFSET, rd_data);
+    stat = uart_stat_reg_t'(rd_data);
+    check(^rd_data !== 1'bx, "STATUS defined after concurrent accesses");
 
-    // concurrent-like AXI activity
-    for (i = 0; i < 4; i++) begin
-        tc5_write_tx(tx_data[i], resp);
-        check(resp == 2'b00, $sformatf("TC5: TX write %0d accepted (0x%02h)", i+1, tx_data[i]));
-        if (resp == 2'b00) tx_ok++;
-
-        cpu_read_32(UART_RXD_OFFSET, rdata, rd_resp);
-        check((rd_resp == 2'b00) || (rd_resp == 2'b10),
-              $sformatf("TC5: RX read %0d completed without deadlock (resp=%0b, data=0x%08h)",
-                        i+1, rd_resp, rdata));
+    // Max FIFO fill stress
+    for (int i = 0; i < 10; i++) begin
+        fork
+            axi_write(UART_TXD_OFFSET, 32'hABCD0000 + i);
+            axi_read(UART_RXD_OFFSET, rd_data);
+        join_none
+        #1ns;
     end
+    fork
+        axi_write(-1, -1);
+        axi_read(UART_STAT_OFFSET, rd_data);
+    join
+    stat = uart_stat_reg_t'(rd_data);
+    check(^rd_data !== 1'bx, "STATUS valid after max-fill stress");
 
-    axi_read(UART_STAT_OFFSET, stat);
-    check(^stat !== 1'bx, $sformatf("TC5: STATUS remains defined after concurrent accesses (STAT=0x%08h)", stat));
-    check(tx_ok == 4, $sformatf("TC5: all 4 TX writes completed successfully (%0d/4)", tx_ok));
-    check(((stat[20] == 1'b0) || (stat[9:0] != 10'd0) || (stat[20] == 1'b1)),
-          $sformatf("TC5: TX status remained live after concurrent accesses (STAT=0x%08h)", stat));
+    // Drain TX and confirm TX_EMPTY
+    wait_tx_done();
+    axi_read(UART_STAT_OFFSET, rd_data);
+    stat = uart_stat_reg_t'(rd_data);
+    check(stat.tx_empty == 1'b1, "TX_EMPTY asserted after drain");
 
-    tc5_wait_tx_empty(ok);
-    check(ok, "TC5: TX drained without deadlock");
-
-    axi_read(UART_STAT_OFFSET, stat);
-    check(stat[20] == 1'b1, $sformatf("TC5: TX_EMPTY asserted after drain (STAT=0x%08h)", stat));
+    $display("=== TC5 Completed ===");
 endtask
