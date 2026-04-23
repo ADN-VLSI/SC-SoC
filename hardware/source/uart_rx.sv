@@ -123,9 +123,9 @@ always_comb begin
     data_valid_o   = 1'b0;
     parity_error_o = 1'b0;
 
-    if (state == STOP && rx_i) begin                      // valid stop bit
+    if (state == STOP) begin
         data_o         = data_masked;                     // masked output
-        data_valid_o   = 1'b1;
+        data_valid_o   = sample_now;
         parity_error_o = parity_en_i & ((parity_xor ^ parity_bit) != parity_type_i);
     end
 end
