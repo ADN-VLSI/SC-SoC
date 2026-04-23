@@ -1,4 +1,5 @@
 `include "package/uart_pkg.sv"
+`include "package/uart_subsystem_pkg.sv"
 
 module axi4l_uart_regif
 
@@ -23,30 +24,32 @@ module axi4l_uart_regif
   import uart_pkg::UART_RXG_OFFSET;
   import uart_pkg::UART_RXD_OFFSET;
   import uart_pkg::UART_INT_EN_OFFSET;
+  import uart_subsystem_pkg::UART_FIFO_DEPTH;
+  import uart_subsystem_pkg::UART_FIFO_COUNT_W;
 
 (
-    input  logic clk_i,
-    input  logic arst_ni,
+    input logic clk_i,
+    input logic arst_ni,
 
-    input  uart_axil_req_t  req_i,
-    output uart_axil_rsp_t  resp_o,
+    input  uart_axil_req_t req_i,
+    output uart_axil_rsp_t resp_o,
 
-    output uart_ctrl_reg_t  uart_ctrl_o,
-    output uart_cfg_reg_t   uart_cfg_o,
-    output uart_stat_reg_t  uart_stat_o,
+    output uart_ctrl_reg_t uart_ctrl_o,
+    output uart_cfg_reg_t  uart_cfg_o,
+    output uart_stat_reg_t uart_stat_o,
 
-    output uart_data_t      tx_data_o,
-    output logic            tx_data_valid_o,
-    input  logic            tx_data_ready_i,
+    output uart_data_t tx_data_o,
+    output logic       tx_data_valid_o,
+    input  logic       tx_data_ready_i,
 
-    input  uart_data_t      rx_data_i,
-    input  logic            rx_data_valid_i,
-    output logic            rx_data_ready_o,
+    input  uart_data_t rx_data_i,
+    input  logic       rx_data_valid_i,
+    output logic       rx_data_ready_o,
 
-    input  uart_count_t     tx_data_cnt_i,
-    input  uart_count_t     rx_data_cnt_i,
+    input uart_count_t tx_data_cnt_i,
+    input uart_count_t rx_data_cnt_i,
 
-    output uart_int_reg_t   uart_int_en_o
+    output uart_int_reg_t uart_int_en_o
 );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,9 +60,9 @@ module axi4l_uart_regif
   uart_axil_rsp_t fifo_resp;
 
   axi4l_fifo #(
-      .axi4l_req_t (uart_axil_req_t),
-      .axi4l_rsp_t (uart_axil_rsp_t),
-      .FIFO_SIZE   (2)
+      .axi4l_req_t(uart_axil_req_t),
+      .axi4l_rsp_t(uart_axil_rsp_t),
+      .FIFO_SIZE  (2)
   ) u_axi4l_fifo (
       .clk_i    (clk_i),
       .arst_ni  (arst_ni),
@@ -109,100 +112,103 @@ module axi4l_uart_regif
 
 
   always_comb tx_data_o = fifo_req.w.data;
-  always_comb tx_id_in  = fifo_req.w.data;
-  always_comb rx_id_in  = fifo_req.w.data;
+  always_comb tx_id_in = fifo_req.w.data;
+  always_comb rx_id_in = fifo_req.w.data;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // READ DATA MUX — combinational
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
-    fifo_resp.r.data  = '0;
-    fifo_resp.r.resp  = 2'b10;   // default SLVERR
-    rx_data_ready_o   = 1'b0;
-    tx_id_out_ready   = 1'b0;
-    rx_id_out_ready   = 1'b0;
+    fifo_resp.r.data = '0;
+    fifo_resp.r.resp = 2'b10;  // default SLVERR
+    rx_data_ready_o  = 1'b0;
+    tx_id_out_ready  = 1'b0;
+    rx_id_out_ready  = 1'b0;
 
-    case (fifo_req.ar.addr[5:0])
+    if (rd_en) begin
+      case (fifo_req.ar.addr)
 
-      UART_CTRL_OFFSET: begin
-        fifo_resp.r.data = uart_ctrl_o;   
-        fifo_resp.r.resp = 2'b00;
-      end
-
-      UART_CFG_OFFSET: begin
-        fifo_resp.r.data = uart_cfg_o;
-        fifo_resp.r.resp = 2'b00;
-      end
-
-      UART_STAT_OFFSET: begin
-        fifo_resp.r.data = uart_stat_o;
-        fifo_resp.r.resp = 2'b00;
-      end
-
-      UART_TXR_OFFSET: begin
-        fifo_resp.r.data = '0;
-        fifo_resp.r.resp = 2'b00;
-      end
-
-      UART_TXGP_OFFSET: begin
-        if (tx_id_out_valid) begin
-          fifo_resp.r.data = {'0, tx_id_out};  // 8-bit ID → 32-bit
+        UART_CTRL_OFFSET: begin
+          fifo_resp.r.data = uart_ctrl_o;
           fifo_resp.r.resp = 2'b00;
-          // tx_id_out_ready stays 0 — peek, no pop
         end
-      end
 
-      UART_TXG_OFFSET: begin
-        if (tx_id_out_valid) begin
-          fifo_resp.r.data = {'0, tx_id_out};
+        UART_CFG_OFFSET: begin
+          fifo_resp.r.data = uart_cfg_o;
           fifo_resp.r.resp = 2'b00;
-          tx_id_out_ready  = rd_en;   // consuming read — pop TXQ
         end
-      end
 
-      UART_TXD_OFFSET: begin
-        fifo_resp.r.data = '0;
-        fifo_resp.r.resp = 2'b00;
-      end
-
-      UART_RXR_OFFSET: begin
-        fifo_resp.r.data = '0;
-        fifo_resp.r.resp = 2'b00;
-      end
-
-      UART_RXGP_OFFSET: begin
-        if (rx_id_out_valid) begin
-          fifo_resp.r.data = {'0, rx_id_out};
+        UART_STAT_OFFSET: begin
+          fifo_resp.r.data = uart_stat_o;
           fifo_resp.r.resp = 2'b00;
-          // rx_id_out_ready stays 0 — peek, no pop
         end
-      end
 
-      UART_RXG_OFFSET: begin
-        if (rx_id_out_valid) begin
-          fifo_resp.r.data = {'0, rx_id_out};
+        UART_TXR_OFFSET: begin
+          fifo_resp.r.data = '0;
           fifo_resp.r.resp = 2'b00;
-          rx_id_out_ready  = rd_en;   // consuming read — pop RXQ
         end
-      end
 
-      UART_RXD_OFFSET: begin
-        if (rx_data_valid_i) begin
-          fifo_resp.r.data = {'0, rx_data_i};  // 8-bit byte → 32-bit
+        UART_TXGP_OFFSET: begin
+          if (tx_id_out_valid) begin
+            fifo_resp.r.data = {'0, tx_id_out};  // 8-bit ID → 32-bit
+            fifo_resp.r.resp = 2'b00;
+            // tx_id_out_ready stays 0 — peek, no pop
+          end
+        end
+
+        UART_TXG_OFFSET: begin
+          if (tx_id_out_valid) begin
+            fifo_resp.r.data = {'0, tx_id_out};
+            fifo_resp.r.resp = 2'b00;
+            tx_id_out_ready  = '1;  // consuming read — pop TXQ
+          end
+        end
+
+        UART_TXD_OFFSET: begin
+          fifo_resp.r.data = '0;
           fifo_resp.r.resp = 2'b00;
-          rx_data_ready_o  = rd_en;   // pop RX CDC FIFO
         end
-      end
 
-      UART_INT_EN_OFFSET: begin
-        fifo_resp.r.data = uart_int_en_o;
-        fifo_resp.r.resp = 2'b00;
-      end
+        UART_RXR_OFFSET: begin
+          fifo_resp.r.data = '0;
+          fifo_resp.r.resp = 2'b00;
+        end
 
-      default: begin end
+        UART_RXGP_OFFSET: begin
+          if (rx_id_out_valid) begin
+            fifo_resp.r.data = {'0, rx_id_out};
+            fifo_resp.r.resp = 2'b00;
+            // rx_id_out_ready stays 0 — peek, no pop
+          end
+        end
 
-    endcase
+        UART_RXG_OFFSET: begin
+          if (rx_id_out_valid) begin
+            fifo_resp.r.data = {'0, rx_id_out};
+            fifo_resp.r.resp = 2'b00;
+            rx_id_out_ready  = '1;  // consuming read — pop RXQ
+          end
+        end
+
+        UART_RXD_OFFSET: begin
+          if (rx_data_valid_i) begin
+            fifo_resp.r.data = {'0, rx_data_i};  // 8-bit byte → 32-bit
+            fifo_resp.r.resp = 2'b00;
+            rx_data_ready_o  = '1;  // pop RX CDC FIFO
+          end
+        end
+
+        UART_INT_EN_OFFSET: begin
+          fifo_resp.r.data = uart_int_en_o;
+          fifo_resp.r.resp = 2'b00;
+        end
+
+        default: begin
+        end
+
+      endcase
+    end
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,41 +217,40 @@ module axi4l_uart_regif
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
-    fifo_resp.b.resp = 2'b10;   // default SLVERR
+    fifo_resp.b.resp = 2'b10;  // default SLVERR
     tx_data_valid_o  = 1'b0;
     tx_id_in_valid   = 1'b0;
     rx_id_in_valid   = 1'b0;
 
-    if (fifo_req.w.strb == 4'b1111) begin
-      case (fifo_req.aw.addr[5:0])
+    if (fifo_req.w.strb == 4'b1111 && wr_en) begin
+      case (fifo_req.aw.addr)
 
         UART_CTRL_OFFSET: begin
           fifo_resp.b.resp = 2'b00;
         end
 
         UART_CFG_OFFSET: begin
-          if (tx_data_cnt_i == '0 && rx_data_cnt_i == '0)
-            fifo_resp.b.resp = 2'b00;
+          if (tx_data_cnt_i == '0 && rx_data_cnt_i == '0) fifo_resp.b.resp = 2'b00;
         end
 
         UART_TXR_OFFSET: begin
           if (tx_id_in_ready) begin
             fifo_resp.b.resp = 2'b00;
-            tx_id_in_valid   = wr_en;
+            tx_id_in_valid   = '1;
           end
         end
 
         UART_TXD_OFFSET: begin
           if (tx_data_ready_i) begin
             fifo_resp.b.resp = 2'b00;
-            tx_data_valid_o  = wr_en;
+            tx_data_valid_o  = '1;
           end
         end
 
         UART_RXR_OFFSET: begin
           if (rx_id_in_ready) begin
             fifo_resp.b.resp = 2'b00;
-            rx_id_in_valid   = wr_en;
+            rx_id_in_valid   = '1;
           end
         end
 
@@ -253,7 +258,8 @@ module axi4l_uart_regif
           fifo_resp.b.resp = 2'b00;
         end
 
-        default: begin end
+        default: begin
+        end
 
       endcase
     end
@@ -270,11 +276,12 @@ module axi4l_uart_regif
       uart_cfg_o    <= 32'h0003_405B;
       uart_int_en_o <= '0;
     end else if (fifo_resp.b.resp == 2'b00) begin
-      case (fifo_req.aw.addr[5:0])
-        UART_CTRL_OFFSET:   uart_ctrl_o   <= fifo_req.w.data;
-        UART_CFG_OFFSET:    uart_cfg_o    <= fifo_req.w.data;
+      case (fifo_req.aw.addr)
+        UART_CTRL_OFFSET: uart_ctrl_o <= fifo_req.w.data;
+        UART_CFG_OFFSET: uart_cfg_o <= fifo_req.w.data;
         UART_INT_EN_OFFSET: uart_int_en_o <= fifo_req.w.data;
-        default: begin end
+        default: begin
+        end
       endcase
     end
   end
@@ -287,10 +294,10 @@ module axi4l_uart_regif
     uart_stat_o.reserved = '0;
     uart_stat_o.tx_cnt   = tx_data_cnt_i.count;
     uart_stat_o.tx_empty = (tx_data_cnt_i == '0);
-    uart_stat_o.tx_full  = (tx_data_cnt_i.count == 10'd512);
+    uart_stat_o.tx_full  = (tx_data_cnt_i.count == uart_subsystem_pkg::UART_FIFO_DEPTH);
     uart_stat_o.rx_cnt   = rx_data_cnt_i.count;
     uart_stat_o.rx_empty = (rx_data_cnt_i == '0);
-    uart_stat_o.rx_full  = (rx_data_cnt_i.count == 10'd512);
+    uart_stat_o.rx_full  = (rx_data_cnt_i.count == uart_subsystem_pkg::UART_FIFO_DEPTH);
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////

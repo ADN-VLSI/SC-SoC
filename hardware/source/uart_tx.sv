@@ -51,7 +51,7 @@ module uart_tx (
     end else begin
       state <= next_state;
 
-      if (state == IDLE && data_valid_i)
+      if (state inside {IDLE, STOP, STOP2} && data_valid_i)
         data_reg <= data_i;
 
       if (state == DATA) begin
@@ -80,8 +80,8 @@ module uart_tx (
                end
       PARITY:                                          next_state = STOP;
       STOP:    if (extra_stop_i)                       next_state = STOP2;
-               else                                    next_state = IDLE;
-      STOP2:                                           next_state = IDLE;
+               else                                    next_state = data_valid_i ? START : IDLE;
+      STOP2:                                           next_state = data_valid_i ? START : IDLE;
       default:                                         next_state = IDLE;
     endcase
   end
@@ -98,8 +98,8 @@ module uart_tx (
       START:   tx_o         = 1'b0;
       DATA:    tx_o         = data_reg[bit_cnt];
       PARITY:  tx_o         = parity_type_i ? ~parity_xor : parity_xor;
-      STOP:    tx_o         = 1'b1;
-      STOP2:   tx_o         = 1'b1;
+      STOP:    begin tx_o =  1'b1; data_ready_o = ~extra_stop_i; end
+      STOP2:   begin tx_o =  1'b1; data_ready_o = 1'b1; end
       default: tx_o         = 1'b1;
     endcase
   end
