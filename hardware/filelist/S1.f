@@ -2,4 +2,5 @@
 -d VCS
 -d VERILATOR
 
-${S1}/hardware/source/s1_axil_2_axi.sv
+${S1}/hardware/source/s1_obi_2_axil.sv
+${S1}/hardware/source/s1_apb_2_axil.sv

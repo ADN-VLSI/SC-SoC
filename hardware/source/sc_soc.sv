@@ -16,36 +16,36 @@ module sc_soc
     input logic glob_arst_ni, // active low asynchronous reset
 
     // APB3 Interface
-    input  logic     apb_arst_ni,  // active low asynchronous reset for APB domain
-    input  logic     apb_clk_i,    // APB clock input
-    input  apb_req_t apb_req_i,    // APB request input
-    output apb_rsp_t apb_rsp_o,    // APB response output
+    input  logic      apb_arst_ni,  // active low asynchronous reset for APB domain
+    input  logic      apb_clk_i,    // APB clock input
+    input  apb_req_t  apb_req_i,    // APB request input
+    output apb_resp_t apb_resp_o,   // APB response output
 
     // UART Interface
     output logic uart_tx_o,  // UART transmit output
     input  logic uart_rx_i   // UART receive input
 );
 
-  logic              instr_req;
-  logic              instr_gnt;
-  logic              instr_rvalid;
-  logic       [31:0] instr_addr;
-  logic       [31:0] instr_rdata;
+  logic                          instr_req;
+  logic                          instr_gnt;
+  logic                          instr_rvalid;
+  logic       [  ADDR_WIDTH-1:0] instr_addr;
+  logic       [  DATA_WIDTH-1:0] instr_rdata;
 
-  logic              data_req;
-  logic              data_gnt;
-  logic              data_rvalid;
-  logic              data_we;
-  logic       [ 3:0] data_be;
-  logic       [31:0] data_addr;
-  logic       [31:0] data_wdata;
-  logic       [31:0] data_rdata;
+  logic                          data_req;
+  logic                          data_gnt;
+  logic                          data_rvalid;
+  logic                          data_we;
+  logic       [DATA_WIDTH/8-1:0] data_be;
+  logic       [  ADDR_WIDTH-1:0] data_addr;
+  logic       [  DATA_WIDTH-1:0] data_wdata;
+  logic       [  DATA_WIDTH-1:0] data_rdata;
 
-  axil_req_t         axil_slave_port_req  [3];
-  axil_resp_t        axil_slave_port_resp [3];
+  axil_req_t  [ SLAVE_PORTS-1:0] axil_slave_port_req;
+  axil_resp_t [ SLAVE_PORTS-1:0] axil_slave_port_resp;
 
-  axil_req_t         axil_master_port_req [4];
-  axil_resp_t        axil_master_port_resp[4];
+  axil_req_t  [MASTER_PORTS-1:0] axil_master_port_req;
+  axil_resp_t [MASTER_PORTS-1:0] axil_master_port_resp;
 
   always_comb begin  // TODO REMOVE
     axil_master_port_resp[1] = '0;
@@ -82,7 +82,7 @@ module sc_soc
       .OBI_ADDRW  (32),
       .OBI_DATAW  (32),
       .axil_req_t (axil_req_t),
-      .axil_resp_t(axil_rsp_t)
+      .axil_resp_t(axil_resp_t)
   ) i_bus (
       .clk_i      (system_clk_i),
       .arst_ni    (system_arst_ni),
@@ -102,7 +102,7 @@ module sc_soc
       .OBI_ADDRW  (32),
       .OBI_DATAW  (32),
       .axil_req_t (axil_req_t),
-      .axil_resp_t(axil_rsp_t)
+      .axil_resp_t(axil_resp_t)
   ) d_bus (
       .clk_i      (system_clk_i),
       .arst_ni    (system_arst_ni),
@@ -138,7 +138,7 @@ module sc_soc
       .mst_ports_resp_i     (axil_master_port_resp),
       .addr_map_i           (addr_map),
       .en_default_mst_port_i('1),
-      .default_mst_port_i   ('0),
+      .default_mst_port_i   ('0)
   );
 
   axi4l_mem #(
