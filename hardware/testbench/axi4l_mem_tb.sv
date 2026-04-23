@@ -1,4 +1,4 @@
-`include "axi4l/typedef.svh"
+`include "axi/typedef.svh"
 `include "vip/axi4l.svh"
 module axi4l_mem_tb;
 
@@ -23,7 +23,7 @@ module axi4l_mem_tb;
   // Macros
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `AXI4L_ALL(my, ADDR_WIDTH, DATA_WIDTH)
+  `AXI_LITE_TYPEDEF_ALL(my, logic[ADDR_WIDTH-1:0], logic[DATA_WIDTH-1:0], logic[DATA_WIDTH/8-1:0])
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // SIGNALS
@@ -48,14 +48,14 @@ module axi4l_mem_tb;
   // Driver (master side) – used by test cases to inject transactions
   axi4l_driver #(
       .req_t    (my_req_t),
-      .rsp_t    (my_rsp_t),
+      .resp_t    (my_resp_t),
       .IS_MASTER(1)          // drives AW/W/AR channels; samples B/R channels
   ) dvr;
 
   // Monitor – passively captures all transactions for checking
   axi4l_monitor #(
       .req_t(my_req_t),
-      .rsp_t(my_rsp_t)
+      .resp_t(my_resp_t)
   ) mon;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ module axi4l_mem_tb;
   // AXI4-Lite interface instance (uses the typedefs from macro)
   axi4l_if #(
       .req_t(my_req_t),
-      .rsp_t(my_rsp_t)
+      .resp_t(my_resp_t)
   ) intf (
       .arst_ni(arst_ni),
       .clk_i  (clk_i)
@@ -74,14 +74,14 @@ module axi4l_mem_tb;
   // Memory model under test – single-cycle AXI4-Lite slave memory
   axi4l_mem #(
       .axi4l_req_t(my_req_t),
-      .axi4l_rsp_t(my_rsp_t),
+      .axi4l_resp_t(my_resp_t),
       .ADDR_WIDTH (ADDR_WIDTH),
       .DATA_WIDTH (DATA_WIDTH)
   ) u_mem (
       .arst_ni(arst_ni),
       .clk_i(clk_i),
       .axi4l_req_i(intf.req),
-      .axi4l_rsp_o(intf.rsp)
+      .axi4l_resp_o(intf.rsp)
   );
 
   //////////////////////////////////////////////////////////////////////////////////////////////////

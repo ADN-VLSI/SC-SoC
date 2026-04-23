@@ -20,7 +20,7 @@ module axi4l_uart_regif_tb;
   localparam int DATA_WIDTH = 32;
   
   // Create VIP typedefs at file scope (ADDR=32, DATA=32)
-  `AXI4L_ALL(my, ADDR_WIDTH, DATA_WIDTH)
+  `AXI_LITE_TYPEDEF_ALL(my, logic[ADDR_WIDTH-1:0], logic[DATA_WIDTH-1:0], logic[DATA_WIDTH/8-1:0])
 
   //////////////////////////////////////////////////////////////////////////////////////
   // SIGNALS
@@ -50,18 +50,18 @@ module axi4l_uart_regif_tb;
 
   axi4l_driver #(
     .req_t    (my_req_t),
-    .rsp_t    (my_rsp_t),
+    .resp_t    (my_resp_t),
     .IS_MASTER(1)
   ) dvr;
 
   axi4l_monitor #(
     .req_t(my_req_t),
-    .rsp_t(my_rsp_t)
+    .resp_t(my_resp_t)
   ) mon;
 
   axi4l_if #(
     .req_t(my_req_t),
-    .rsp_t(my_rsp_t)
+    .resp_t(my_resp_t)
   ) intf (
     .arst_ni(arst_ni),
     .clk_i  (clk_i)
@@ -69,10 +69,10 @@ module axi4l_uart_regif_tb;
 
   //////////////////////////////////////////////////////////////////////////////////////
   // ADAPTER — inline combinational, no separate module
-  // Bridges VIP interface (my_req_t/my_rsp_t) <-> DUT (uart_axil_req_t/rsp_t)
+  // Bridges VIP interface (my_req_t/my_resp_t) <-> DUT (uart_axil_req_t/resp_t)
   //////////////////////////////////////////////////////////////////////////////////////
   uart_axil_req_t  adapter_req;
-  uart_axil_rsp_t  adapter_rsp;
+  uart_axil_resp_t  adapter_rsp;
 
   always_comb begin
     adapter_req          = '0;

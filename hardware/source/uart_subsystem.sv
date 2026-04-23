@@ -8,7 +8,7 @@ module uart_subsystem #(
     input  logic                     arst_ni,
 
     input  uart_pkg::uart_axil_req_t req_i,
-    output uart_pkg::uart_axil_rsp_t resp_o,
+    output uart_pkg::uart_axil_resp_t resp_o,
 
     input  logic                     rx_i,
     output logic                     tx_o,

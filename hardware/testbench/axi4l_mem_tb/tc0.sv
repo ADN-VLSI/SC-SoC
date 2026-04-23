@@ -5,7 +5,7 @@ task automatic tc0(output int p, output int f);
   // Force asynchronous reset and keep asserted for 5 cycles.
   arst_ni <= 0;
   intf.req_reset();
-  intf.rsp_reset();
+  intf.resp_reset();
   repeat (5) @(posedge clk_i);
 
   // During reset all DUT ready/valid outputs must be 0.

@@ -1,6 +1,6 @@
 `ifndef UART_PKG_SV
 `define UART_PKG_SV
-`include "axi4l/typedef.svh"
+`include "axi/typedef.svh"
 
 package uart_pkg;
 
@@ -18,8 +18,8 @@ package uart_pkg;
   parameter int UART_RXD_OFFSET    = 'h2C;
   parameter int UART_INT_EN_OFFSET = 'h30;
 
-  // AXI4-Lite types: ADDR=32 DATA=32
-  `AXI4L_ALL(uart_axil, 32, 32)
+  // AXI4-Lite types: ADDR=6 DATA=32
+  `AXI_LITE_TYPEDEF_ALL(uart_axil, logic[5:0], logic[31:0], logic[3:0])
 
   // UART_CTRL — offset 0x00 | RW | reset 0x00000000
   // [31:5] reserved | [4] rx_en | [3] tx_en | [2] rx_fifo_flush | [1] tx_fifo_flush | [0] uart_rst

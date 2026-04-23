@@ -26,29 +26,31 @@ module sc_soc
     input  logic uart_rx_i   // UART receive input
 );
 
-  logic                          instr_req;
-  logic                          instr_gnt;
-  logic                          instr_rvalid;
-  logic       [  ADDR_WIDTH-1:0] instr_addr;
-  logic       [  DATA_WIDTH-1:0] instr_rdata;
+  logic                                         instr_req;
+  logic                                         instr_gnt;
+  logic                                         instr_rvalid;
+  logic                      [  ADDR_WIDTH-1:0] instr_addr;
+  logic                      [  DATA_WIDTH-1:0] instr_rdata;
 
-  logic                          data_req;
-  logic                          data_gnt;
-  logic                          data_rvalid;
-  logic                          data_we;
-  logic       [DATA_WIDTH/8-1:0] data_be;
-  logic       [  ADDR_WIDTH-1:0] data_addr;
-  logic       [  DATA_WIDTH-1:0] data_wdata;
-  logic       [  DATA_WIDTH-1:0] data_rdata;
+  logic                                         data_req;
+  logic                                         data_gnt;
+  logic                                         data_rvalid;
+  logic                                         data_we;
+  logic                      [DATA_WIDTH/8-1:0] data_be;
+  logic                      [  ADDR_WIDTH-1:0] data_addr;
+  logic                      [  DATA_WIDTH-1:0] data_wdata;
+  logic                      [  DATA_WIDTH-1:0] data_rdata;
 
-  axil_req_t  [ SLAVE_PORTS-1:0] axil_slave_port_req;
-  axil_resp_t [ SLAVE_PORTS-1:0] axil_slave_port_resp;
+  axil_req_t                 [ SLAVE_PORTS-1:0] axil_slave_port_req;
+  axil_resp_t                [ SLAVE_PORTS-1:0] axil_slave_port_resp;
 
-  axil_req_t  [MASTER_PORTS-1:0] axil_master_port_req;
-  axil_resp_t [MASTER_PORTS-1:0] axil_master_port_resp;
+  axil_req_t                 [MASTER_PORTS-1:0] axil_master_port_req;
+  axil_resp_t                [MASTER_PORTS-1:0] axil_master_port_resp;
+
+  uart_pkg::uart_axil_req_t                     uart_req;
+  uart_pkg::uart_axil_resp_t                    uart_resp;
 
   always_comb begin  // TODO REMOVE
-    axil_master_port_resp[1] = '0;
     axil_master_port_resp[2] = '0;
     axil_master_port_resp[3] = '0;
   end
@@ -142,15 +144,15 @@ module sc_soc
   );
 
   axi4l_mem #(
-      .axi4l_req_t(axil_req_t),
-      .axi4l_rsp_t(axil_resp_t),
-      .ADDR_WIDTH (ADDR_WIDTH),
-      .DATA_WIDTH (DATA_WIDTH)
+      .axi4l_req_t (axil_req_t),
+      .axi4l_resp_t(axil_resp_t),
+      .ADDR_WIDTH  (ADDR_WIDTH),
+      .DATA_WIDTH  (DATA_WIDTH)
   ) u_ram (
-      .arst_ni    (system_arst_ni),
-      .clk_i      (system_clk_i),
-      .axi4l_req_i(axil_master_port_req[0]),
-      .axi4l_rsp_o(axil_master_port_resp[0])
+      .arst_ni     (system_arst_ni),
+      .clk_i       (system_clk_i),
+      .axi4l_req_i (axil_master_port_req[0]),
+      .axi4l_resp_o(axil_master_port_resp[0])
   );
 
   s1_apb_2_axil #(
@@ -174,6 +176,29 @@ module sc_soc
       .axi_arst_ni(system_arst_ni),
       .axi_req_o  (axil_slave_port_req[2]),
       .axi_resp_i (axil_slave_port_resp[2])
+  );
+
+  axil_addr_shifter #(
+      .slv_port_req_t (axil_req_t),
+      .slv_port_resp_t(axil_resp_t),
+      .mst_port_req_t (uart_pkg::uart_axil_req_t),
+      .mst_port_resp_t(uart_pkg::uart_axil_resp_t),
+      .SHIFT          (-UART_BASE)
+  ) aas_uart (
+      .slv_port_req_i (axil_master_port_req[1]),
+      .slv_port_resp_o(axil_master_port_resp[1]),
+      .mst_port_req_o (uart_req),
+      .mst_port_resp_i(uart_resp)
+  );
+
+  uart_subsystem u_uart (
+      .clk_i   (system_clk_i),
+      .arst_ni (system_arst_ni),
+      .req_i   (uart_req),
+      .resp_o  (uart_resp),
+      .rx_i    (uart_rx_i),
+      .tx_o    (uart_tx_o),
+      .int_en_o()                 // TODO
   );
 
 endmodule

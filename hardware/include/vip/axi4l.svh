@@ -1,7 +1,7 @@
 `ifndef __GUARD_VIP_AXI4L_SVH__
 `define __GUARD_VIP_AXI4L_SVH__
 
-`include "axi4l/typedef.svh"
+`include "axi/typedef.svh"
 
 package axi4l_vip_pkg;
 

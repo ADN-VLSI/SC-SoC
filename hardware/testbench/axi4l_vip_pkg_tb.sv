@@ -1,4 +1,3 @@
-`include "axi4l/typedef.svh"
 `include "vip/axi4l.svh"
 
 module axi4l_vip_pkg_tb;
@@ -12,14 +11,14 @@ module axi4l_vip_pkg_tb;
   import axi4l_vip_pkg::axi4l_driver;
   import axi4l_vip_pkg::axi4l_monitor;
 
-  `AXI4L_ALL(axi4l, 32, 32)
+  `AXI_LITE_TYPEDEF_ALL(axi4l, logic[31:0], logic[31:0], logic[3:0])
 
   logic arst_ni;
   logic clk_i;
 
   axi4l_if #(
       .req_t(axi4l_req_t),
-      .rsp_t(axi4l_rsp_t)
+      .resp_t(axi4l_resp_t)
   ) intf (
       .arst_ni(arst_ni),
       .clk_i  (clk_i)
@@ -27,25 +26,25 @@ module axi4l_vip_pkg_tb;
 
   axi4l_mem #(
       .axi4l_req_t(axi4l_req_t),
-      .axi4l_rsp_t(axi4l_rsp_t),
+      .axi4l_resp_t(axi4l_resp_t),
       .ADDR_WIDTH (32),
       .DATA_WIDTH (32)
   ) u_mem (
       .arst_ni(arst_ni),
       .clk_i(clk_i),
       .axi4l_req_i(intf.req),
-      .axi4l_rsp_o(intf.rsp)
+      .axi4l_resp_o(intf.resp)
   );
 
   axi4l_driver #(
       .req_t(axi4l_req_t),
-      .rsp_t(axi4l_rsp_t),
+      .resp_t(axi4l_resp_t),
       .IS_MASTER(1)
   ) dvr;
 
   axi4l_monitor #(
       .req_t(axi4l_req_t),
-      .rsp_t(axi4l_rsp_t)
+      .resp_t(axi4l_resp_t)
   ) mon;
 
   task automatic apply_reset();

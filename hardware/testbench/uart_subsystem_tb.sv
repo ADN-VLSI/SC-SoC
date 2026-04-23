@@ -23,7 +23,7 @@ module uart_subsystem_tb;
     logic int_en_o;
 
     uart_axil_req_t req_i;
-    uart_axil_rsp_t resp_o;
+    uart_axil_resp_t resp_o;
 
     `SIMPLE_AXIL_M_DRIVER(cpu, clk_i, arst_ni, req_i, resp_o)
 
