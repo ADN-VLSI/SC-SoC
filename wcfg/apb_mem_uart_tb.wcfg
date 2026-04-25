@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="apb_mem_uart_tb.wdb" id="1">
+         <top_modules>
+            <top_module name="apb_mem_uart_tb" />
+            <top_module name="apb_pkg" />
+            <top_module name="axi_pkg" />
+            <top_module name="fpnew_pkg" />
+            <top_module name="rv32imf_fpu_pkg" />
+            <top_module name="rv32imf_pkg" />
+            <top_module name="sc_soc_pkg" />
+            <top_module name="uart_pkg" />
+            <top_module name="uart_subsystem_pkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.306667 us"></ZoomStartTime>
+      <ZoomEndTime time="78.806668 us"></ZoomEndTime>
+      <Cursor1Time time="45.070000 us"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="163"></NameColumnWidth>
+      <ValueColumnWidth column_width="97"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="49" />
+   <wvobject fp_name="/apb_mem_uart_tb/apb_clk" type="logic">
+      <obj_property name="ElementShortName">apb_clk</obj_property>
+      <obj_property name="ObjectShortName">apb_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/apb_arst_n" type="logic">
+      <obj_property name="ElementShortName">apb_arst_n</obj_property>
+      <obj_property name="ObjectShortName">apb_arst_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/sys_clk" type="logic">
+      <obj_property name="ElementShortName">sys_clk</obj_property>
+      <obj_property name="ObjectShortName">sys_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/sys_arst_n" type="logic">
+      <obj_property name="ElementShortName">sys_arst_n</obj_property>
+      <obj_property name="ObjectShortName">sys_arst_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/uart_loop" type="logic">
+      <obj_property name="ElementShortName">uart_loop</obj_property>
+      <obj_property name="ObjectShortName">uart_loop</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/rd_data" type="array">
+      <obj_property name="ElementShortName">rd_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rd_data[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/clk_i" type="logic">
+      <obj_property name="ElementShortName">clk_i</obj_property>
+      <obj_property name="ObjectShortName">clk_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/arst_ni" type="logic">
+      <obj_property name="ElementShortName">arst_ni</obj_property>
+      <obj_property name="ObjectShortName">arst_ni</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/req_i" type="array">
+      <obj_property name="ElementShortName">req_i</obj_property>
+      <obj_property name="ObjectShortName">req_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/resp_o" type="array">
+      <obj_property name="ElementShortName">resp_o</obj_property>
+      <obj_property name="ObjectShortName">resp_o</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_i" type="logic">
+      <obj_property name="ElementShortName">rx_i</obj_property>
+      <obj_property name="ObjectShortName">rx_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_o" type="logic">
+      <obj_property name="ElementShortName">tx_o</obj_property>
+      <obj_property name="ObjectShortName">tx_o</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/int_en_o" type="logic">
+      <obj_property name="ElementShortName">int_en_o</obj_property>
+      <obj_property name="ObjectShortName">int_en_o</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/uart_ctrl" type="array">
+      <obj_property name="ElementShortName">uart_ctrl</obj_property>
+      <obj_property name="ObjectShortName">uart_ctrl</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/uart_cfg" type="array">
+      <obj_property name="ElementShortName">uart_cfg</obj_property>
+      <obj_property name="ObjectShortName">uart_cfg</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/uart_stat" type="array">
+      <obj_property name="ElementShortName">uart_stat</obj_property>
+      <obj_property name="ObjectShortName">uart_stat</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/uart_int_en" type="array">
+      <obj_property name="ElementShortName">uart_int_en</obj_property>
+      <obj_property name="ObjectShortName">uart_int_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_data_from_regif" type="array">
+      <obj_property name="ElementShortName">tx_data_from_regif</obj_property>
+      <obj_property name="ObjectShortName">tx_data_from_regif</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_data_valid_from_regif" type="logic">
+      <obj_property name="ElementShortName">tx_data_valid_from_regif</obj_property>
+      <obj_property name="ObjectShortName">tx_data_valid_from_regif</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_data_ready_to_regif" type="logic">
+      <obj_property name="ElementShortName">tx_data_ready_to_regif</obj_property>
+      <obj_property name="ObjectShortName">tx_data_ready_to_regif</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_data_to_regif" type="array">
+      <obj_property name="ElementShortName">rx_data_to_regif</obj_property>
+      <obj_property name="ObjectShortName">rx_data_to_regif</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_data_valid_to_regif" type="logic">
+      <obj_property name="ElementShortName">rx_data_valid_to_regif</obj_property>
+      <obj_property name="ObjectShortName">rx_data_valid_to_regif</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_data_ready_from_regif" type="logic">
+      <obj_property name="ElementShortName">rx_data_ready_from_regif</obj_property>
+      <obj_property name="ObjectShortName">rx_data_ready_from_regif</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_data_cnt" type="array">
+      <obj_property name="ElementShortName">tx_data_cnt</obj_property>
+      <obj_property name="ObjectShortName">tx_data_cnt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_data_cnt" type="array">
+      <obj_property name="ElementShortName">rx_data_cnt</obj_property>
+      <obj_property name="ObjectShortName">rx_data_cnt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/prescale_clk" type="logic">
+      <obj_property name="ElementShortName">prescale_clk</obj_property>
+      <obj_property name="ObjectShortName">prescale_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_clk" type="logic">
+      <obj_property name="ElementShortName">tx_clk</obj_property>
+      <obj_property name="ObjectShortName">tx_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_clk" type="logic">
+      <obj_property name="ElementShortName">rx_clk</obj_property>
+      <obj_property name="ObjectShortName">rx_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_fifo_rd_data" type="array">
+      <obj_property name="ElementShortName">tx_fifo_rd_data[7:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_fifo_rd_data[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_fifo_rd_valid" type="logic">
+      <obj_property name="ElementShortName">tx_fifo_rd_valid</obj_property>
+      <obj_property name="ObjectShortName">tx_fifo_rd_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_fifo_rd_ready" type="logic">
+      <obj_property name="ElementShortName">tx_fifo_rd_ready</obj_property>
+      <obj_property name="ObjectShortName">tx_fifo_rd_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_fifo_wr_count" type="array">
+      <obj_property name="ElementShortName">tx_fifo_wr_count[4:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_fifo_wr_count[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_fifo_rd_count" type="array">
+      <obj_property name="ElementShortName">tx_fifo_rd_count[4:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_fifo_rd_count[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_data_ready_from_uart" type="logic">
+      <obj_property name="ElementShortName">tx_data_ready_from_uart</obj_property>
+      <obj_property name="ObjectShortName">tx_data_ready_from_uart</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_data_from_uart" type="array">
+      <obj_property name="ElementShortName">rx_data_from_uart[7:0]</obj_property>
+      <obj_property name="ObjectShortName">rx_data_from_uart[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_data_valid_from_uart" type="logic">
+      <obj_property name="ElementShortName">rx_data_valid_from_uart</obj_property>
+      <obj_property name="ObjectShortName">rx_data_valid_from_uart</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_parity_error" type="logic">
+      <obj_property name="ElementShortName">rx_parity_error</obj_property>
+      <obj_property name="ObjectShortName">rx_parity_error</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_fifo_rd_data" type="array">
+      <obj_property name="ElementShortName">rx_fifo_rd_data[7:0]</obj_property>
+      <obj_property name="ObjectShortName">rx_fifo_rd_data[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_fifo_rd_valid" type="logic">
+      <obj_property name="ElementShortName">rx_fifo_rd_valid</obj_property>
+      <obj_property name="ObjectShortName">rx_fifo_rd_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_fifo_rd_ready" type="logic">
+      <obj_property name="ElementShortName">rx_fifo_rd_ready</obj_property>
+      <obj_property name="ObjectShortName">rx_fifo_rd_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_fifo_wr_count" type="array">
+      <obj_property name="ElementShortName">rx_fifo_wr_count[4:0]</obj_property>
+      <obj_property name="ObjectShortName">rx_fifo_wr_count[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/rx_fifo_rd_count" type="array">
+      <obj_property name="ElementShortName">rx_fifo_rd_count[4:0]</obj_property>
+      <obj_property name="ObjectShortName">rx_fifo_rd_count[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_empty_irq" type="logic">
+      <obj_property name="ElementShortName">tx_empty_irq</obj_property>
+      <obj_property name="ObjectShortName">tx_empty_irq</obj_property>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/tx_full_irq" type="logic">
+      <obj_property name="ElementShortName">tx_full_irq</obj_property>
+      <obj_property name="ObjectShortName">tx_full_irq</obj_property>
+   </wvobject>
+   <wvobject fp_name="group51" type="group">
+      <obj_property name="label">u_uart</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="group98" type="group">
+      <obj_property name="label">txx</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/bit_cnt" type="array">
+         <obj_property name="ElementShortName">bit_cnt[2:0]</obj_property>
+         <obj_property name="ObjectShortName">bit_cnt[2:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/data_reg" type="array">
+         <obj_property name="ElementShortName">data_reg[7:0]</obj_property>
+         <obj_property name="ObjectShortName">data_reg[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/next_state" type="array">
+         <obj_property name="ElementShortName">next_state[2:0]</obj_property>
+         <obj_property name="ObjectShortName">next_state[2:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/state" type="array">
+         <obj_property name="ElementShortName">state[2:0]</obj_property>
+         <obj_property name="ObjectShortName">state[2:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/data_ready_o" type="logic">
+         <obj_property name="ElementShortName">data_ready_o</obj_property>
+         <obj_property name="ObjectShortName">data_ready_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/tx_o" type="logic">
+         <obj_property name="ElementShortName">tx_o</obj_property>
+         <obj_property name="ObjectShortName">tx_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/extra_stop_i" type="logic">
+         <obj_property name="ElementShortName">extra_stop_i</obj_property>
+         <obj_property name="ObjectShortName">extra_stop_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/parity_type_i" type="logic">
+         <obj_property name="ElementShortName">parity_type_i</obj_property>
+         <obj_property name="ObjectShortName">parity_type_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/parity_en_i" type="logic">
+         <obj_property name="ElementShortName">parity_en_i</obj_property>
+         <obj_property name="ObjectShortName">parity_en_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/data_bits_i" type="array">
+         <obj_property name="ElementShortName">data_bits_i[1:0]</obj_property>
+         <obj_property name="ObjectShortName">data_bits_i[1:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/data_valid_i" type="logic">
+         <obj_property name="ElementShortName">data_valid_i</obj_property>
+         <obj_property name="ObjectShortName">data_valid_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/data_i" type="array">
+         <obj_property name="ElementShortName">data_i[7:0]</obj_property>
+         <obj_property name="ObjectShortName">data_i[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/arst_ni" type="logic">
+         <obj_property name="ElementShortName">arst_ni</obj_property>
+         <obj_property name="ObjectShortName">arst_ni</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_tx/clk_i" type="logic">
+         <obj_property name="ElementShortName">clk_i</obj_property>
+         <obj_property name="ObjectShortName">clk_i</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group99" type="group">
+      <obj_property name="label">tx_fifo</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/arst_ni" type="logic">
+         <obj_property name="ElementShortName">arst_ni</obj_property>
+         <obj_property name="ObjectShortName">arst_ni</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/wr_clk_i" type="logic">
+         <obj_property name="ElementShortName">wr_clk_i</obj_property>
+         <obj_property name="ObjectShortName">wr_clk_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/wr_data_i" type="array">
+         <obj_property name="ElementShortName">wr_data_i[7:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_data_i[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/wr_valid_i" type="logic">
+         <obj_property name="ElementShortName">wr_valid_i</obj_property>
+         <obj_property name="ObjectShortName">wr_valid_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/wr_ready_o" type="logic">
+         <obj_property name="ElementShortName">wr_ready_o</obj_property>
+         <obj_property name="ObjectShortName">wr_ready_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/wr_count_o" type="array">
+         <obj_property name="ElementShortName">wr_count_o[4:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_count_o[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/rd_clk_i" type="logic">
+         <obj_property name="ElementShortName">rd_clk_i</obj_property>
+         <obj_property name="ObjectShortName">rd_clk_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/rd_data_o" type="array">
+         <obj_property name="ElementShortName">rd_data_o[7:0]</obj_property>
+         <obj_property name="ObjectShortName">rd_data_o[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/rd_valid_o" type="logic">
+         <obj_property name="ElementShortName">rd_valid_o</obj_property>
+         <obj_property name="ObjectShortName">rd_valid_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/rd_ready_i" type="logic">
+         <obj_property name="ElementShortName">rd_ready_i</obj_property>
+         <obj_property name="ObjectShortName">rd_ready_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/rd_count_o" type="array">
+         <obj_property name="ElementShortName">rd_count_o[4:0]</obj_property>
+         <obj_property name="ObjectShortName">rd_count_o[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/wr_ptr_pass" type="array">
+         <obj_property name="ElementShortName">wr_ptr_pass[4:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_ptr_pass[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/rd_ptr_pass" type="array">
+         <obj_property name="ElementShortName">rd_ptr_pass[4:0]</obj_property>
+         <obj_property name="ObjectShortName">rd_ptr_pass[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/hsi" type="logic">
+         <obj_property name="ElementShortName">hsi</obj_property>
+         <obj_property name="ObjectShortName">hsi</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/hso" type="logic">
+         <obj_property name="ElementShortName">hso</obj_property>
+         <obj_property name="ObjectShortName">hso</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/wr_addr" type="array">
+         <obj_property name="ElementShortName">wr_addr[4:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_addr[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/rd_addr" type="array">
+         <obj_property name="ElementShortName">rd_addr[4:0]</obj_property>
+         <obj_property name="ObjectShortName">rd_addr[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_tx_cdc_fifo/\g_mem.mem " type="array">
+         <obj_property name="ElementShortName">\g_mem.mem [0:15][7:0]</obj_property>
+         <obj_property name="ObjectShortName">\g_mem.mem [0:15][7:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_rx/data_bits_i" type="array">
+      <obj_property name="ElementShortName">data_bits_i[1:0]</obj_property>
+      <obj_property name="ObjectShortName">data_bits_i[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="group128" type="group">
+      <obj_property name="label">rxx</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_rx/clk_i" type="logic">
+         <obj_property name="ElementShortName">clk_i</obj_property>
+         <obj_property name="ObjectShortName">clk_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_rx/arst_ni" type="logic">
+         <obj_property name="ElementShortName">arst_ni</obj_property>
+         <obj_property name="ObjectShortName">arst_ni</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_rx/rx_i" type="logic">
+         <obj_property name="ElementShortName">rx_i</obj_property>
+         <obj_property name="ObjectShortName">rx_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_rx/shift_reg" type="array">
+         <obj_property name="ElementShortName">shift_reg[7:0]</obj_property>
+         <obj_property name="ObjectShortName">shift_reg[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_rx/state" type="array">
+         <obj_property name="ElementShortName">state[2:0]</obj_property>
+         <obj_property name="ObjectShortName">state[2:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/apb_mem_uart_tb/dut/u_uart/u_uart_rx/data_valid_o" type="logic">
+         <obj_property name="ElementShortName">data_valid_o</obj_property>
+         <obj_property name="ObjectShortName">data_valid_o</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>
