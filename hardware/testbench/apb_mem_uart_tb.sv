@@ -91,7 +91,7 @@ module apb_mem_uart_tb;
         apb_arst_n <= 0;
         sys_arst_n <= 0;
         apb_vif.req_reset();
-        #205; @(posedge apb_clk);
+        #205;
         apb_arst_n <= 1;
         sys_arst_n <= 1;
         repeat(5) @(posedge apb_clk);
@@ -99,8 +99,8 @@ module apb_mem_uart_tb;
 
     task tc1_ram_write_read();
         $display("=== TC1: RAM write/read ===");
-        write_read_check(32'h0000_0010, 32'hDEAD_BEEF, "TC1_RAM");
-        write_read_check(32'h0000_0020, 32'hCAFE_BABE, "TC1_RAM2");
+        write_read_check(32'h2100_0000, 32'h1000_BEEF, "TC1_RAM");  // Access RAM 0x2000_0000-0x6000_0000
+        write_read_check(32'h0000_0010, 32'hCAFE_BABE, "TC1_RAM2"); // Access RAM without dedicated Memory map. 
     endtask
 
     task tc2_uart_cfg_write_read();
@@ -129,7 +129,7 @@ module apb_mem_uart_tb;
         apb_vif.apb_write(UART_BASE + 32'h04, 32'h0003_405B, 4'hF);
         apb_vif.apb_write(UART_BASE + 32'h00, 32'h0000_0018, 4'hF);
 
-        // 16 বার write
+
         for (int i = 0; i < 16; i++) begin
             apb_vif.apb_write(UART_BASE + 32'h1C, i, 4'hF);
         end
@@ -138,7 +138,7 @@ module apb_mem_uart_tb;
         apb_vif.wait_tx_empty();
         repeat(5000) @(posedge apb_clk);
 
-        // 16 বার read
+
         for (int i = 0; i < 16; i++) begin
             apb_vif.wait_rx_data();
             apb_vif.apb_read(UART_BASE + 32'h2C, rd_data);
