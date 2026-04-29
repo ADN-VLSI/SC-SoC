@@ -31,7 +31,7 @@ module axi4l_uart_regif
     input logic clk_i,
     input logic arst_ni,
 
-    input  uart_axil_req_t req_i,
+    input  uart_axil_req_t  req_i,
     output uart_axil_resp_t resp_o,
 
     output uart_ctrl_reg_t uart_ctrl_o,
@@ -56,19 +56,21 @@ module axi4l_uart_regif
   // AXI4L FIFO
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  uart_axil_req_t fifo_req;
+  uart_axil_req_t  fifo_req;
   uart_axil_resp_t fifo_resp;
 
   axi4l_fifo #(
       .axi4l_req_t(uart_axil_req_t),
       .axi4l_resp_t(uart_axil_resp_t),
-      .FIFO_SIZE  (2)
+      .ADDR_WIDTH($bits(req_i.aw.addr)),
+      .DATA_WIDTH($bits(req_i.w.data)),
+      .FIFO_SIZE(2)
   ) u_axi4l_fifo (
-      .clk_i    (clk_i),
-      .arst_ni  (arst_ni),
-      .slv_req_i(req_i),
+      .clk_i     (clk_i),
+      .arst_ni   (arst_ni),
+      .slv_req_i (req_i),
       .slv_resp_o(resp_o),
-      .mst_req_o(fifo_req),
+      .mst_req_o (fifo_req),
       .mst_resp_i(fifo_resp)
   );
 
