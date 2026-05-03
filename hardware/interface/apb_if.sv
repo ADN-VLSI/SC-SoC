@@ -1,3 +1,6 @@
+`ifndef __GUARD_APB_IF_SV__
+`define __GUARD_APB_IF_SV__
+
 `include "package/sc_soc_pkg.sv"
 
 interface apb_if #(
@@ -12,7 +15,7 @@ interface apb_if #(
 
 );
     import sc_soc_pkg::*;
-
+  localparam int STRB_WIDTH = DATA_WIDTH / 8;
     /////////////////////////////////////////////////////////////////////////////////////////////////
    // SIGNALS
   /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,18 +38,18 @@ task automatic apb_read(
 
     req.pwrite <= 1'b0;                                  // First, set pwrite_i to 0 for a read operation
     req.psel <= 1'b1;                                   // Then assert psel_i to select the slave
-    req.penable <= 1'b0;                                 // Ensure penable_i is low at the start of the read operation
+    req.penable <= 1'b0;                               // Ensure penable_i is low at the start of the read operation
     @(posedge clk_i);                                 // wait for one clock cycle
-    req.penable <= 1'b1;                              //Then assert penable_i
+    req.penable <= 1'b1;                             //Then assert penable_i
 
     do begin
         @(posedge clk_i);                         // wait for the next clock cycle
     end while (resp.pready == 1'b0);             // wait until pready_o is asserted
     
     pdata = resp.prdata;                       // Connect the output data to the response structure 
-    req.pwrite <= 1'b0;                        // Deassert pwrite_i after the read operation is complete
-    req.psel <= 1'b0;                         // Deassert psel_i to deselect the slave
-    req.penable <= 1'b0;                     // Deassert penable_i to complete the read operation
+    req.pwrite <= 1'b0;                       // Deassert pwrite_i after the read operation is complete
+    req.psel <= 1'b0;                        // Deassert psel_i to deselect the slave
+    req.penable <= 1'b0;                    // Deassert penable_i to complete the read operation
 
 
 endtask
@@ -64,16 +67,16 @@ task automatic apb_write(
    
     req.pwrite <= 1'b1;                                // First, set pwrite_i to 1 for a write operation
     req.psel <= 1'b1;
-    req.penable <= 1'b0;                                 // Ensure penable_i is low at the start of the write operation
+    req.penable <= 1'b0;                             // Ensure penable_i is low at the start of the write operation
     @(posedge clk_i);                               // wait for one clock cycle
-    req.penable <= 1'b1;                            //Then assert penable_i
+    req.penable <= 1'b1;                           //Then assert penable_i
     do begin
         @(posedge clk_i);                        // wait for the next clock cycle
     end while (resp.pready == 1'b0);            // wait until pready_o is asserted
     
-    req.pwrite <= 1'b0;                        // Deassert pwrite_i after the write operation is complete
-    req.psel <= 1'b0;                         // Deassert psel_i to deselect the slave
-    req.penable <= 1'b0;                     // Deassert penable_i to complete the write operation
+    req.pwrite <= 1'b0;                       // Deassert pwrite_i after the write operation is complete
+    req.psel <= 1'b0;                        // Deassert psel_i to deselect the slave
+    req.penable <= 1'b0;                    // Deassert penable_i to complete the write operation
     
 endtask
 
