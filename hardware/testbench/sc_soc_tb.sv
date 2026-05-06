@@ -41,7 +41,17 @@ module sc_soc_tb;
 
   `undef CLOCK
 
-  sc_soc u_dut (.*);
+  sc_soc u_dut (
+    .*,
+    .apb_req_i  (u_apb_if.req),
+    .apb_resp_o (u_apb_if.resp)
+    );
+
+  // Instance of the APB interface for driving and monitoring
+  apb_if u_apb_if (
+      .clk_i(apb_clk_i),
+      .arst_ni(apb_arst_ni)
+  );
 
   task automatic apply_reset(input realtime duration = 100ns);
     #(duration);
@@ -60,13 +70,34 @@ module sc_soc_tb;
   endtask
 
   initial begin
-
+    logic [31:0] rdata;
+    logic        slverr;
 
     apply_reset();
 
     system_clk_i_enable();
     xtal_in_enable();
     apb_clk_i_enable();
+
+    // UART — enable TX/RX
+        u_apb_if.write(UART_BASE + UART_CTRL, 32'h0000_0018, 4'b1111, slverr);
+        assert(slverr == 0) 
+        else $error("UART CTRL write failed");
+
+    // UART — write byte 'A' to TXD
+        u_apb_if.write(UART_BASE + UART_TXD, 32'h0000_0041, 4'b1111, slverr);
+        assert(slverr == 0) 
+        else $error("UART TXD write failed");
+    // UART — read STAT
+        u_apb_if.read(UART_BASE + UART_STAT, rdata, slverr);
+        $display("UART STAT = 0x%08X", rdata);
+
+    // RAM — write then read back
+        u_apb_if.write(32'h2000_0010, 32'hDEAD_BEEF, 4'b1111, slverr);
+        u_apb_if.read(32'h2000_0010, rdata, slverr);
+        assert(rdata == 32'hDEAD_BEEF) 
+        else $fatal(1, "RAM mismatch: got 0x%08X", rdata);
+        $display("RAM readback = 0x%08X", rdata);
 
     #1000;
 
