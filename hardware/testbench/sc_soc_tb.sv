@@ -230,7 +230,7 @@ module sc_soc_tb;
     system_clk_i_enable();
     xtal_in_enable();
     apb_clk_i_enable();
-    core_clk_i_enable();
+    //core_clk_i_enable();
     apply_reset();
     repeat(10) @(posedge apb_clk_i);
 
