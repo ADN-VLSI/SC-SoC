@@ -31,7 +31,7 @@ TEST := default
 # loading mechanism in the testbench, which directly loads the program into the simulated RAM
 # without going through the normal instruction fetch mechanism. This can speed up simulation for
 # larger test programs, but may not be compatible
-BDL := 1
+BDL := 0
 
 # Set GUI=0 for headless simulation, any other value to open the Vivado waveform GUI
 GUI := 0

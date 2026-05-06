@@ -213,7 +213,12 @@ module sc_soc_tb;
 
     core_clk_i_enable();
 
-    do #100ns; while (ram_read(sym["tohost"]) == 0);
+    while (1) begin
+      int data;
+      repeat (100) @(posedge apb_clk_i);
+      apb_intf.apb_read(sym["tohost"], data);
+      if (data != 0) break;
+    end
 
     $display("Exit code: 0x%08x", ram_read(sym["tohost"]));
 
