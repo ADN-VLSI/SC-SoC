@@ -1,6 +1,7 @@
 module sc_soc_tb;
 
   import sc_soc_pkg::*;
+  import uart_pkg::*;
 
   //---------------------------REMOVE---------------------------
   logic                       system_arst_ni;
@@ -80,16 +81,16 @@ module sc_soc_tb;
     apb_clk_i_enable();
 
     // UART — enable TX/RX
-        u_apb_if.write(UART_BASE + UART_CTRL, 32'h0000_0018, 4'b1111, slverr);
+        u_apb_if.write(UART_BASE + UART_CTRL_OFFSET, 32'h0000_0018, 4'b1111, slverr);
         assert(slverr == 0) 
         else $error("UART CTRL write failed");
 
     // UART — write byte 'A' to TXD
-        u_apb_if.write(UART_BASE + UART_TXD, 32'h0000_0041, 4'b1111, slverr);
+        u_apb_if.write(UART_BASE + UART_TXD_OFFSET, 32'h0000_0041, 4'b1111, slverr);
         assert(slverr == 0) 
         else $error("UART TXD write failed");
     // UART — read STAT
-        u_apb_if.read(UART_BASE + UART_STAT, rdata, slverr);
+        u_apb_if.read(UART_BASE + UART_STAT_OFFSET, rdata, slverr);
         $display("UART STAT = 0x%08X", rdata);
 
     // RAM — write then read back
