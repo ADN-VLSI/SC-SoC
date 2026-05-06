@@ -201,20 +201,20 @@ module sc_soc_tb;
       $readmemh("test.hex", byte_mem);
       $display("TC5: Hex file loaded");
 
-      // Step 2: byte → word convert
+      // Step 2: byte to word convert
       foreach (byte_mem[addr]) begin
           word_addr = addr & 'hFFFFFFFC;
           byte_pos  = addr & 'h3;
           word_data[word_addr] |= (byte_mem[addr]) << (byte_pos * 8);
       end
 
-      // Step 3: APB write → RAM
+      // Step 3: APB write RAM
       foreach (word_data[waddr]) begin
           apb_vif.apb_write(waddr, word_data[waddr], 4'hF);
       end
       $display("TC5: Written to RAM");
 
-      // Step 4: APB read → verify
+      // Step 4: APB read verify
       foreach (word_data[waddr]) begin
           apb_vif.apb_read(waddr, rd_data);
           check_data(rd_data, word_data[waddr], $sformatf("TC5_WORD_0x%08X", waddr));
