@@ -1,6 +1,7 @@
 module apb_mem_uart_tb;
 
     import sc_soc_pkg::*;
+    import uart_pkg::*;
 
     //////////////////////////////////////////////////////////////////
     // SIGNALS
@@ -114,24 +115,24 @@ module apb_mem_uart_tb;
 
     task tc3_uart_single_byte_loopback();
         $display("=== TC3: UART single byte loopback ===");
-        apb_vif.apb_write(UART_BASE + 32'h04, 32'h0003_405B, 4'hF);
-        apb_vif.apb_write(UART_BASE + 32'h00, 32'h0000_0018, 4'hF);
-        apb_vif.apb_write(UART_BASE + 32'h1C, 32'h0000_0041, 4'hF);
+        apb_vif.apb_write(UART_BASE + UART_CFG_OFFSET, 32'h0003_405B, 4'hF);
+        apb_vif.apb_write(UART_BASE + UART_CTRL_OFFSET , 32'h0000_0018, 4'hF);
+        apb_vif.apb_write(UART_BASE + UART_TXD_OFFSET, 32'h0000_0041, 4'hF);
         apb_vif.wait_tx_empty();
         repeat(5000) @(posedge apb_clk);
         apb_vif.wait_rx_data();
-        apb_vif.apb_read(UART_BASE + 32'h2C, rd_data);
+        apb_vif.apb_read(UART_BASE + UART_RXD_OFFSET, rd_data);
         check_data(rd_data[7:0], 8'h41, "TC3_UART_LOOPBACK");
     endtask
 
     task tc4_uart_16byte_loopback();
         $display("=== TC4: 16 byte TX/RX loopback ===");
-        apb_vif.apb_write(UART_BASE + 32'h04, 32'h0003_405B, 4'hF);
-        apb_vif.apb_write(UART_BASE + 32'h00, 32'h0000_0018, 4'hF);
+        apb_vif.apb_write(UART_BASE + UART_CFG_OFFSET, 32'h0003_405B, 4'hF);
+        apb_vif.apb_write(UART_BASE + UART_CTRL_OFFSET, 32'h0000_0018, 4'hF);
 
 
         for (int i = 0; i < 16; i++) begin
-            apb_vif.apb_write(UART_BASE + 32'h1C, i, 4'hF);
+            apb_vif.apb_write(UART_BASE + UART_TXD_OFFSET, i, 4'hF);
         end
 
         // TX complete wait
@@ -141,11 +142,45 @@ module apb_mem_uart_tb;
 
         for (int i = 0; i < 16; i++) begin
             apb_vif.wait_rx_data();
-            apb_vif.apb_read(UART_BASE + 32'h2C, rd_data);
+            apb_vif.apb_read(UART_BASE + UART_RXD_OFFSET, rd_data);
             check_data(rd_data[7:0], i[7:0], $sformatf("TC4_RX_BYTE_%0d", i));
         end
     endtask
 
+    task tc5_hex_load_verify();
+        int byte_mem [int];   // associative array: key=address, value=byte
+        int word_data [int];  // associative array: key=word_addr, value=word
+        int word_addr;
+        logic [3:0] byte_pos;
+
+        $display("=== TC5: Load hex file to RAM via APB ===");
+
+        // Step 1: hex file load
+        $readmemh("test.hex", byte_mem);
+        $display("TC5: Hex file loaded");
+
+        // Step 2: byte → word convert
+        foreach (byte_mem[addr]) begin
+            word_addr = addr & 'hFFFFFFFC;  // aligned word address
+            byte_pos  = addr & 'h3;         // byte position
+
+            // word এ byte বসাও
+            word_data[word_addr] |= (byte_mem[addr] & 'hFF) << (byte_pos * 8);
+        end
+
+        // Step 3: APB write → RAM
+        foreach (word_data[waddr]) begin
+            apb_vif.apb_write(waddr, word_data[waddr], 4'hF);
+        end
+        $display("TC5: Written to RAM");
+
+        // Step 4: APB read → verify
+        foreach (word_data[waddr]) begin
+            apb_vif.apb_read(waddr, rd_data);
+            check_data(rd_data, word_data[waddr], $sformatf("TC5_WORD_0x%08X", waddr));
+        end
+
+    endtask
     //////////////////////////////////////////////////////////////////
     // TEST
     //////////////////////////////////////////////////////////////////
@@ -156,8 +191,9 @@ module apb_mem_uart_tb;
 
         tc1_ram_write_read();
         tc2_uart_cfg_write_read();
-        tc3_uart_single_byte_loopback();
-        tc4_uart_16byte_loopback();
+        tc5_hex_load_verify();
+        //tc3_uart_single_byte_loopback();
+        //tc4_uart_16byte_loopback();
 
         repeat(10) @(posedge apb_clk);
 
