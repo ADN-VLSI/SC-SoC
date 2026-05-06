@@ -56,7 +56,7 @@ module sc_soc
   end
 
   rv32imf u_core (
-      .clk_i              (system_clk_i),
+      .clk_i              (core_clk_i),
       .rst_ni             (system_arst_ni),
       .boot_addr_i        (boot_addr_i),
       .dm_halt_addr_i     ('0),
