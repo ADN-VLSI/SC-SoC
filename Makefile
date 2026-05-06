@@ -21,14 +21,24 @@ export S1=$(SC_SOC)/submodule/S1
 # CONFIGURATION
 ####################################################################################################
 
-# Read the top-level module name from build/top; default to "hello" if the file does not exist
-TOP := $(shell cat build/top &> /dev/null || echo "hello")
+# Read the top-level module name from build/top; default to "sc_soc_tb" if the file does not exist
+TOP := $(shell cat build/top &> /dev/null || echo "sc_soc_tb")
 
 # Sets the test name for the simulation
-TEST ?= default
+TEST := default
+
+# Back-door load flag for the testbench, forwarded as +BDL plusarg. Set to 1 to enable the back-door
+# loading mechanism in the testbench, which directly loads the program into the simulated RAM
+# without going through the normal instruction fetch mechanism. This can speed up simulation for
+# larger test programs, but may not be compatible
+BDL := 1
 
 # Set GUI=0 for headless simulation, any other value to open the Vivado waveform GUI
-GUI ?= 0
+GUI := 0
+
+# Set DEBUG to a non-zero value to enable debug print statements in the testbenches (forwarded as
+# +DEBUG plusarg)
+DEBUG := 0
 
 # Simulation mode: GUI=0 runs headless (-runall), any other value opens the Vivado waveform GUI
 ifeq ($(GUI), 0)
@@ -39,9 +49,9 @@ else
 endif
 
 # Set COV=1 to enable functional coverage collection during simulation
-COV ?= 0
+COV := 0
 # Set CC_COV=1 to also enable code coverage (requires COV=1)
-CC_COV ?= 0
+CC_COV := 0
 
 # When both functional and code coverage are enabled, instruct xelab to instrument
 # the design for statement/branch/condition coverage using the SBC (SystemVerilog
@@ -88,7 +98,7 @@ XVLOG_DEFS += -d SIMULATION
 
 # List of all tracked hardware files whose SHA-256 checksums are used to detect changes and trigger
 # incremental recompilation / elaboration only when needed
-SHA_FILES = $(shell find $(SC_SOC)/hardware/ -name "*" -type f)
+SHA_FILES = $(shell find $(SC_SOC)/hardware/ -name "*.sv" -type f)
 
 ####################################################################################################
 # TOOLS
@@ -143,9 +153,9 @@ help:
 	@echo -e "  \033[0;36mhelp\033[0m             Show this help message"
 	@echo ""
 	@echo -e "\033[1mOptions:\033[0m"
-	@echo -e "  \033[0;33mTOP=<module>\033[0m     Top-level module to simulate              (default: hello)"
+	@echo -e "  \033[0;33mTOP=<module>\033[0m     Top-level module to simulate              (default: sc_soc_tb)"
 	@echo -e "  \033[0;33mTEST=<name>\033[0m      Test name forwarded as +TEST plusarg      (default: default)"
-	@echo -e "  \033[0;33mDEBUG=<value>\033[0m    Value forwarded as +DEBUG plusarg         (default: unset)"
+	@echo -e "  \033[0;33mDEBUG=<value>\033[0m    Value forwarded as +DEBUG plusarg         (default: 0)"
 	@echo -e "  \033[0;33mGUI=<0|1>\033[0m        0=headless, 1=open Vivado waveform GUI    (default: 0)"
 	@echo -e "  \033[0;33mCOV=<0|1>\033[0m        1=enable functional coverage collection   (default: 0)"
 	@echo -e "  \033[0;33mCC_COV=<0|1>\033[0m     1=also enable code coverage (needs COV=1) (default: 0)"
@@ -246,7 +256,8 @@ __ENV_BUILD__:
 common_sim_checks:
 	@echo "--testplusarg TEST=$(TEST)" > build/xsim_args
 	@echo "--testplusarg DEBUG=$(DEBUG)" >> build/xsim_args
-ifeq ($(TOP), rv32imf_tb)
+	@echo "--testplusarg BDL=$(BDL)" >> build/xsim_args
+ifeq ($(TOP), sc_soc_tb)
 	@make -s test TEST=$(TEST)
 endif
 

@@ -62,6 +62,8 @@ module axi4l_uart_regif
   axi4l_fifo #(
       .axi4l_req_t(uart_axil_req_t),
       .axi4l_resp_t(uart_axil_resp_t),
+      .ADDR_WIDTH  (6),
+      .DATA_WIDTH  (32),
       .FIFO_SIZE  (2)
   ) u_axi4l_fifo (
       .clk_i    (clk_i),
