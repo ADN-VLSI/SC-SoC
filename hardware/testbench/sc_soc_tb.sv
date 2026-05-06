@@ -118,11 +118,11 @@ module sc_soc_tb;
   endtask
 
   function automatic void ram_write(int addr, int data);
-    u_dut.u_ram.mem_inst.mem_array[addr] = data;
+    u_dut.u_ram.mem_inst.mem_array[addr>>2] = data;
   endfunction
 
   function automatic int ram_read(int addr);
-    return u_dut.u_ram.mem_inst.mem_array[addr];
+    return u_dut.u_ram.mem_inst.mem_array[addr>>2];
   endfunction
 
   // LOAD SYMBOL FILE
@@ -213,12 +213,7 @@ module sc_soc_tb;
 
     core_clk_i_enable();
 
-    while (1) begin
-      int data;
-      repeat (100) @(posedge apb_clk_i);
-      apb_intf.apb_read(sym["tohost"], data);
-      if (data != 0) break;
-    end
+    do #100ns; while (ram_read(sym["tohost"]) == 0);
 
     $display("Exit code: 0x%08x", ram_read(sym["tohost"]));
 
