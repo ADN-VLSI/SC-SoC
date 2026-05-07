@@ -21,8 +21,17 @@ export S1=$(SC_SOC)/submodule/S1
 # CONFIGURATION
 ####################################################################################################
 
-# Read the top-level module name from build/top; default to "sc_soc_tb" if the file does not exist
-TOP := $(shell cat build/top &> /dev/null || echo "sc_soc_tb")
+# Set the top-level module to simulate. This should match the name of a testbench module defined in
+# the hardware/testbench directory. The default is sc_soc_tb, which is the main SoC testbench that
+# instantiates the entire design and runs a suite of tests on it. You can also set TOP to other
+# testbench modules for more focused testing of specific components (e.g. bin_2_gray_tb for testing
+# the binary to gray code converter). When you run 'make simulate', the Makefile will look for a
+# testbench module with the name specified by TOP and simulate it. You can also set TOP when running
+# 'make simulate' to override the default. For example, 'make simulate TOP=bin_2_gray_tb' will
+# simulate the bin_2_gray_tb testbench instead of sc_soc_tb. Note that the testbench module you
+# specify must be defined in the hardware/testbench directory and must be included in the xvlog file
+# list for the simulation to work.
+TOP := sc_soc_tb
 
 # Sets the test name for the simulation
 TEST := default

@@ -9,7 +9,6 @@
 // Define constants and types
 typedef int FILE;
 #define stdout ((FILE *)2)
-#define STDOUT_PUTC_OFFSET 0x00000000
 #define MAXFP1 0xFFFFFFFF
 #define HIGHBIT64 (1ull << 63)
 

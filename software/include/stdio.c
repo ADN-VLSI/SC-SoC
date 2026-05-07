@@ -36,9 +36,9 @@ uint32_t get_hart_id() {
 
 // Lock UART with HART ID + 1
 void uart_req_lock() {
-    REG_DHS_UART_ACCESS_ID_REQ = (get_hart_id() + 1);
+    REG_UART_TXR = (1); // REG_UART_TXR = (get_hart_id() + 1);
     // Wait until grant has arrived through peeking.
-    while (REG_DHS_UART_ACCESS_ID_GNT_PEEK != (get_hart_id() + 1)) {
+    while (REG_UART_TXGP != (1)) { // while (REG_UART_TXGP != (get_hart_id() + 1)) {
         nop_delay(128);
     }
 }
@@ -46,17 +46,17 @@ void uart_req_lock() {
 // Release UART lock
 void uart_req_release() {
     // Wait until TX fifo is empty
-    while (REG_DHS_UART_TX_FIFO_STAT > 0) {
+    while ((REG_UART_STAT & 0x100000) == 0) {
         nop_delay(128);
     }
 
     // Just make sure HART ID is appropriate
-    while (REG_DHS_UART_ACCESS_ID_GNT_PEEK != (get_hart_id() + 1)) {
+    while (REG_UART_TXGP != (1)) { // while (REG_UART_TXGP != (get_hart_id() + 1)) {
         nop_delay(128);
     }
 
     // Pop HART ID out of ID queue
-    (void)REG_DHS_UART_ACCESS_ID_GNT;  // Read to clear/pop the grant
+    (void)REG_UART_TXG;  // Read to clear/pop the grant
 }
 
 // Function definitions
@@ -74,7 +74,7 @@ void *memcpy(void *dest, const void *src, size_t n)
 void pos_libc_putc_stdout(char c)
 {
     // extern int putchar_stdout;                         // External variable for stdout
-    REG_DHS_UART_TX_FIFO_DATA = c; // Write character to stdout
+    REG_UART_TXD = c; // Write character to stdout
 }
 
 static void pos_putc(char c)

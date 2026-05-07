@@ -13,6 +13,14 @@ fromhost: .dword 0
 _start:
     la sp, __stack_top
     csrc 0x320, 1
+    li t0, 0x00011000
+    li t1, 0x00000006
+    li t2, 0x0003405B
+    li t3, 0x00000018
+    sw t1,   0(t0)
+    sw zero, 0(t0)
+    sw t2,   4(t0)
+    sw t3,   0(t0)
     call main
 
 _exit:
