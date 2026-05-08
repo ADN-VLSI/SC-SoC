@@ -940,9 +940,4 @@ int printf(char *format, ...)
     return r;
 }
 
-double __extendsfdf2(float a)
-{
-    return (double)a;
-}
-
 #endif

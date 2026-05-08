@@ -43,7 +43,6 @@ void *memmove(void *d, const void *s, size_t n);
 int pos_libc_prf(int (*func)(int, void *), void *dest, char *format, va_list vargs);
 int pos_libc_prf_locked(int (*func)(int, void *), void *dest, char *format, va_list vargs);
 int printf(char *format, ...);
-double __extendsfdf2(float a);
 
 #include "stdio.c"
 
