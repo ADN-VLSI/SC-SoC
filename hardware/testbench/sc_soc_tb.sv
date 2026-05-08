@@ -215,7 +215,7 @@ module sc_soc_tb;
 
     do #100ns; while (ram_read(sym["tohost"]) == 0);
 
-    $display("Exit code: 0x%08x", ram_read(sym["tohost"]));
+    $display("Exit code: 0x%08x (%0d)", ram_read(sym["tohost"]), ram_read(sym["tohost"]));
 
     $finish;
   end

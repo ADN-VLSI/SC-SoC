@@ -42,7 +42,7 @@ module axi4l_mem #(
 
   // AXI Signals
   axi4l_req_t                    axi4l_req;
-  axi4l_resp_t                    axi4l_rsp;
+  axi4l_resp_t                   axi4l_rsp;
 
   // Write interface
   logic       [  ADDR_WIDTH-1:0] mem_waddr;
