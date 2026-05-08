@@ -1,23 +1,26 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Thu May 07 08:51:21 2026
+[*] Fri May 08 15:28:02 2026
 [*]
 [dumpfile] "C:\Users\Foez\Documents\ADN\SC-SoC\build\sc_soc_tb.vcd"
-[dumpfile_mtime] "Thu May 07 08:39:41 2026"
-[dumpfile_size] 655164177
+[dumpfile_mtime] "Fri May 08 15:24:12 2026"
+[dumpfile_size] 210487766
 [savefile] "C:\Users\Foez\Documents\ADN\SC-SoC\wave.gtkw"
-[timestart] 3632800
-[size] 1920 1129
-[pos] -165 -165
-*-16.061514 3870000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 0
+[size] 2560 1369
+[pos] -851 -165
+*-21.410007 100000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] sc_soc_tb.
 [treeopen] sc_soc_tb.u_dut.
+[treeopen] sc_soc_tb.u_dut.u_core.
+[treeopen] sc_soc_tb.u_dut.u_core.core_i.
+[treeopen] sc_soc_tb.u_dut.u_core.core_i.id_stage_i.
 [treeopen] sc_soc_tb.u_dut.u_uart.
 [treeopen] sc_soc_tb.u_dut.u_uart.u_axi4l_regif.
 [sst_width] 259
 [signals_width] 226
 [sst_expanded] 1
-[sst_vpaned_height] 339
+[sst_vpaned_height] 423
 @28
 sc_soc_tb.uart_tx_o
 sc_soc_tb.u_dut.d_bus.arst_ni
@@ -38,69 +41,24 @@ sc_soc_tb.u_dut.d_bus.rvalid_o
 @200
 -
 @22
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_data_o[7:0]
-@28
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.arst_ni
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.clk_i
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_data_valid_o
+sc_soc_tb.x0_zero[31:0]
+sc_soc_tb.x1_ra[31:0]
+sc_soc_tb.x2_sp[31:0]
+sc_soc_tb.x3_gp[31:0]
+sc_soc_tb.x4_tp[31:0]
+sc_soc_tb.x5_t0[31:0]
+sc_soc_tb.x6_t1[31:0]
+sc_soc_tb.x7_t2[31:0]
+sc_soc_tb.x8_s0_fp[31:0]
+sc_soc_tb.x9_s1[31:0]
 @200
 -
+@23
+sc_soc_tb.u_dut.u_core.core_i.id_stage_i.pc_id_i[31:0]
 @22
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_cfg_o[31:0]
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_ctrl_o[31:0]
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_int_en_o[31:0]
-@c00022
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
+sc_soc_tb.u_dut.u_core.core_i.id_stage_i.pc_ex_o[31:0]
+sc_soc_tb.u_dut.u_core.core_i.id_stage_i.pc_mux_o[3:0]
 @28
-(0)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(1)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(2)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(3)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(4)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(5)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(6)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(7)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(8)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(9)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(10)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(11)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(12)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(13)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(14)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(15)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(16)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(17)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(18)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(19)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(20)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(21)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(22)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(23)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(24)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(25)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(26)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(27)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(28)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(29)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(30)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-(31)sc_soc_tb.u_dut.u_uart.u_axi4l_regif.uart_stat_o[31:0]
-@1401200
--group_end
-@200
--
-@28
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_id_in_valid
-@22
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_id_in[7:0]
-@28
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_id_in_ready
-@200
--
-@22
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_id_out[7:0]
-@28
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_id_out_valid
-@29
-sc_soc_tb.u_dut.u_uart.u_axi4l_regif.tx_id_out_ready
+sc_soc_tb.u_dut.u_core.core_i.id_stage_i.pc_set_o
 [pattern_trace] 1
 [pattern_trace] 0

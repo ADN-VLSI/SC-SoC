@@ -62,6 +62,73 @@ module sc_soc_tb;
 
   longint sym            [string];
 
+  `define REGFILE sc_soc_tb.u_dut.u_core.core_i.id_stage_i.register_file_i
+  // regfile internal probing
+  logic [31:0] x0_zero;
+  assign x0_zero = `REGFILE.mem[0];
+  logic [31:0] x1_ra;
+  assign x1_ra = `REGFILE.mem[1];
+  logic [31:0] x2_sp;
+  assign x2_sp = `REGFILE.mem[2];
+  logic [31:0] x3_gp;
+  assign x3_gp = `REGFILE.mem[3];
+  logic [31:0] x4_tp;
+  assign x4_tp = `REGFILE.mem[4];
+  logic [31:0] x5_t0;
+  assign x5_t0 = `REGFILE.mem[5];
+  logic [31:0] x6_t1;
+  assign x6_t1 = `REGFILE.mem[6];
+  logic [31:0] x7_t2;
+  assign x7_t2 = `REGFILE.mem[7];
+  logic [31:0] x8_s0_fp;
+  assign x8_s0_fp = `REGFILE.mem[8];
+  logic [31:0] x9_s1;
+  assign x9_s1 = `REGFILE.mem[9];
+  logic [31:0] x10_a0;
+  assign x10_a0 = `REGFILE.mem[10];
+  logic [31:0] x11_a1;
+  assign x11_a1 = `REGFILE.mem[11];
+  logic [31:0] x12_a2;
+  assign x12_a2 = `REGFILE.mem[12];
+  logic [31:0] x13_a3;
+  assign x13_a3 = `REGFILE.mem[13];
+  logic [31:0] x14_a4;
+  assign x14_a4 = `REGFILE.mem[14];
+  logic [31:0] x15_a5;
+  assign x15_a5 = `REGFILE.mem[15];
+  logic [31:0] x16_a6;
+  assign x16_a6 = `REGFILE.mem[16];
+  logic [31:0] x17_a7;
+  assign x17_a7 = `REGFILE.mem[17];
+  logic [31:0] x18_s2;
+  assign x18_s2 = `REGFILE.mem[18];
+  logic [31:0] x19_s3;
+  assign x19_s3 = `REGFILE.mem[19];
+  logic [31:0] x20_s4;
+  assign x20_s4 = `REGFILE.mem[20];
+  logic [31:0] x21_s5;
+  assign x21_s5 = `REGFILE.mem[21];
+  logic [31:0] x22_s6;
+  assign x22_s6 = `REGFILE.mem[22];
+  logic [31:0] x23_s7;
+  assign x23_s7 = `REGFILE.mem[23];
+  logic [31:0] x24_s8;
+  assign x24_s8 = `REGFILE.mem[24];
+  logic [31:0] x25_s9;
+  assign x25_s9 = `REGFILE.mem[25];
+  logic [31:0] x26_s10;
+  assign x26_s10 = `REGFILE.mem[26];
+  logic [31:0] x27_s11;
+  assign x27_s11 = `REGFILE.mem[27];
+  logic [31:0] x28_t3;
+  assign x28_t3 = `REGFILE.mem[28];
+  logic [31:0] x29_t4;
+  assign x29_t4 = `REGFILE.mem[29];
+  logic [31:0] x30_t5;
+  assign x30_t5 = `REGFILE.mem[30];
+  logic [31:0] x31_t6;
+  assign x31_t6 = `REGFILE.mem[31];
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // INTERFACE INSTANTIATION
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,11 +185,19 @@ module sc_soc_tb;
   endtask
 
   function automatic void ram_write(int addr, int data);
-    u_dut.u_ram.mem_inst.mem_array[addr>>2] = data;
+    bit [3:0][7:0] byte_data;
+    int aligned_addr;
+    aligned_addr = addr & 'hffff_fffc;
+    byte_data = data;
+    foreach (byte_data[i]) u_dut.u_ram.mem[0][aligned_addr+i] = byte_data[i];
   endfunction
 
   function automatic int ram_read(int addr);
-    return u_dut.u_ram.mem_inst.mem_array[addr>>2];
+    bit [3:0][7:0] byte_data;
+    int aligned_addr;
+    aligned_addr = addr & 'hffff_fffc;
+    foreach (byte_data[i]) byte_data[i] = u_dut.u_ram.mem[0][aligned_addr+i];
+    return byte_data;
   endfunction
 
   // LOAD SYMBOL FILE
