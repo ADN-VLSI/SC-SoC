@@ -24,10 +24,10 @@ _start:
     call main
 
 _exit:
-    la   t0, tohost
-    slli a0, a0, 1
-    ori  a0, a0, 1
-    sw   a0, 0(t0)
+    la  t0, tohost
+    li  a1, 0x80000000
+    or  a0, a0, a1
+    sw  a0, 0(t0)
 
 _forever_loop:
     j _forever_loop

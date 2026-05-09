@@ -57,8 +57,7 @@ module sc_soc_tb;
   bit     debug;
   bit     back_door_load;
 
-  int     pass_count = 0;
-  int     fail_count = 0;
+  int exit_code;
 
   longint sym            [string];
 
@@ -290,7 +289,13 @@ module sc_soc_tb;
 
     do #100ns; while (ram_read(sym["tohost"]) == 0);
 
-    $display("Exit code: 0x%08x (%0d)", ram_read(sym["tohost"]), ram_read(sym["tohost"]));
+    begin
+      exit_code = 'h7fff_ffff & ram_read(sym["tohost"]);
+      $display("Exit code: 0x%08x (%0d)", exit_code, exit_code);
+      if (exit_code == 0) $display("\033[1;32m [PASS] %s\033[0m", test_name);
+      else                $display("\033[1;31m [FAIL] %s\033[0m", test_name);
+    end
+
 
     $finish;
   end
