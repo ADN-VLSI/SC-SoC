@@ -377,6 +377,33 @@ module sc_soc_tb;
 
   endtask
 
+  // -----------------------------------------------------------------------
+  // DECODE ERRORS TASK
+  //
+  // Decodes the exit_code bitmask written by uart.c to tohost.
+  // Each set bit i indicates that character i of UART_EXPECTED was not
+  // matched in the RX FIFO read-back.
+  //
+  // Declared as a separate automatic task so that the local variable
+  // 'exp' is unambiguously automatic in scope, eliminating the
+  // VRFC 10-3824 warning that fires when a variable with an initializer
+  // is declared inside a for-loop inside a static initial block.
+  // -----------------------------------------------------------------------
+  task automatic decode_errors(input int err_code);
+    byte exp_byte;  // declared once outside the loop — no static/automatic ambiguity
+    for (int i = 0; i < UART_MSG_LEN; i++) begin
+      if (err_code & (1 << i)) begin
+        exp_byte = byte'(UART_EXPECTED[i]);  // assigned, not declared+initialized in loop
+        if (exp_byte >= 8'h20 && exp_byte < 8'h7f)
+          $display(" [FAIL]   bit[%02d] set — expected '%c' (0x%02x) not matched in RX",
+                   i, exp_byte, exp_byte);
+        else
+          $display(" [FAIL]   bit[%02d] set — expected 0x%02x not matched in RX",
+                   i, exp_byte);
+      end
+    end
+  endtask
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // PROCEDURALS
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -432,17 +459,9 @@ module sc_soc_tb;
         $display("\033[1;32m [PASS] %s\033[0m", test_name);
       end else begin
         $display("\033[1;31m [FAIL] %s — error bitmask 0x%08x\033[0m", test_name, exit_code);
-        // Decode which characters the C program found wrong
-        for (int i = 0; i < UART_MSG_LEN; i++) begin
-          if (exit_code & (1 << i)) begin
-            byte exp = byte'(UART_EXPECTED[i]);
-            if (exp >= 8'h20 && exp < 8'h7f)
-              $display(" [FAIL]   bit[%02d] set — expected '%c' (0x%02x) not matched in RX",
-                       i, exp, exp);
-            else
-              $display(" [FAIL]   bit[%02d] set — expected 0x%02x not matched in RX", i, exp);
-          end
-        end
+        // Decode which characters the C program found wrong.
+        // Delegated to decode_errors() to avoid VRFC 10-3824 on 'exp'.
+        decode_errors(exit_code);
       end
     end
 
