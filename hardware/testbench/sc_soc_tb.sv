@@ -27,21 +27,21 @@ module sc_soc_tb;
   // CLOCK MACRO
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `define CLOCK(__NAME__, __PERIOD__)                                  \
-      logic ``__NAME__``;                                              \
-      bit ``__NAME__``_state = '0;                                     \
-      initial begin                                                    \
-        forever begin                                                  \
-          ``__NAME__ <= ``__NAME__``_state;                            \
-          #( __PERIOD__ / 2 );                                         \
-          ``__NAME__ <= '0;                                            \
-          #( __PERIOD__ / 2 );                                         \
-        end                                                            \
-      end                                                              \
-                                                                       \
-      function automatic void ``__NAME__``_enable(input bit en = 1);   \
-        ``__NAME__``_state = en;                                       \
-      endfunction                                                      \
+  `define CLOCK(__NAME__, __PERIOD__)                                                              \
+      logic ``__NAME__``;                                                                          \
+      bit ``__NAME__``_state = '0;                                                                 \
+      initial begin                                                                                \
+        forever begin                                                                              \
+          ``__NAME__ <= ``__NAME__``_state;                                                        \
+          #( __PERIOD__ / 2 );                                                                     \
+          ``__NAME__ <= '0;                                                                        \
+          #( __PERIOD__ / 2 );                                                                     \
+        end                                                                                        \
+      end                                                                                          \
+                                                                                                   \
+      function automatic void ``__NAME__``_enable(input bit en = 1);                               \
+        ``__NAME__``_state = en;                                                                   \
+      endfunction                                                                                  \
 
   `CLOCK(system_clk_i, 10ns)
   `CLOCK(core_clk_i, 10ns)
@@ -61,72 +61,80 @@ module sc_soc_tb;
 
   longint sym            [string];
 
-  `define REGFILE sc_soc_tb.u_dut.u_core.core_i.id_stage_i.register_file_i
   // regfile internal probing
-  logic [31:0] x0_zero;
-  assign x0_zero = `REGFILE.mem[0];
-  logic [31:0] x1_ra;
-  assign x1_ra = `REGFILE.mem[1];
-  logic [31:0] x2_sp;
-  assign x2_sp = `REGFILE.mem[2];
-  logic [31:0] x3_gp;
-  assign x3_gp = `REGFILE.mem[3];
-  logic [31:0] x4_tp;
-  assign x4_tp = `REGFILE.mem[4];
-  logic [31:0] x5_t0;
-  assign x5_t0 = `REGFILE.mem[5];
-  logic [31:0] x6_t1;
-  assign x6_t1 = `REGFILE.mem[6];
-  logic [31:0] x7_t2;
-  assign x7_t2 = `REGFILE.mem[7];
-  logic [31:0] x8_s0_fp;
-  assign x8_s0_fp = `REGFILE.mem[8];
-  logic [31:0] x9_s1;
-  assign x9_s1 = `REGFILE.mem[9];
-  logic [31:0] x10_a0;
-  assign x10_a0 = `REGFILE.mem[10];
-  logic [31:0] x11_a1;
-  assign x11_a1 = `REGFILE.mem[11];
-  logic [31:0] x12_a2;
-  assign x12_a2 = `REGFILE.mem[12];
-  logic [31:0] x13_a3;
-  assign x13_a3 = `REGFILE.mem[13];
-  logic [31:0] x14_a4;
-  assign x14_a4 = `REGFILE.mem[14];
-  logic [31:0] x15_a5;
-  assign x15_a5 = `REGFILE.mem[15];
-  logic [31:0] x16_a6;
-  assign x16_a6 = `REGFILE.mem[16];
-  logic [31:0] x17_a7;
-  assign x17_a7 = `REGFILE.mem[17];
-  logic [31:0] x18_s2;
-  assign x18_s2 = `REGFILE.mem[18];
-  logic [31:0] x19_s3;
-  assign x19_s3 = `REGFILE.mem[19];
-  logic [31:0] x20_s4;
-  assign x20_s4 = `REGFILE.mem[20];
-  logic [31:0] x21_s5;
-  assign x21_s5 = `REGFILE.mem[21];
-  logic [31:0] x22_s6;
-  assign x22_s6 = `REGFILE.mem[22];
-  logic [31:0] x23_s7;
-  assign x23_s7 = `REGFILE.mem[23];
-  logic [31:0] x24_s8;
-  assign x24_s8 = `REGFILE.mem[24];
-  logic [31:0] x25_s9;
-  assign x25_s9 = `REGFILE.mem[25];
-  logic [31:0] x26_s10;
-  assign x26_s10 = `REGFILE.mem[26];
-  logic [31:0] x27_s11;
-  assign x27_s11 = `REGFILE.mem[27];
-  logic [31:0] x28_t3;
-  assign x28_t3 = `REGFILE.mem[28];
-  logic [31:0] x29_t4;
-  assign x29_t4 = `REGFILE.mem[29];
-  logic [31:0] x30_t5;
-  assign x30_t5 = `REGFILE.mem[30];
-  logic [31:0] x31_t6;
-  assign x31_t6 = `REGFILE.mem[31];
+  `define REGFILE_SEE(__NAME__,__INDEX__,__TYPE__,__EXT__)                                         \
+    logic [31:0] ``__TYPE__``_``__INDEX__``_``__NAME__``;                                          \
+    assign ``__TYPE__``_``__INDEX__``_``__NAME__`` =                                               \
+    sc_soc_tb.u_dut.u_core.core_i.id_stage_i.register_file_i.``__EXT__``[``__INDEX__``];           \
+
+
+  `REGFILE_SEE(zero,0,x,mem)
+  `REGFILE_SEE(ra,1,x,mem)
+  `REGFILE_SEE(sp,2,x,mem)
+  `REGFILE_SEE(gp,3,x,mem)
+  `REGFILE_SEE(tp,4,x,mem)
+  `REGFILE_SEE(t0,5,x,mem)
+  `REGFILE_SEE(t1,6,x,mem)
+  `REGFILE_SEE(t2,7,x,mem)
+  `REGFILE_SEE(s0_fp,8,x,mem)
+  `REGFILE_SEE(s1,9,x,mem)
+  `REGFILE_SEE(a0,10,x,mem)
+  `REGFILE_SEE(a1,11,x,mem)
+  `REGFILE_SEE(a2,12,x,mem)
+  `REGFILE_SEE(a3,13,x,mem)
+  `REGFILE_SEE(a4,14,x,mem)
+  `REGFILE_SEE(a5,15,x,mem)
+  `REGFILE_SEE(a6,16,x,mem)
+  `REGFILE_SEE(a7,17,x,mem)
+  `REGFILE_SEE(s2,18,x,mem)
+  `REGFILE_SEE(s3,19,x,mem)
+  `REGFILE_SEE(s4,20,x,mem)
+  `REGFILE_SEE(s5,21,x,mem)
+  `REGFILE_SEE(s6,22,x,mem)
+  `REGFILE_SEE(s7,23,x,mem)
+  `REGFILE_SEE(s8,24,x,mem)
+  `REGFILE_SEE(s9,25,x,mem)
+  `REGFILE_SEE(s10,26,x,mem)
+  `REGFILE_SEE(s11,27,x,mem)
+  `REGFILE_SEE(t3,28,x,mem)
+  `REGFILE_SEE(t4,29,x,mem)
+  `REGFILE_SEE(t5,30,x,mem)
+  `REGFILE_SEE(t6,31,x,mem)
+
+  `REGFILE_SEE(ft0,0,f,mem_fp)
+  `REGFILE_SEE(ft1,1,f,mem_fp)
+  `REGFILE_SEE(ft2,2,f,mem_fp)
+  `REGFILE_SEE(ft3,3,f,mem_fp)
+  `REGFILE_SEE(ft4,4,f,mem_fp)
+  `REGFILE_SEE(ft5,5,f,mem_fp)
+  `REGFILE_SEE(ft6,6,f,mem_fp)
+  `REGFILE_SEE(ft7,7,f,mem_fp)
+  `REGFILE_SEE(fs0,8,f,mem_fp)
+  `REGFILE_SEE(fs1,9,f,mem_fp)
+  `REGFILE_SEE(fa0,10,f,mem_fp)
+  `REGFILE_SEE(fa1,11,f,mem_fp)
+  `REGFILE_SEE(fa2,12,f,mem_fp)
+  `REGFILE_SEE(fa3,13,f,mem_fp)
+  `REGFILE_SEE(fa4,14,f,mem_fp)
+  `REGFILE_SEE(fa5,15,f,mem_fp)
+  `REGFILE_SEE(fa6,16,f,mem_fp)
+  `REGFILE_SEE(fa7,17,f,mem_fp)
+  `REGFILE_SEE(fs2,18,f,mem_fp)
+  `REGFILE_SEE(fs3,19,f,mem_fp)
+  `REGFILE_SEE(fs4,20,f,mem_fp)
+  `REGFILE_SEE(fs5,21,f,mem_fp)
+  `REGFILE_SEE(fs6,22,f,mem_fp)
+  `REGFILE_SEE(fs7,23,f,mem_fp)
+  `REGFILE_SEE(fs8,24,f,mem_fp)
+  `REGFILE_SEE(fs9,25,f,mem_fp)
+  `REGFILE_SEE(fs10,26,f,mem_fp)
+  `REGFILE_SEE(fs11,27,f,mem_fp)
+  `REGFILE_SEE(t8,28,f,mem_fp)
+  `REGFILE_SEE(t9,29,f,mem_fp)
+  `REGFILE_SEE(t10,30,f,mem_fp)
+  `REGFILE_SEE(t11,31,f,mem_fp)
+
+  `undef REGFILE_SEE
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // INTERFACE INSTANTIATION
@@ -296,7 +304,12 @@ module sc_soc_tb;
       else                $display("\033[1;31m [FAIL] %s\033[0m", test_name);
     end
 
+    $finish;
+  end
 
+  initial begin
+    #200us;
+    $display("\033[1;31m [FAIL] %s -- TIMEDOUT\033[0m", test_name);
     $finish;
   end
 
