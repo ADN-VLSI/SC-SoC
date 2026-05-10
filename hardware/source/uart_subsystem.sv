@@ -58,6 +58,7 @@ module uart_subsystem #(
   logic [FIFO_COUNT_W-1:0] tx_fifo_rd_count;
 
   logic tx_data_ready_from_uart;
+  logic tx_idle;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // RX FIFO SIGNALS
@@ -117,6 +118,7 @@ module uart_subsystem #(
       .rx_data_ready_o (rx_data_ready_from_regif),
       .tx_data_cnt_i   (tx_data_cnt),
       .rx_data_cnt_i   (rx_data_cnt),
+      .tx_uart_idle_i  (tx_idle),
       .uart_int_en_o   (uart_int_en)
   );
 
@@ -187,7 +189,8 @@ module uart_subsystem #(
       .parity_type_i (uart_cfg.ptp),
       .extra_stop_i  (uart_cfg.sb),
       .tx_o          (tx_o),
-      .data_ready_o  (tx_data_ready_from_uart)
+      .data_ready_o  (tx_data_ready_from_uart),
+      .tx_idle_o     (tx_idle)
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
