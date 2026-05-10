@@ -61,6 +61,9 @@ module sc_soc_tb;
 
   longint sym            [string];
 
+  logic [31:0] pc;
+  assign pc = sc_soc_tb.u_dut.u_core.core_i.id_stage_i.pc_id_i[31:0];
+
   // regfile internal probing
   `define REGFILE_SEE(__NAME__,__INDEX__,__TYPE__,__EXT__)                                         \
     logic [31:0] ``__TYPE__``_``__INDEX__``_``__NAME__``;                                          \
