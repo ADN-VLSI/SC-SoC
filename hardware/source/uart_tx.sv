@@ -7,6 +7,7 @@ module uart_tx (
     input  logic       parity_en_i,
     input  logic       parity_type_i,
     input  logic       extra_stop_i,
+    output logic       tx_idle_o,
     output logic       tx_o,
     output logic       data_ready_o
 );
@@ -93,8 +94,9 @@ module uart_tx (
   always_comb begin
     tx_o         = 1'b1;
     data_ready_o = 1'b0;
+    tx_idle_o    = 1'b0;
     case (state)
-      IDLE:    data_ready_o = 1'b1;
+      IDLE:    begin tx_idle_o = 1'b1; data_ready_o = 1'b1; end
       START:   tx_o         = 1'b0;
       DATA:    tx_o         = data_reg[bit_cnt];
       PARITY:  tx_o         = parity_type_i ? ~parity_xor : parity_xor;

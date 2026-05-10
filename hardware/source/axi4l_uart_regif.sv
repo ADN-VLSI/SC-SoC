@@ -48,6 +48,7 @@ module axi4l_uart_regif
 
     input uart_count_t tx_data_cnt_i,
     input uart_count_t rx_data_cnt_i,
+    input logic        tx_uart_idle_i,
 
     output uart_int_reg_t uart_int_en_o
 );
@@ -295,7 +296,7 @@ module axi4l_uart_regif
   always_comb begin
     uart_stat_o.reserved = '0;
     uart_stat_o.tx_cnt   = tx_data_cnt_i.count;
-    uart_stat_o.tx_empty = (tx_data_cnt_i == '0);
+    uart_stat_o.tx_empty = (tx_data_cnt_i == '0) & tx_uart_idle_i;
     uart_stat_o.tx_full  = (tx_data_cnt_i.count == uart_subsystem_pkg::UART_FIFO_DEPTH);
     uart_stat_o.rx_cnt   = rx_data_cnt_i.count;
     uart_stat_o.rx_empty = (rx_data_cnt_i == '0);
