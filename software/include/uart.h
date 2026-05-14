@@ -18,4 +18,6 @@
 #define REG_UART_RXD   *(volatile uint32_t*)(UART_BASE+0x02C)
 #define REG_UART_INT   *(volatile uint32_t*)(UART_BASE+0x030)
 
+void uart_init(void);
+
 #endif

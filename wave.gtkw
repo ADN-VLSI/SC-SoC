@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Sun May 10 17:42:47 2026
+[*] Thu May 14 07:23:47 2026
 [*]
 [dumpfile] "build/sc_soc_tb.vcd"
-[dumpfile_mtime] "Sun May 10 17:42:20 2026"
-[dumpfile_size] 1380261
+[dumpfile_mtime] "Thu May 14 07:16:44 2026"
+[dumpfile_size] 105154701
 [savefile] "wave.gtkw"
 [timestart] 0
-[size] 1920 1129
-[pos] -1 -1
-*-18.253284 156000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[size] 1920 1009
+[pos] 1911 -8
+*-18.813040 1030000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] sc_soc_tb.
 [treeopen] sc_soc_tb.u_dut.
 [treeopen] sc_soc_tb.u_dut.u_core.
@@ -20,9 +20,29 @@
 [sst_width] 259
 [signals_width] 252
 [sst_expanded] 1
-[sst_vpaned_height] 402
-@23
+[sst_vpaned_height] 378
+@22
 sc_soc_tb.pc[31:0]
+@c00200
+-data_bus
+@22
+sc_soc_tb.u_dut.u_core.data_addr_o[31:0]
+@28
+sc_soc_tb.u_dut.u_core.data_we_o
+@22
+sc_soc_tb.u_dut.u_core.data_wdata_o[31:0]
+sc_soc_tb.u_dut.u_core.data_be_o[3:0]
+@28
+sc_soc_tb.u_dut.u_core.data_req_o
+sc_soc_tb.u_dut.u_core.data_gnt_i
+@200
+-
+@28
+sc_soc_tb.u_dut.u_core.data_rvalid_i
+@22
+sc_soc_tb.u_dut.u_core.data_rdata_i[31:0]
+@1401200
+-data_bus
 @c00200
 -GPR
 @22
