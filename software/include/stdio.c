@@ -940,4 +940,59 @@ int printf(char *format, ...)
     return r;
 }
 
+double __extendsfdf2(float a)
+{
+    union {
+        float f;
+        uint32_t u;
+    } in;
+
+    union {
+        uint64_t u;
+        double d;
+    } out;
+
+    in.f = a;
+
+    uint32_t sign = (uint32_t)(in.u >> 31);
+    uint32_t exp  = (in.u >> 23) & 0xFF;
+    uint32_t frac = in.u & 0x7FFFFF;
+
+    uint64_t sign64 = (uint64_t)sign << 63;
+
+    if (exp == 0xFF) {
+        if (frac == 0) {
+            out.u = sign64 | ((uint64_t)0x7FF << 52);
+        } else {
+            uint64_t payload = (uint64_t)frac << (52 - 23);
+            out.u = sign64 | ((uint64_t)0x7FF << 52) | payload | ((uint64_t)1 << 51);
+        }
+        return out.d;
+    }
+
+    if (exp == 0 && frac == 0) {
+        out.u = sign64;
+        return out.d;
+    }
+
+    if (exp == 0) {
+        int32_t e = -126;
+        while ((frac & 0x800000) == 0) {
+            frac <<= 1;
+            e--;
+        }
+        frac &= 0x7FFFFF;
+        uint64_t exp64 = (uint64_t)(e + 1023);
+        uint64_t frac64 = (uint64_t)frac << (52 - 23);
+        out.u = sign64 | (exp64 << 52) | frac64;
+        return out.d;
+    }
+    {
+        uint64_t exp64 = (uint64_t)((int32_t)exp - 127 + 1023);
+        uint64_t frac64 = (uint64_t)frac << (52 - 23);
+        out.u = sign64 | (exp64 << 52) | frac64;
+        return out.d;
+    }
+}
+
 #endif
