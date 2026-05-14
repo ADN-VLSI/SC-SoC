@@ -36,9 +36,9 @@ uint32_t get_hart_id() {
 
 // Lock UART with HART ID + 1
 void uart_req_lock() {
-    REG_UART_TXR = (1); // REG_UART_TXR = (get_hart_id() + 1);
+    REG_UART_TXR = (get_hart_id() + 1);
     // Wait until grant has arrived through peeking.
-    while (REG_UART_TXGP != (1)) { // while (REG_UART_TXGP != (get_hart_id() + 1)) {
+    while (REG_UART_TXGP != (get_hart_id() + 1)) {
         nop_delay(128);
     }
 }
@@ -51,7 +51,7 @@ void uart_req_release() {
     }
 
     // Just make sure HART ID is appropriate
-    while (REG_UART_TXGP != (1)) { // while (REG_UART_TXGP != (get_hart_id() + 1)) {
+    while (REG_UART_TXGP != (get_hart_id() + 1)) {
         nop_delay(128);
     }
 
