@@ -310,10 +310,10 @@ module sc_soc_tb;
     $finish;
   end
 
-  // initial begin
-  //   #200us;
-  //   $display("\033[1;31m [FAIL] %s -- TIMEDOUT\033[0m", test_name);
-  //   $finish;
-  // end
+  initial begin
+    #10ms;
+    $display("\033[1;31m [FAIL] %s -- TIMEDOUT\033[0m", test_name);
+    $finish;
+  end
 
 endmodule
