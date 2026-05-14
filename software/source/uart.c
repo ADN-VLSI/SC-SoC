@@ -55,22 +55,22 @@ int main () {
     }
 
     int error = 0;
-    if (REG_UART_RXD & 0x000000FF != 'H')  error |= 0x00000001;
-    if (REG_UART_RXD & 0x000000FF != 'e')  error |= 0x00000002;
-    if (REG_UART_RXD & 0x000000FF != 'l')  error |= 0x00000004;
-    if (REG_UART_RXD & 0x000000FF != 'l')  error |= 0x00000008;
-    if (REG_UART_RXD & 0x000000FF != 'o')  error |= 0x00000010;
-    if (REG_UART_RXD & 0x000000FF != ' ')  error |= 0x00000020;
-    if (REG_UART_RXD & 0x000000FF != 'W')  error |= 0x00000040;
-    if (REG_UART_RXD & 0x000000FF != 'o')  error |= 0x00000080;
-    if (REG_UART_RXD & 0x000000FF != 'r')  error |= 0x00000100;
-    if (REG_UART_RXD & 0x000000FF != 'l')  error |= 0x00000200;
-    if (REG_UART_RXD & 0x000000FF != 'd')  error |= 0x00000400;
-    if (REG_UART_RXD & 0x000000FF != '.')  error |= 0x00000800;
-    if (REG_UART_RXD & 0x000000FF != '.')  error |= 0x00001000;
-    if (REG_UART_RXD & 0x000000FF != '.')  error |= 0x00002000;
-    if (REG_UART_RXD & 0x000000FF != '!')  error |= 0x00004000;
-    if (REG_UART_RXD & 0x000000FF != '\n') error |= 0x00008000;
+    if ((REG_UART_RXD & 0x000000FF) != 'H')  error |= 0x00000001;
+    if ((REG_UART_RXD & 0x000000FF) != 'e')  error |= 0x00000002;
+    if ((REG_UART_RXD & 0x000000FF) != 'l')  error |= 0x00000004;
+    if ((REG_UART_RXD & 0x000000FF) != 'l')  error |= 0x00000008;
+    if ((REG_UART_RXD & 0x000000FF) != 'o')  error |= 0x00000010;
+    if ((REG_UART_RXD & 0x000000FF) != ' ')  error |= 0x00000020;
+    if ((REG_UART_RXD & 0x000000FF) != 'W')  error |= 0x00000040;
+    if ((REG_UART_RXD & 0x000000FF) != 'o')  error |= 0x00000080;
+    if ((REG_UART_RXD & 0x000000FF) != 'r')  error |= 0x00000100;
+    if ((REG_UART_RXD & 0x000000FF) != 'l')  error |= 0x00000200;
+    if ((REG_UART_RXD & 0x000000FF) != 'd')  error |= 0x00000400;
+    if ((REG_UART_RXD & 0x000000FF) != '.')  error |= 0x00000800;
+    if ((REG_UART_RXD & 0x000000FF) != '.')  error |= 0x00001000;
+    if ((REG_UART_RXD & 0x000000FF) != '.')  error |= 0x00002000;
+    if ((REG_UART_RXD & 0x000000FF) != '!')  error |= 0x00004000;
+    if ((REG_UART_RXD & 0x000000FF) != '\n') error |= 0x00008000;
 
     return error;
 }
