@@ -140,7 +140,7 @@ module uart_subsystem #(
   ) u_rx_clk_div (
       .arst_ni (arst_ni),
       .clk_i   (prescale_clk),
-      .div_i   (uart_cfg.clk_div >> 3),
+      .div_i   (uart_cfg.clk_div >> 2),
       .clk_o   (rx_clk)
   );
 

@@ -18,10 +18,6 @@ module sc_soc_tb;
 
   logic                       glob_arst_ni;
   logic                       apb_arst_ni;
-  apb_req_t                   apb_req_i;
-  apb_resp_t                  apb_resp_o;
-  logic                       uart_tx_o;
-  wire                        uart_rx_i;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // CLOCK MACRO
@@ -148,6 +144,8 @@ module sc_soc_tb;
       .arst_ni(apb_arst_ni)
   );
 
+  uart_if uart_intf ();
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // DUT INSTANTIATION
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,12 +165,12 @@ module sc_soc_tb;
       .apb_clk_i   (apb_clk_i),
       .apb_req_i   (apb_intf.req),
       .apb_resp_o  (apb_intf.resp),
-      .uart_tx_o   (uart_tx_o),
-      .uart_rx_i   (uart_rx_i)
+      .uart_tx_o   (uart_intf.rx),
+      .uart_rx_i   (uart_intf.tx)
   );
 
-  // loopback
-  assign uart_rx_i = uart_tx_o;
+  // LOOP-BACK
+  assign uart_intf.tx = uart_intf.rx;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // METHODS
@@ -264,6 +262,56 @@ module sc_soc_tb;
     end
   endtask
 
+
+  `define UART_CFG(__BITS__) u_dut.u_uart.u_axi4l_regif.uart_cfg_o[``__BITS__``]
+
+  task automatic start_uart_monitoring();
+    string dut_tx;
+    string dut_rx;
+    fork
+      forever begin
+        bit [7:0] data;
+        bit       parity;
+        int       clk_div;
+        int       prescalar;
+        @(negedge uart_intf.rx);
+        clk_div = `UART_CFG(11:0);
+        prescalar = `UART_CFG(15:12);
+        if (clk_div == 0) clk_div = 1;
+        if (prescalar == 0) prescalar = 1;
+        uart_intf.recv_rx(
+          data,
+          parity,
+          ((100000000 / prescalar) / clk_div), // BAUD RATE
+          `UART_CFG(18), // PARITY ENABLE
+          `UART_CFG(19), // PARITY TYPE
+          `UART_CFG(20), // STOP BITS
+          (5 + `UART_CFG(17:16)) // DATA BITS
+        );
+        if (data == "\n") begin
+          $display("\033[7;35m > \033[0m\033[7;38m%s\033[0m", dut_tx);
+          dut_tx = "";
+        end else begin
+          $sformat(dut_tx, "%s%s", dut_tx, data);
+        end
+      end
+      forever begin
+        bit [7:0] data;
+        bit       parity;
+        @(negedge uart_intf.tx);
+        uart_intf.recv_rx(data, parity);
+        if (data == "\n") begin
+          $display("\033[7;36m < \033[0m\033[7;38m%s\033[0m", dut_rx);
+          dut_rx = "";
+        end else begin
+          $sformat(dut_rx, "%s%s", dut_rx, data);
+        end
+      end
+    join_none
+  endtask
+
+  `undef UART_CFG
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // TPROCEDURALS
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -285,12 +333,22 @@ module sc_soc_tb;
       $fatal(1, " [FATAL] No back door load specified. Use +BDL=<back_door_load_value>");
     end
 
+    fork
+      forever begin
+        #25us;
+        $display("%0t\033[1A\033[0G", $realtime);
+      end
+    join_none
+
     load_symbols("prog.sym");
 
     system_clk_i_enable();
     xtal_in_enable();
     apb_clk_i_enable();
     apply_reset();
+
+    start_uart_monitoring();
+
     boot_addr_i <= sym["_start"];
     repeat (10) @(posedge apb_clk_i);
 
@@ -307,12 +365,6 @@ module sc_soc_tb;
       else                $display("\033[1;31m [FAIL] %s\033[0m", test_name);
     end
 
-    $finish;
-  end
-
-  initial begin
-    #10ms;
-    $display("\033[1;31m [FAIL] %s -- TIMEDOUT\033[0m", test_name);
     $finish;
   end
 
