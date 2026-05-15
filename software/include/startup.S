@@ -24,10 +24,3 @@ _exit:
 
 _forever_loop:
     j _forever_loop
-
-.section .data
-.align 4
-
-TEST_DATA_START:
-.zero 1024
-TEST_DATA_END:
