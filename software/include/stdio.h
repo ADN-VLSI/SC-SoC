@@ -8,7 +8,9 @@
 
 // Define constants and types
 typedef int FILE;
+#define stdin ((FILE *)1)
 #define stdout ((FILE *)2)
+#define EOF (-1)
 #define MAXFP1 0xFFFFFFFF
 #define HIGHBIT64 (1ull << 63)
 
@@ -28,9 +30,14 @@ typedef struct printHandler
 // Function declarations
 void *memcpy(void *dest, const void *src, size_t n);
 void pos_libc_putc_stdout(char c);
+int fgetc(FILE *stream);
+char *fgets(char *s, int n, FILE *stream);
 int fputc(int c, FILE *stream);
 int puts(const char *s);
 int putchar(int c);
+int getchar(void);
+int scanf(char *format, ...);
+int sscanf(const char *input, char *format, ...);
 int get_flag(char s, flags_t *f);
 char *convert(unsigned long int num, int base, int lowercase);
 int print_string(va_list l, flags_t *f);
