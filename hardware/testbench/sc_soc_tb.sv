@@ -57,83 +57,7 @@ module sc_soc_tb;
 
   longint sym            [string];
 
-  logic [31:0] pc;
-  assign pc = sc_soc_tb.u_dut.u_core.core_i.id_stage_i.pc_id_i[31:0];
-
-  // regfile internal probing
-  `define REGFILE_SEE(__NAME__,__INDEX__,__TYPE__,__EXT__)                                         \
-    logic [31:0] ``__TYPE__``_``__INDEX__``_``__NAME__``;                                          \
-    assign ``__TYPE__``_``__INDEX__``_``__NAME__`` =                                               \
-    sc_soc_tb.u_dut.u_core.core_i.id_stage_i.register_file_i.``__EXT__``[``__INDEX__``];           \
-
-
-  `REGFILE_SEE(zero,0,x,mem)
-  `REGFILE_SEE(ra,1,x,mem)
-  `REGFILE_SEE(sp,2,x,mem)
-  `REGFILE_SEE(gp,3,x,mem)
-  `REGFILE_SEE(tp,4,x,mem)
-  `REGFILE_SEE(t0,5,x,mem)
-  `REGFILE_SEE(t1,6,x,mem)
-  `REGFILE_SEE(t2,7,x,mem)
-  `REGFILE_SEE(s0_fp,8,x,mem)
-  `REGFILE_SEE(s1,9,x,mem)
-  `REGFILE_SEE(a0,10,x,mem)
-  `REGFILE_SEE(a1,11,x,mem)
-  `REGFILE_SEE(a2,12,x,mem)
-  `REGFILE_SEE(a3,13,x,mem)
-  `REGFILE_SEE(a4,14,x,mem)
-  `REGFILE_SEE(a5,15,x,mem)
-  `REGFILE_SEE(a6,16,x,mem)
-  `REGFILE_SEE(a7,17,x,mem)
-  `REGFILE_SEE(s2,18,x,mem)
-  `REGFILE_SEE(s3,19,x,mem)
-  `REGFILE_SEE(s4,20,x,mem)
-  `REGFILE_SEE(s5,21,x,mem)
-  `REGFILE_SEE(s6,22,x,mem)
-  `REGFILE_SEE(s7,23,x,mem)
-  `REGFILE_SEE(s8,24,x,mem)
-  `REGFILE_SEE(s9,25,x,mem)
-  `REGFILE_SEE(s10,26,x,mem)
-  `REGFILE_SEE(s11,27,x,mem)
-  `REGFILE_SEE(t3,28,x,mem)
-  `REGFILE_SEE(t4,29,x,mem)
-  `REGFILE_SEE(t5,30,x,mem)
-  `REGFILE_SEE(t6,31,x,mem)
-
-  `REGFILE_SEE(ft0,0,f,mem_fp)
-  `REGFILE_SEE(ft1,1,f,mem_fp)
-  `REGFILE_SEE(ft2,2,f,mem_fp)
-  `REGFILE_SEE(ft3,3,f,mem_fp)
-  `REGFILE_SEE(ft4,4,f,mem_fp)
-  `REGFILE_SEE(ft5,5,f,mem_fp)
-  `REGFILE_SEE(ft6,6,f,mem_fp)
-  `REGFILE_SEE(ft7,7,f,mem_fp)
-  `REGFILE_SEE(fs0,8,f,mem_fp)
-  `REGFILE_SEE(fs1,9,f,mem_fp)
-  `REGFILE_SEE(fa0,10,f,mem_fp)
-  `REGFILE_SEE(fa1,11,f,mem_fp)
-  `REGFILE_SEE(fa2,12,f,mem_fp)
-  `REGFILE_SEE(fa3,13,f,mem_fp)
-  `REGFILE_SEE(fa4,14,f,mem_fp)
-  `REGFILE_SEE(fa5,15,f,mem_fp)
-  `REGFILE_SEE(fa6,16,f,mem_fp)
-  `REGFILE_SEE(fa7,17,f,mem_fp)
-  `REGFILE_SEE(fs2,18,f,mem_fp)
-  `REGFILE_SEE(fs3,19,f,mem_fp)
-  `REGFILE_SEE(fs4,20,f,mem_fp)
-  `REGFILE_SEE(fs5,21,f,mem_fp)
-  `REGFILE_SEE(fs6,22,f,mem_fp)
-  `REGFILE_SEE(fs7,23,f,mem_fp)
-  `REGFILE_SEE(fs8,24,f,mem_fp)
-  `REGFILE_SEE(fs9,25,f,mem_fp)
-  `REGFILE_SEE(fs10,26,f,mem_fp)
-  `REGFILE_SEE(fs11,27,f,mem_fp)
-  `REGFILE_SEE(t8,28,f,mem_fp)
-  `REGFILE_SEE(t9,29,f,mem_fp)
-  `REGFILE_SEE(t10,30,f,mem_fp)
-  `REGFILE_SEE(t11,31,f,mem_fp)
-
-  `undef REGFILE_SEE
+  `include "sc_soc_tb/reg_wave_mon.sv"
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // INTERFACE INSTANTIATION
@@ -317,9 +241,8 @@ module sc_soc_tb;
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   initial begin
+    
     $timeformat(-6, 0, "us");
-    $dumpfile("sc_soc_tb.vcd");
-    $dumpvars(0, sc_soc_tb);
 
     if (!$value$plusargs("TEST=%s", test_name)) begin
       $fatal(1, " [FATAL] No test specified. Use +TEST=<test_name>");
@@ -331,6 +254,11 @@ module sc_soc_tb;
 
     if (!$value$plusargs("BDL=%d", back_door_load)) begin
       $fatal(1, " [FATAL] No back door load specified. Use +BDL=<back_door_load_value>");
+    end
+
+    if (debug != 0) begin
+      $dumpfile("sc_soc_tb.vcd");
+      $dumpvars(0, sc_soc_tb);
     end
 
     fork
@@ -358,12 +286,33 @@ module sc_soc_tb;
 
     do #100ns; while (ram_read(sym["tohost"]) == 0);
 
-    begin
-      exit_code = 'h7fff_ffff & ram_read(sym["tohost"]);
-      $display("Exit code: 0x%08x (%0d)", exit_code, exit_code);
-      if (exit_code == 0) $display("\033[1;32m [PASS] %s\033[0m", test_name);
-      else                $display("\033[1;31m [FAIL] %s\033[0m", test_name);
+    exit_code = 'h7fff_ffff & ram_read(sym["tohost"]);
+
+    if (sym.exists("TEST_DATA_BYTES") && sym.exists("REF_DATA") && sym.exists("TEST_DATA")) begin
+      automatic int test_data_bytes = ram_read(sym["TEST_DATA_BYTES"]);
+      for (int i = 0; i < test_data_bytes; i++) begin
+        int ref_data;
+        int test_data;
+        ref_data  = ram_read(sym["REF_DATA"] + i);
+        test_data = ram_read(sym["TEST_DATA"] + i);
+        ref_data  = ref_data  >> (i & 'h0000_0003);
+        test_data = test_data >> (i & 'h0000_0003);
+        ref_data  = ref_data  & 'h0000_00FF;
+        test_data = test_data & 'h0000_00FF;
+        if (ref_data != test_data) begin
+          $display(" [ERROR] Data mismatch at index %0d: expected 0x%08x, got 0x%08x", i, ref_data, test_data);
+          exit_code = exit_code | 'h8000_0000;
+        end else if (debug) begin
+          $display(" [DEBUG] Data match at index %0d: 0x%08x", i, ref_data);
+        end
+      end
+    end else begin
+      $display("\033[1;33mNo test data to compare\033[0m");
     end
+
+    $display("Exit code: 0x%08x (%0d)", exit_code, exit_code);
+    if (exit_code == 0) $display("\033[1;32m [PASS] %s\033[0m", test_name);
+    else                $display("\033[1;31m [FAIL] %s\033[0m", test_name);
 
     $finish;
   end
