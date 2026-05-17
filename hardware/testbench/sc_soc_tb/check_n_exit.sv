@@ -2,6 +2,11 @@ do #100ns; while (ram_read(sym["tohost"]) == 0);
 
 exit_code = 'h7fff_ffff & ram_read(sym["tohost"]);
 
+fork
+  uart_intf.wait_till_idle();
+  // apb_intf.wait_till_idle();
+join
+
 if (sym.exists("TEST_DATA_BYTES") && sym.exists("REF_DATA") && sym.exists("TEST_DATA")) begin
   
   automatic int test_data_bytes = ram_read(sym["TEST_DATA_BYTES"]);

@@ -50,7 +50,7 @@ int main () {
         for (volatile int i = 0; i < 32; i++); // BUSY WAIT. VOLATILE TO PREVENT OPTIMIZATION
     }
     
-    while (((REG_UART_STAT & 0x000FFC00)>>10) != 0x00000010) { // WAIT FOR RX FIFO TO BE NOT EMPTY
+    while (((REG_UART_STAT & 0x000FFC00)>>10) != 0x0000000E) { // WAIT FOR RX FIFO TO BE NOT EMPTY
         for (volatile int i = 0; i < 32; i++); // BUSY WAIT. VOLATILE TO PREVENT OPTIMIZATION
     }
 
