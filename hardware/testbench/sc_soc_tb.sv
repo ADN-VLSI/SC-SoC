@@ -220,7 +220,7 @@ module sc_soc_tb;
         bit [7:0] data;
         bit       parity;
         @(negedge uart_intf.tx);
-        uart_intf.recv_rx(data, parity);
+        uart_intf.recv_tx(data, parity);
         if (data == "\n") begin
           $display("\033[7;36m < \033[0m\033[7;38m%s\033[0m", dut_rx);
           dut_rx = "";
