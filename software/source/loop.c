@@ -1,9 +1,10 @@
 #include "stdio.h"
 
 int main () {
-  int a;
-  printf("123\n");
-  scanf("%d", &a);
-  printf("You entered: %d\n", a);
+  char name[100];
+  printf("What is your name?\n");
+  scanf("%s", name);
+  printf("Hello, %s!\n", name);
+  printf("Nice to meet you..!\n");
   return 0;
 }
