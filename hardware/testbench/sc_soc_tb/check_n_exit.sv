@@ -22,6 +22,7 @@ if (sym.exists("TEST_DATA_BYTES") && sym.exists("REF_DATA") && sym.exists("TEST_
     if (ref_data != test_data) begin
       $display(" [ERROR] Data mismatch at index %0d: expected 0x%08x, got 0x%08x", i, ref_data, test_data);
       exit_code = exit_code | 'h8000_0000;
+      ref_fault = 1;
     end else if (debug) begin
       $display(" [DEBUG] Data match at index %0d: 0x%08x", i, ref_data);
     end
@@ -29,6 +30,10 @@ if (sym.exists("TEST_DATA_BYTES") && sym.exists("REF_DATA") && sym.exists("TEST_
 
 end else begin
   $display("\033[1;33mNo test data to compare\033[0m");
+end
+
+if (uart_fault) begin
+  exit_code = exit_code | 'h4000_0000;
 end
 
 $display("Exit code: 0x%08x (%0d)", exit_code, exit_code);

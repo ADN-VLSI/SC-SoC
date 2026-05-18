@@ -57,6 +57,12 @@ module sc_soc_tb;
 
   longint sym            [string];
 
+  bit ref_fault;
+  bit uart_fault;
+
+  mailbox #(string) dut_tx_mbx = new();
+  mailbox #(string) dut_rx_mbx = new();
+
   `include "sc_soc_tb/reg_wave_mon.sv"
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -210,6 +216,7 @@ module sc_soc_tb;
           (5 + `UART_CFG(17:16)) // DATA BITS
         );
         if (data == "\n") begin
+          dut_tx_mbx.put(dut_tx);
           $display("\033[7;35m > \033[0m\033[7;38m%s\033[0m", dut_tx);
           dut_tx = "";
         end else begin
@@ -222,6 +229,7 @@ module sc_soc_tb;
         @(negedge uart_intf.tx);
         uart_intf.recv_tx(data, parity);
         if (data == "\n") begin
+          dut_rx_mbx.put(dut_rx);
           $display("\033[7;36m < \033[0m\033[7;38m%s\033[0m", dut_rx);
           dut_rx = "";
         end else begin
@@ -232,6 +240,19 @@ module sc_soc_tb;
   endtask
 
   `undef UART_CFG
+
+  task automatic wait_uart_slash_n();
+    automatic bit [7:0] data;
+    automatic bit       parity;
+    do uart_intf.recv_rx(data, parity); while (data !== "\n");
+  endtask
+
+  task automatic display_uart(input string txt);
+    for (int i = 0; i < txt.len(); i++) begin
+      uart_intf.send_tx(txt[i]);
+    end
+    uart_intf.send_tx("\n");
+  endtask
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // TPROCEDURALS
