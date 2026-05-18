@@ -24,19 +24,19 @@ The build flow is driven by the top-level `Makefile` and targets Xilinx simulati
 
 ## Repository Layout
 
-| Path | Purpose |
-| --- | --- |
-| `hardware/source/` | Synthesizable RTL modules for the SoC building blocks |
-| `hardware/interface/` | SystemVerilog interfaces used by RTL and testbenches |
-| `hardware/include/` | Shared type definitions, packages, and verification headers |
-| `hardware/testbench/` | Unit and subsystem testbenches |
-| `hardware/filelist/` | Compilation file lists, including the RV32IMF submodule file list |
-| `software/source/` | RISC-V assembly and C test programs |
-| `software/include/` | Startup code and small support headers/source files |
-| `software/linkers/` | Linker scripts for software test builds |
-| `document/` | Design notes, verification notes, and block-level documentation |
-| `submodule/rv32imf/` | RV32IMF core and related sources brought in as a git submodule |
-| `wcfg/` | Waveform configuration files for GUI simulation |
+| Path                  | Purpose                                                           |
+| --------------------- | ----------------------------------------------------------------- |
+| `hardware/source/`    | Synthesizable RTL modules for the SoC building blocks             |
+| `hardware/interface/` | SystemVerilog interfaces used by RTL and testbenches              |
+| `hardware/include/`   | Shared type definitions, packages, and verification headers       |
+| `hardware/testbench/` | Unit and subsystem testbenches                                    |
+| `hardware/filelist/`  | Compilation file lists, including the RV32IMF submodule file list |
+| `software/source/`    | RISC-V assembly and C test programs                               |
+| `software/include/`   | Startup code and small support headers/source files               |
+| `software/linkers/`   | Linker scripts for software test builds                           |
+| `document/`           | Design notes, verification notes, and block-level documentation   |
+| `submodule/rv32imf/`  | RV32IMF core and related sources brought in as a git submodule    |
+| `wcfg/`               | Waveform configuration files for GUI simulation                   |
 
 ## Key Hardware Blocks
 
@@ -107,14 +107,14 @@ make simulate TOP=clk_mux_tb COV=1 CC_COV=1
 
 ### Supported Simulation Options
 
-| Option | Description | Default |
-| --- | --- | --- |
-| `TOP=<module>` | Top-level module or testbench to elaborate and simulate | `hello` |
-| `TEST=<name>` | Forwarded to simulation as a `+TEST` plusarg | `default` |
-| `DEBUG=<value>` | Forwarded to simulation as a `+DEBUG` plusarg | unset |
-| `GUI=0|1` | Run headless or open the waveform GUI | `0` |
-| `COV=0|1` | Enable functional coverage collection | `0` |
-| `CC_COV=0|1` | Enable code coverage instrumentation when `COV=1` | `0` |
+| Option          | Description                                             | Default                                           |
+| --------------- | ------------------------------------------------------- | ------------------------------------------------- | --- |
+| `TOP=<module>`  | Top-level module or testbench to elaborate and simulate | `hello`                                           |
+| `TEST=<name>`   | Forwarded to simulation as a `+TEST` plusarg            | `default`                                         |
+| `DEBUG=<value>` | Forwarded to simulation as a `+DEBUG` plusarg           | unset                                             |
+| `GUI=0          | 1`                                                      | Run headless or open the waveform GUI             | `0` |
+| `COV=0          | 1`                                                      | Enable functional coverage collection             | `0` |
+| `CC_COV=0       | 1`                                                      | Enable code coverage instrumentation when `COV=1` | `0` |
 
 ### Generated Outputs
 
@@ -216,4 +216,3 @@ The CPU implementation is maintained in `submodule/rv32imf/` and is compiled thr
 ## License
 
 This project is licensed under the terms in `LICENSE`.
-
