@@ -94,7 +94,9 @@ RV32IMF_COMMIT = $(shell git submodule status -- $(RV32IMF) | awk '{print $$1}')
 # Get S1 submodule commit hash only
 S1_COMMIT = $(shell git submodule status -- $(S1) | awk '{print $$1}')
 
-# Filter xvlog/xelab/xsim output to highlight only Errors and Warnings
+# Filter xvlog/xelab output to highlight only Errors and Warnings Only
+EW_O := | grep -iE "Error:|Warning:" --color=auto || true
+# Filter xsim output to highlight only Errors and Warnings
 EWHL := | grep -iE "Error:|Warning:|" --color=auto
 
 # Preprocessor defines passed to xvlog; SIMULATION is used to gate simulation-only
@@ -235,7 +237,7 @@ __COMPILE__:
 	@find ${SC_SOC}/hardware/interface -maxdepth 1 -name "*" -type f >> build/flist
 	@find ${SC_SOC}/hardware/source -maxdepth 1 -name "*" -type f >> build/flist
 	@find ${SC_SOC}/hardware/testbench -maxdepth 1 -name "*" -type f >> build/flist
-	@cd build; $(XVLOG) -sv -f flist $(XVLOG_DEFS) --nolog $(EWHL)
+	@cd build; $(XVLOG) -sv -f flist $(XVLOG_DEFS) --nolog $(EW_O)
 	@sha256sum ${SHA_FILES} > build/build_sha
 	@echo -e "\033[3;35mCompiled\033[0m"
 
@@ -244,7 +246,7 @@ __COMPILE__:
 # simulation snapshot, then the empty stamp file is written so subsequent runs skip this step.
 build/build_$(TOP):
 	@echo -e "\033[3;35mElaborating $(TOP)...\033[0m"
-	@cd build; $(XELAB) $(TOP) -s $(TOP) -debug all --O3 $(XELAB_FLAGS) --nolog $(EWHL)
+	@cd build; $(XELAB) $(TOP) -s $(TOP) -debug all --O3 $(XELAB_FLAGS) --nolog $(EW_O)
 	@echo "" > build/build_$(TOP)
 	@echo -e "\033[3;35mElaborated $(TOP)\033[0m"
 
@@ -279,6 +281,7 @@ endif
 # code coverage report is also moved into the coverage_report directory.
 .PHONY: simulate
 simulate:
+	@make -s LOGO
 	@make -s build
 	@make -s log
 	@echo "$(TOP)" > build/top
@@ -286,7 +289,7 @@ simulate:
 	@make -s common_sim_checks TEST=$(TEST) DEBUG=$(DEBUG)
 	@echo -e "\033[3;35mSimulating $(TOP) $(TEST)...\033[0m"
 	@$(eval log_file_name := $(shell echo "$(TOP)_$(TEST).txt" | sed "s/\//___/g"))
-	@cd build; $(XSIM) $(TOP) -f xsim_args $(SIM_ARGS) -log ../log/$(log_file_name)
+	@cd build; $(XSIM) $(TOP) -f xsim_args $(SIM_ARGS) -log ../log/$(log_file_name) $(EWHL)
 	@echo -e "\033[3;35mSimulated $(TOP) $(TEST)\033[0m"
 ifeq ($(COV), 1)
 	@make -s coverage_report
@@ -321,7 +324,7 @@ RV32IMF_COMPILE:
 	     [ "$$(cat build/rv32imf_commit.txt)" = "$$(cat build/current_rv32imf_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/rv32imf.f $(EWHL); \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/rv32imf.f $(EW_O); \
 	fi
 	@echo "$(RV32IMF_COMMIT)" > build/rv32imf_commit.txt
 	@rm -f build/current_rv32imf_commit.txt
@@ -340,7 +343,7 @@ S1_COMPILE:
 	     [ "$$(cat build/s1_commit.txt)" = "$$(cat build/current_s1_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/S1.f $(EWHL); \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/S1.f $(EW_O); \
 	fi
 	@echo "$(S1_COMMIT)" > build/s1_commit.txt
 	@rm -f build/current_s1_commit.txt
@@ -359,7 +362,7 @@ AXI_COMPILE:
 	     [ "$$(cat build/axi_commit.txt)" = "$$(cat build/current_axi_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/axi.f $(EWHL); \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/axi.f $(EW_O); \
 	fi
 	@echo "$(AXI_COMMIT)" > build/axi_commit.txt
 	@rm -f build/current_axi_commit.txt
@@ -378,7 +381,7 @@ APB_COMPILE:
 	     [ "$$(cat build/apb_commit.txt)" = "$$(cat build/current_apb_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/apb.f $(EWHL); \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/apb.f $(EW_O); \
 	fi
 	@echo "$(APB_COMMIT)" > build/apb_commit.txt
 	@rm -f build/current_apb_commit.txt
@@ -397,7 +400,7 @@ COMMON_CELLS_COMPILE:
 	     [ "$$(cat build/common_cells_commit.txt)" = "$$(cat build/current_common_cells_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/common_cells.f $(EWHL); \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/common_cells.f $(EW_O); \
 	fi
 	@echo "$(COMMON_CELLS_COMMIT)" > build/common_cells_commit.txt
 	@rm -f build/current_common_cells_commit.txt
@@ -418,3 +421,13 @@ test:
 	@${RISCV64_OBJCOPY} -O verilog build/prog.elf build/prog.hex
 	@${RISCV64_NM} -n build/prog.elf > build/prog.sym
 	@${RISCV64_OBJDUMP} -d build/prog.elf > build/prog.dis
+
+
+.PHONY: LOGO
+LOGO:
+	@clear
+	@echo "     _   ___  _  _   ___ ___ __  __ ___ ___ ___  _  _ ___  _   _  ___ _____ ___  ___  ___   "
+	@echo "    /_\ |   \| \| | / __| __|  \/  |_ _/ __/ _ \| \| |   \| | | |/ __|_   _/ _ \| _ \/ __|  "
+	@echo "   / _ \| |) | .\` | \__ \ _|| |\/| || | (_| (_) | .\` | |) | |_| | (__  | || (_) |   /\__ \  "
+	@echo "  /_/ \_\___/|_|\_| |___/___|_|  |_|___\___\___/|_|\_|___/ \___/ \___| |_| \___/|_|_\|___/  "
+	@echo "                                                                                            "
