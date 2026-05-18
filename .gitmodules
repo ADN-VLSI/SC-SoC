@@ -1,3 +1,15 @@
 [submodule "submodule/rv32imf"]
 	path = submodule/rv32imf
 	url = https://github.com/squared-studio/rv32imf.git
+[submodule "submodule/S1"]
+	path = submodule/S1
+	url = https://github.com/ADN-VLSI/S1.git
+[submodule "submodule/axi"]
+	path = submodule/axi
+	url = https://github.com/pulp-platform/axi.git
+[submodule "submodule/apb"]
+	path = submodule/apb
+	url = https://github.com/pulp-platform/apb.git
+[submodule "submodule/common_cells"]
+	path = submodule/common_cells
+	url = https://github.com/pulp-platform/common_cells.git

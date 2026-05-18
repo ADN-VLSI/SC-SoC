@@ -24,7 +24,7 @@
 
 module axi4l_mem_ctrlr #(
     parameter type axi4l_req_t = defaults_pkg::axi4l_req_t,
-    parameter type axi4l_rsp_t = defaults_pkg::axi4l_rsp_t,
+    parameter type axi4l_resp_t = defaults_pkg::axi4l_resp_t,
     parameter int  ADDR_WIDTH  = 32,
     parameter int  DATA_WIDTH  = 64
 ) (
@@ -34,7 +34,7 @@ module axi4l_mem_ctrlr #(
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     input  axi4l_req_t axi4l_req_i,
-    output axi4l_rsp_t axi4l_rsp_o,
+    output axi4l_resp_t axi4l_resp_o,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MEMORY SIGNALS
@@ -71,18 +71,18 @@ module axi4l_mem_ctrlr #(
 
   // Deassert AW/W ready until the response channel is also free, preventing
   // a situation where data is consumed but the response can't be sent.
-  always_comb axi4l_rsp_o.aw_ready = do_write;
-  always_comb axi4l_rsp_o.w_ready = do_write;
+  always_comb axi4l_resp_o.aw_ready = do_write;
+  always_comb axi4l_resp_o.w_ready = do_write;
 
   // Drive BVALID alongside BREADY so the handshake completes in one cycle.
-  always_comb axi4l_rsp_o.b_valid = do_write;
+  always_comb axi4l_resp_o.b_valid = do_write;
 
   // Access permission check: only unprivileged non-secure accesses
   // (aw_prot[1:0] == 2'b00) are allowed; anything else returns SLVERR (2'b11).
   always_comb begin
-    axi4l_rsp_o.b.resp = 2'b11;  // default: SLVERR
+    axi4l_resp_o.b.resp = 2'b11;  // default: SLVERR
     if (axi4l_req_i.aw.prot[1:0] == 2'b00) begin
-      axi4l_rsp_o.b.resp = 2'b00;  // OKAY
+      axi4l_resp_o.b.resp = 2'b00;  // OKAY
     end
   end
 
@@ -93,14 +93,14 @@ module axi4l_mem_ctrlr #(
 
   // Only drive the memory write-enable when the transaction is valid AND the
   // response is OKAY — suppresses writes for rejected (SLVERR) accesses.
-  always_comb wenable_o = do_write && (axi4l_rsp_o.b.resp == 2'b00);
+  always_comb wenable_o = do_write && (axi4l_resp_o.b.resp == 2'b00);
 
   // --- Read path ------------------------------------------------------------
 
   // Accept a new read address only when the data channel is free, so the
   // combinationally produced read data can be forwarded to the master
   // in the same cycle without being overwritten.
-  always_comb axi4l_rsp_o.ar_ready = axi4l_req_i.r_ready;
+  always_comb axi4l_resp_o.ar_ready = axi4l_req_i.r_ready;
 
   // Drive the memory read address directly from the incoming AR channel.
   always_comb raddr_o = axi4l_req_i.ar.addr;
@@ -109,16 +109,16 @@ module axi4l_mem_ctrlr #(
   // On a protected access, return SLVERR and zero data rather than
   // leaking memory contents.
   always_comb begin
-    axi4l_rsp_o.r.resp = 2'b11;  // default: SLVERR
-    axi4l_rsp_o.r.data = '0;  // default: zero (prevent data leak on rejected reads)
+    axi4l_resp_o.r.resp = 2'b11;  // default: SLVERR
+    axi4l_resp_o.r.data = '0;  // default: zero (prevent data leak on rejected reads)
     if (axi4l_req_i.ar.prot[1:0] == 2'b00) begin
-      axi4l_rsp_o.r.resp = 2'b00;  // OKAY
-      axi4l_rsp_o.r.data = rdata_i;  // forward memory read data
+      axi4l_resp_o.r.resp = 2'b00;  // OKAY
+      axi4l_resp_o.r.data = rdata_i;  // forward memory read data
     end
   end
 
   // Assert RVALID combinationally with ARVALID — relies on the downstream
   // memory presenting valid data within the same clock cycle.
-  always_comb axi4l_rsp_o.r_valid = axi4l_req_i.ar_valid;
+  always_comb axi4l_resp_o.r_valid = axi4l_req_i.ar_valid;
 
 endmodule

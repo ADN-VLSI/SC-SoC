@@ -127,7 +127,7 @@ interface uart_if;
       do begin                                                                                    \
         wait(``__PORT__`` === '0);                                                                \
         bit_time = 1s / BAUD_RATE;                                                                \
-        #(bit_time / 2);                                                                          \
+        #(bit_time / 2); #1ps;                                                                    \
       end while (``__PORT__`` != '0);                                                             \
                                                                                                   \
       /* Sample data bits */                                                                      \
@@ -146,13 +146,13 @@ interface uart_if;
 
   // Instantiate the macro for tx port (creates send_tx and recv_tx tasks)
   `SEND_RECV(tx)
-  // task automatic send_tx(DATA, baud_rate, parity_enable, parity_type, second_stop_bit, data_bits);
-  // task automatic recv_tx(DATA, baud_rate, parity_enable, parity_type, second_stop_bit, data_bits);
+  // task automatic send_tx(data_I, baud_rate_I, parity_enable_I, parity_type_I, second_stop_bit_I, data_bits_I);
+  // task automatic recv_tx(data_O, parity_O, baud_rate_I, parity_enable_I, parity_type_I, second_stop_bit_I, data_bits_I);
 
   // Instantiate the macro for rx port (creates send_rx and recv_rx tasks)
   `SEND_RECV(rx)
-  // task automatic send_rx(DATA, baud_rate, parity_enable, parity_type, second_stop_bit, data_bits);
-  // task automatic recv_rx(DATA, baud_rate, parity_enable, parity_type, second_stop_bit, data_bits);
+  // task automatic send_rx(data_I, baud_rate_I, parity_enable_I, parity_type_I, second_stop_bit_I, data_bits_I);
+  // task automatic recv_rx(data_O, parity_O, baud_rate_I, parity_enable_I, parity_type_I, second_stop_bit_I, data_bits_I);
 
   // Undefine the macro to avoid conflicts
   `undef SEND_RECV

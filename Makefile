@@ -11,20 +11,43 @@ export SHELL=/bin/bash
 export SC_SOC=$(CURDIR)
 
 # Absolute path to the RV32IMF submodule
+export APB=$(SC_SOC)/submodule/apb
+export AXI=$(SC_SOC)/submodule/axi
+export COMMON_CELLS=$(SC_SOC)/submodule/common_cells
 export RV32IMF=$(SC_SOC)/submodule/rv32imf
+export S1=$(SC_SOC)/submodule/S1
 
 ####################################################################################################
 # CONFIGURATION
 ####################################################################################################
 
-# Read the top-level module name from build/top; default to "hello" if the file does not exist
-TOP := $(shell cat build/top &> /dev/null || echo "hello")
+# Set the top-level module to simulate. This should match the name of a testbench module defined in
+# the hardware/testbench directory. The default is sc_soc_tb, which is the main SoC testbench that
+# instantiates the entire design and runs a suite of tests on it. You can also set TOP to other
+# testbench modules for more focused testing of specific components (e.g. bin_2_gray_tb for testing
+# the binary to gray code converter). When you run 'make simulate', the Makefile will look for a
+# testbench module with the name specified by TOP and simulate it. You can also set TOP when running
+# 'make simulate' to override the default. For example, 'make simulate TOP=bin_2_gray_tb' will
+# simulate the bin_2_gray_tb testbench instead of sc_soc_tb. Note that the testbench module you
+# specify must be defined in the hardware/testbench directory and must be included in the xvlog file
+# list for the simulation to work.
+TOP := sc_soc_tb
 
 # Sets the test name for the simulation
-TEST ?= default
+TEST := default
+
+# Back-door load flag for the testbench, forwarded as +BDL plusarg. Set to 1 to enable the back-door
+# loading mechanism in the testbench, which directly loads the program into the simulated RAM
+# without going through the normal instruction fetch mechanism. This can speed up simulation for
+# larger test programs, but may not be compatible
+BDL := 1
 
 # Set GUI=0 for headless simulation, any other value to open the Vivado waveform GUI
-GUI ?= 0
+GUI := 0
+
+# Set DEBUG to a non-zero value to enable debug print statements in the testbenches (forwarded as
+# +DEBUG plusarg)
+DEBUG := 0
 
 # Simulation mode: GUI=0 runs headless (-runall), any other value opens the Vivado waveform GUI
 ifeq ($(GUI), 0)
@@ -35,9 +58,9 @@ else
 endif
 
 # Set COV=1 to enable functional coverage collection during simulation
-COV ?= 0
+COV := 0
 # Set CC_COV=1 to also enable code coverage (requires COV=1)
-CC_COV ?= 0
+CC_COV := 0
 
 # When both functional and code coverage are enabled, instruct xelab to instrument
 # the design for statement/branch/condition coverage using the SBC (SystemVerilog
@@ -56,8 +79,20 @@ ifeq ($(CC_COV), 1)
 endif
 endif
 
+# Get APB submodule commit hash only
+APB_COMMIT = $(shell git submodule status -- $(APB) | awk '{print $$1}')
+
+# Get AXI submodule commit hash only
+AXI_COMMIT = $(shell git submodule status -- $(AXI) | awk '{print $$1}')
+
+# Get COMMON_CELLS submodule commit hash only
+COMMON_CELLS_COMMIT = $(shell git submodule status -- $(COMMON_CELLS) | awk '{print $$1}')
+
 # Get RV32IMF submodule commit hash only
 RV32IMF_COMMIT = $(shell git submodule status -- $(RV32IMF) | awk '{print $$1}')
+
+# Get S1 submodule commit hash only
+S1_COMMIT = $(shell git submodule status -- $(S1) | awk '{print $$1}')
 
 # Filter xvlog/xelab/xsim output to highlight only Errors and Warnings
 EWHL := | grep -iE "Error:|Warning:|" --color=auto
@@ -72,7 +107,7 @@ XVLOG_DEFS += -d SIMULATION
 
 # List of all tracked hardware files whose SHA-256 checksums are used to detect changes and trigger
 # incremental recompilation / elaboration only when needed
-SHA_FILES = $(shell find $(SC_SOC)/hardware/ -name "*" -type f)
+SHA_FILES = $(shell find $(SC_SOC)/hardware/ -name "*.sv" -type f)
 
 ####################################################################################################
 # TOOLS
@@ -127,9 +162,9 @@ help:
 	@echo -e "  \033[0;36mhelp\033[0m             Show this help message"
 	@echo ""
 	@echo -e "\033[1mOptions:\033[0m"
-	@echo -e "  \033[0;33mTOP=<module>\033[0m     Top-level module to simulate              (default: hello)"
+	@echo -e "  \033[0;33mTOP=<module>\033[0m     Top-level module to simulate              (default: sc_soc_tb)"
 	@echo -e "  \033[0;33mTEST=<name>\033[0m      Test name forwarded as +TEST plusarg      (default: default)"
-	@echo -e "  \033[0;33mDEBUG=<value>\033[0m    Value forwarded as +DEBUG plusarg         (default: unset)"
+	@echo -e "  \033[0;33mDEBUG=<value>\033[0m    Value forwarded as +DEBUG plusarg         (default: 0)"
 	@echo -e "  \033[0;33mGUI=<0|1>\033[0m        0=headless, 1=open Vivado waveform GUI    (default: 0)"
 	@echo -e "  \033[0;33mCOV=<0|1>\033[0m        1=enable functional coverage collection   (default: 0)"
 	@echo -e "  \033[0;33mCC_COV=<0|1>\033[0m     1=also enable code coverage (needs COV=1) (default: 0)"
@@ -185,9 +220,18 @@ __COMPILE__:
 	@make -s build
 	@rm -rf build/build_*
 	@echo -e "\033[3;35mCompiling...\033[0m"
+	@make -s APB_COMPILE
+	@make -s AXI_COMPILE
+	@make -s COMMON_CELLS_COMPILE
 	@make -s RV32IMF_COMPILE
+	@make -s S1_COMPILE
 	@echo "-i ${SC_SOC}/hardware/include" > build/flist
+	@echo "-i ${AXI}/include" >> build/flist
+	@echo "-i ${APB}/include" >> build/flist
+	@echo "-i ${COMMON_CELLS}/include" >> build/flist
 	@echo "-i ${SC_SOC}/hardware/testbench" >> build/flist
+	@echo "${APB}/src/apb_pkg.sv" >> build/flist
+	@echo "${AXI}/src/axi_pkg.sv" >> build/flist
 	@find ${SC_SOC}/hardware/interface -maxdepth 1 -name "*" -type f >> build/flist
 	@find ${SC_SOC}/hardware/source -maxdepth 1 -name "*" -type f >> build/flist
 	@find ${SC_SOC}/hardware/testbench -maxdepth 1 -name "*" -type f >> build/flist
@@ -221,7 +265,8 @@ __ENV_BUILD__:
 common_sim_checks:
 	@echo "--testplusarg TEST=$(TEST)" > build/xsim_args
 	@echo "--testplusarg DEBUG=$(DEBUG)" >> build/xsim_args
-ifeq ($(TOP), rv32imf_tb)
+	@echo "--testplusarg BDL=$(BDL)" >> build/xsim_args
+ifeq ($(TOP), sc_soc_tb)
 	@make -s test TEST=$(TEST)
 endif
 
@@ -281,6 +326,82 @@ RV32IMF_COMPILE:
 	@echo "$(RV32IMF_COMMIT)" > build/rv32imf_commit.txt
 	@rm -f build/current_rv32imf_commit.txt
 
+##################################################
+# S1
+##################################################
+
+.PHONY: S1_COMPILE
+S1_COMPILE:
+	@make -s build
+	@git submodule update --init --depth 1 $(S1)
+	@touch build/s1_commit.txt
+	@echo "$(S1_COMMIT)" > build/current_s1_commit.txt
+	@if [ -f build/s1_commit.txt ] && [ -f build/current_s1_commit.txt ] && \
+	     [ "$$(cat build/s1_commit.txt)" = "$$(cat build/current_s1_commit.txt)" ]; then \
+		echo -n ""; \
+	else \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/S1.f $(EWHL); \
+	fi
+	@echo "$(S1_COMMIT)" > build/s1_commit.txt
+	@rm -f build/current_s1_commit.txt
+
+##################################################
+# AXI
+##################################################
+
+.PHONY: AXI_COMPILE
+AXI_COMPILE:
+	@make -s build
+	@git submodule update --init --depth 1 $(AXI)
+	@touch build/axi_commit.txt
+	@echo "$(AXI_COMMIT)" > build/current_axi_commit.txt
+	@if [ -f build/axi_commit.txt ] && [ -f build/current_axi_commit.txt ] && \
+	     [ "$$(cat build/axi_commit.txt)" = "$$(cat build/current_axi_commit.txt)" ]; then \
+		echo -n ""; \
+	else \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/axi.f $(EWHL); \
+	fi
+	@echo "$(AXI_COMMIT)" > build/axi_commit.txt
+	@rm -f build/current_axi_commit.txt
+
+##################################################
+# APB
+##################################################
+
+.PHONY: APB_COMPILE
+APB_COMPILE:
+	@make -s build
+	@git submodule update --init --depth 1 $(APB)
+	@touch build/apb_commit.txt
+	@echo "$(APB_COMMIT)" > build/current_apb_commit.txt
+	@if [ -f build/apb_commit.txt ] && [ -f build/current_apb_commit.txt ] && \
+	     [ "$$(cat build/apb_commit.txt)" = "$$(cat build/current_apb_commit.txt)" ]; then \
+		echo -n ""; \
+	else \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/apb.f $(EWHL); \
+	fi
+	@echo "$(APB_COMMIT)" > build/apb_commit.txt
+	@rm -f build/current_apb_commit.txt
+
+##################################################
+# COMMON CELLS
+##################################################
+
+.PHONY: COMMON_CELLS_COMPILE
+COMMON_CELLS_COMPILE:
+	@make -s build
+	@git submodule update --init --depth 1 $(COMMON_CELLS)
+	@touch build/common_cells_commit.txt
+	@echo "$(COMMON_CELLS_COMMIT)" > build/current_common_cells_commit.txt
+	@if [ -f build/common_cells_commit.txt ] && [ -f build/current_common_cells_commit.txt ] && \
+	     [ "$$(cat build/common_cells_commit.txt)" = "$$(cat build/current_common_cells_commit.txt)" ]; then \
+		echo -n ""; \
+	else \
+		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/common_cells.f $(EWHL); \
+	fi
+	@echo "$(COMMON_CELLS_COMMIT)" > build/common_cells_commit.txt
+	@rm -f build/current_common_cells_commit.txt
+
 ####################################################################################################
 # RISC V
 ####################################################################################################
@@ -293,7 +414,7 @@ test:
 	@if [ $$(echo "${TEST_PATH}" | wc -w) -gt 1 ]; then echo -e "\033[1;31mMultiple test files found for ${TEST}:\n${TEST_PATH}\033[0m"; exit 1; fi
 	@echo -e "\033[3;35mCompiling test program ${TEST_PATH}...\033[0m"
 	@make -s build
-	@${RISCV64_GCC} -march=rv32imf -mabi=ilp32f -nostdlib -nostartfiles -T software/linkers/core.ld -o build/prog.elf software/include/startup.S ${TEST_PATH} -I software/include
+	@${RISCV64_GCC} -march=rv32imf -mabi=ilp32f -nostdlib -nostartfiles -T software/linkers/core.ld -o build/prog.elf software/include/startup.S software/include/uart.c ${TEST_PATH} -I software/include
 	@${RISCV64_OBJCOPY} -O verilog build/prog.elf build/prog.hex
 	@${RISCV64_NM} -n build/prog.elf > build/prog.sym
 	@${RISCV64_OBJDUMP} -d build/prog.elf > build/prog.dis

@@ -1,6 +1,6 @@
 class axi4l_driver #(
     parameter type req_t     = defaults_pkg::axi4l_req_t,
-    parameter type rsp_t     = defaults_pkg::axi4l_rsp_t,
+    parameter type resp_t    = defaults_pkg::axi4l_resp_t,
     parameter bit  IS_MASTER = 1
 );
 
@@ -17,9 +17,9 @@ class axi4l_driver #(
   // TYPEDEFS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `AXI4L_ALL(r, ADDR_WIDTH, DATA_WIDTH)
+  `AXI_LITE_TYPEDEF_ALL(r, logic[ADDR_WIDTH-1:0], logic[DATA_WIDTH-1:0], logic[DATA_WIDTH/8-1:0])
   // r_aw_chan_t r_w_chan_t r_b_chan_t r_ar_chan_t r_r_chan_t
-  // r_req_t r_rsp_t
+  // r_req_t r_resp_t
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // MAILBOXES
@@ -39,7 +39,7 @@ class axi4l_driver #(
 
   virtual axi4l_if #(
       .req_t(req_t),
-      .rsp_t(rsp_t)
+      .resp_t(resp_t)
   ) vif;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ class axi4l_driver #(
   function automatic void connect_interface(
   virtual axi4l_if #(
   .req_t(req_t),
-  .rsp_t(rsp_t)
+  .resp_t(resp_t)
   ) vif);
     this.vif = vif;
   endfunction

@@ -7,8 +7,19 @@
 #include "uart.h"
 
 static void pos_putc(char c);
+static char *fgets_internal(char *s, int n, FILE *stream);
 static inline int isdigit(int a);
+static inline int pos_libc_isspace(int a);
+static inline int pos_libc_isxdigit(int a);
 static int pos_libc_atoi(char **sptr);
+static int pos_libc_hex_value(int a);
+static const char *pos_libc_skip_space(const char *sptr);
+static int pos_libc_scan_uint(const char **sptr, uint32_t *value, int base, int width);
+static int pos_libc_scan_int(const char **sptr, int32_t *value, int base, int width);
+static int pos_libc_scan_auto_int(const char **sptr, int32_t *value, int width);
+static int pos_libc_scan_str(const char **sptr, char *dest, int width);
+static int pos_libc_scan_chars(const char **sptr, char *dest, int width);
+static int pos_libc_vsscanf(const char *input, char *format, va_list vargs);
 static int pos_libc_reverse_and_pad(char *start, char *end, int minlen);
 static int pos_libc_to_x(char *buf, uint32_t n, int base, int minlen);
 static int pos_libc_to_udec(char *buf, uint32_t value, int precision);
@@ -36,9 +47,9 @@ uint32_t get_hart_id() {
 
 // Lock UART with HART ID + 1
 void uart_req_lock() {
-    REG_DHS_UART_ACCESS_ID_REQ = (get_hart_id() + 1);
+    REG_UART_TXR = (get_hart_id() + 1);
     // Wait until grant has arrived through peeking.
-    while (REG_DHS_UART_ACCESS_ID_GNT_PEEK != (get_hart_id() + 1)) {
+    while (REG_UART_TXGP != (get_hart_id() + 1)) {
         nop_delay(128);
     }
 }
@@ -46,17 +57,37 @@ void uart_req_lock() {
 // Release UART lock
 void uart_req_release() {
     // Wait until TX fifo is empty
-    while (REG_DHS_UART_TX_FIFO_STAT > 0) {
+    while ((REG_UART_STAT & 0x100000) == 0) {
         nop_delay(128);
     }
 
     // Just make sure HART ID is appropriate
-    while (REG_DHS_UART_ACCESS_ID_GNT_PEEK != (get_hart_id() + 1)) {
+    while (REG_UART_TXGP != (get_hart_id() + 1)) {
         nop_delay(128);
     }
 
     // Pop HART ID out of ID queue
-    (void)REG_DHS_UART_ACCESS_ID_GNT;  // Read to clear/pop the grant
+    (void)REG_UART_TXG;  // Read to clear/pop the grant
+}
+
+// Lock UART RX path with HART ID + 1
+void uart_req_rx_lock() {
+    REG_UART_RXR = (get_hart_id() + 1);
+    // Wait until grant has arrived through peeking.
+    while (REG_UART_RXGP != (get_hart_id() + 1)) {
+        nop_delay(128);
+    }
+}
+
+// Release UART RX lock
+void uart_req_rx_release() {
+    // Just make sure HART ID is appropriate
+    while (REG_UART_RXGP != (get_hart_id() + 1)) {
+        nop_delay(128);
+    }
+
+    // Pop HART ID out of ID queue
+    (void)REG_UART_RXG;  // Read to clear/pop the grant
 }
 
 // Function definitions
@@ -74,7 +105,7 @@ void *memcpy(void *dest, const void *src, size_t n)
 void pos_libc_putc_stdout(char c)
 {
     // extern int putchar_stdout;                         // External variable for stdout
-    REG_DHS_UART_TX_FIFO_DATA = c; // Write character to stdout
+    REG_UART_TXD = c; // Write character to stdout
 }
 
 static void pos_putc(char c)
@@ -94,6 +125,27 @@ int fputc(int c, FILE *stream)
     fputc_internal(c, stream); // Put character to stream
     uart_req_release();
     return 0;    // Return success
+}
+
+int fgetc_internal(FILE *stream)
+{
+    (void)stream;
+
+    while ((REG_UART_STAT & 0x00400000) != 0) {
+        nop_delay(128);
+    }
+
+    return (int)(REG_UART_RXD & 0xFF); // Read one byte from stdin
+}
+
+int fgetc(FILE *stream)
+{
+    int r;
+
+    uart_req_rx_lock();
+    r = fgetc_internal(stream); // Get character from stream
+    uart_req_rx_release();
+    return r;
 }
 
 int puts_internal(const char *s)
@@ -128,6 +180,58 @@ int putchar(int c)
     uart_req_lock();
     r = fputc_internal(c, stdout); // Put character to stdout
     uart_req_release();
+    return r;
+}
+
+int getchar(void)
+{
+    int r;
+
+    uart_req_rx_lock();
+    r = fgetc_internal(stdin); // Get character from stdin
+    uart_req_rx_release();
+    return r;
+}
+
+static char *fgets_internal(char *s, int n, FILE *stream)
+{
+    char *start = s;
+    int c;
+
+    if (s == NULL || n <= 0)
+        return NULL;
+
+    while (n > 1)
+    {
+        c = fgetc_internal(stream);
+        if (c == EOF)
+            break;
+
+        *s++ = (char)c;
+        n--;
+
+        if (c == '\n')
+            break;
+    }
+
+    *s = 0;
+
+    if (s == start)
+        return NULL;
+
+    return start;
+}
+
+char *fgets(char *s, int n, FILE *stream)
+{
+    char *r;
+
+    if (s == NULL || n <= 0)
+        return NULL;
+
+    uart_req_rx_lock();
+    r = fgets_internal(s, n, stream);
+    uart_req_rx_release();
     return r;
 }
 
@@ -236,9 +340,348 @@ char *strchr(const char *s, int c)
     return (*s == tmp) ? (char *)s : NULL; // Return pointer to character or NULL
 }
 
+static inline int pos_libc_isspace(int a)
+{
+    return (a == ' ') || (a == '\t') || (a == '\n') || (a == '\r') || (a == '\f') || (a == '\v');
+}
+
 static inline int isdigit(int a)
 {
     return (((unsigned)(a) - '0') < 10); // Check if character is a digit
+}
+
+static inline int pos_libc_isxdigit(int a)
+{
+    return isdigit(a) || (((unsigned)((a | 0x20) - 'a')) < 6);
+}
+
+static int pos_libc_hex_value(int a)
+{
+    if (isdigit(a))
+        return a - '0';
+
+    if (((unsigned)((a | 0x20) - 'a')) < 6)
+        return (a | 0x20) - 'a' + 10;
+
+    return -1;
+}
+
+static const char *pos_libc_skip_space(const char *sptr)
+{
+    while (pos_libc_isspace((int)*sptr))
+        sptr++;
+
+    return sptr;
+}
+
+static int pos_libc_scan_uint(const char **sptr, uint32_t *value, int base, int width)
+{
+    const char *p = *sptr;
+    uint32_t result = 0;
+    int digit;
+    int digits = 0;
+
+    if (base == 16 && width != 0 && p[0] == '0' && ((p[1] | 0x20) == 'x') &&
+        (width < 0 || width > 1) && pos_libc_isxdigit((int)p[2]))
+    {
+        p += 2;
+        if (width > 0)
+            width -= 2;
+    }
+
+    while (*p && width != 0)
+    {
+        digit = pos_libc_hex_value((int)*p);
+        if (digit < 0 || digit >= base)
+            break;
+
+        result = result * (uint32_t)base + (uint32_t)digit;
+        p++;
+        digits++;
+        if (width > 0)
+            width--;
+    }
+
+    if (!digits)
+        return 0;
+
+    *sptr = p;
+    *value = result;
+    return 1;
+}
+
+static int pos_libc_scan_int(const char **sptr, int32_t *value, int base, int width)
+{
+    const char *p = *sptr;
+    uint32_t uvalue;
+    int negative = false;
+
+    if (width != 0 && (*p == '+' || *p == '-'))
+    {
+        negative = (*p == '-');
+        p++;
+        if (width > 0)
+            width--;
+    }
+
+    if (!pos_libc_scan_uint(&p, &uvalue, base, width))
+        return 0;
+
+    *sptr = p;
+    *value = negative ? -(int32_t)uvalue : (int32_t)uvalue;
+    return 1;
+}
+
+static int pos_libc_scan_auto_int(const char **sptr, int32_t *value, int width)
+{
+    const char *p = *sptr;
+    uint32_t uvalue;
+    int negative = false;
+    int base = 10;
+
+    if (width != 0 && (*p == '+' || *p == '-'))
+    {
+        negative = (*p == '-');
+        p++;
+        if (width > 0)
+            width--;
+    }
+
+    if (width != 0 && *p == '0')
+    {
+        base = 8;
+        if ((width < 0 || width > 1) && ((p[1] | 0x20) == 'x') && pos_libc_isxdigit((int)p[2]))
+            base = 16;
+    }
+
+    if (!pos_libc_scan_uint(&p, &uvalue, base, width))
+        return 0;
+
+    *sptr = p;
+    *value = negative ? -(int32_t)uvalue : (int32_t)uvalue;
+    return 1;
+}
+
+static int pos_libc_scan_str(const char **sptr, char *dest, int width)
+{
+    const char *p = *sptr;
+    int count = 0;
+
+    if (width == 0)
+        return 0;
+
+    while (*p && !pos_libc_isspace((int)*p) && width != 0)
+    {
+        if (dest != NULL)
+            *dest++ = *p;
+
+        p++;
+        count++;
+        if (width > 0)
+            width--;
+    }
+
+    if (!count)
+        return 0;
+
+    if (dest != NULL)
+        *dest = 0;
+
+    *sptr = p;
+    return 1;
+}
+
+static int pos_libc_scan_chars(const char **sptr, char *dest, int width)
+{
+    const char *p = *sptr;
+    int count = 0;
+
+    if (width < 0)
+        width = 1;
+
+    while (count < width)
+    {
+        if (*p == 0)
+            return 0;
+
+        if (dest != NULL)
+            *dest++ = *p;
+
+        p++;
+        count++;
+    }
+
+    *sptr = p;
+    return 1;
+}
+
+static int pos_libc_vsscanf(const char *input, char *format, va_list vargs)
+{
+    const char *sptr = input;
+    int assigned = 0;
+    char c;
+
+    if (input == NULL || format == NULL)
+        return 0;
+
+    while ((c = *format++) != 0)
+    {
+        int suppress;
+        int width;
+
+        if (pos_libc_isspace((int)c))
+        {
+            sptr = pos_libc_skip_space(sptr);
+            while (pos_libc_isspace((int)*format))
+                format++;
+            continue;
+        }
+
+        if (c != '%')
+        {
+            if (*sptr != c)
+                break;
+
+            if (*sptr == 0)
+                break;
+
+            sptr++;
+            continue;
+        }
+
+        c = *format++;
+        if (c == 0)
+            break;
+
+        if (c == '%')
+        {
+            if (*sptr != '%')
+                break;
+
+            sptr++;
+            continue;
+        }
+
+        suppress = false;
+        if (c == '*')
+        {
+            suppress = true;
+            c = *format++;
+        }
+
+        width = -1;
+        if (isdigit((int)c))
+        {
+            width = 0;
+            do
+            {
+                width = (width * 10) + c - '0';
+                c = *format++;
+            } while (isdigit((int)c));
+        }
+
+        while (strchr("hlLz", c) != NULL)
+            c = *format++;
+
+        if (c == 0)
+            break;
+
+        if (c != 'c' && c != 'n')
+            sptr = pos_libc_skip_space(sptr);
+
+        switch (c)
+        {
+        case 'c':
+            if (!pos_libc_scan_chars(&sptr, suppress ? NULL : va_arg(vargs, char *), width))
+                return assigned;
+            if (!suppress)
+                assigned++;
+            break;
+
+        case 'd':
+        {
+            int32_t value;
+            if (!pos_libc_scan_int(&sptr, &value, 10, width))
+                return assigned;
+            if (!suppress)
+            {
+                *va_arg(vargs, int32_t *) = value;
+                assigned++;
+            }
+            break;
+        }
+
+        case 'i':
+        {
+            int32_t value;
+            if (!pos_libc_scan_auto_int(&sptr, &value, width))
+                return assigned;
+            if (!suppress)
+            {
+                *va_arg(vargs, int32_t *) = value;
+                assigned++;
+            }
+            break;
+        }
+
+        case 'n':
+            if (!suppress)
+                *va_arg(vargs, int32_t *) = (int32_t)(sptr - input);
+            break;
+
+        case 'o':
+        {
+            uint32_t value;
+            if (!pos_libc_scan_uint(&sptr, &value, 8, width))
+                return assigned;
+            if (!suppress)
+            {
+                *va_arg(vargs, uint32_t *) = value;
+                assigned++;
+            }
+            break;
+        }
+
+        case 's':
+            if (!pos_libc_scan_str(&sptr, suppress ? NULL : va_arg(vargs, char *), width))
+                return assigned;
+            if (!suppress)
+                assigned++;
+            break;
+
+        case 'u':
+        {
+            uint32_t value;
+            if (!pos_libc_scan_uint(&sptr, &value, 10, width))
+                return assigned;
+            if (!suppress)
+            {
+                *va_arg(vargs, uint32_t *) = value;
+                assigned++;
+            }
+            break;
+        }
+
+        case 'x':
+        case 'X':
+        {
+            uint32_t value;
+            if (!pos_libc_scan_uint(&sptr, &value, 16, width))
+                return assigned;
+            if (!suppress)
+            {
+                *va_arg(vargs, uint32_t *) = value;
+                assigned++;
+            }
+            break;
+        }
+
+        default:
+            return assigned;
+        }
+    }
+
+    return assigned;
 }
 
 static int pos_libc_atoi(char **sptr)
@@ -928,6 +1371,37 @@ int pos_libc_prf_locked(int (*func)(int, void *), void *dest, char *format, va_l
     return err;
 }
 
+int scanf(char *format, ...)
+{
+    char buf[200 + 1];
+    va_list vargs;
+    int r;
+
+    if (format == NULL)
+        return 0;
+
+    va_start(vargs, format);
+    uart_req_rx_lock();
+    if (fgets_internal(buf, sizeof(buf), stdin) == NULL)
+        r = EOF;
+    else
+        r = pos_libc_vsscanf(buf, format, vargs);
+    va_end(vargs);
+    uart_req_rx_release();
+    return r;
+}
+
+int sscanf(const char *input, char *format, ...)
+{
+    va_list vargs;
+    int r;
+
+    va_start(vargs, format);
+    r = pos_libc_vsscanf(input, format, vargs);
+    va_end(vargs);
+    return r;
+}
+
 int printf(char *format, ...)
 {
     va_list vargs;
@@ -942,7 +1416,57 @@ int printf(char *format, ...)
 
 double __extendsfdf2(float a)
 {
-    return (double)a;
+    union {
+        float f;
+        uint32_t u;
+    } in;
+
+    union {
+        uint64_t u;
+        double d;
+    } out;
+
+    in.f = a;
+
+    uint32_t sign = (uint32_t)(in.u >> 31);
+    uint32_t exp  = (in.u >> 23) & 0xFF;
+    uint32_t frac = in.u & 0x7FFFFF;
+
+    uint64_t sign64 = (uint64_t)sign << 63;
+
+    if (exp == 0xFF) {
+        if (frac == 0) {
+            out.u = sign64 | ((uint64_t)0x7FF << 52);
+        } else {
+            uint64_t payload = (uint64_t)frac << (52 - 23);
+            out.u = sign64 | ((uint64_t)0x7FF << 52) | payload | ((uint64_t)1 << 51);
+        }
+        return out.d;
+    }
+
+    if (exp == 0 && frac == 0) {
+        out.u = sign64;
+        return out.d;
+    }
+
+    if (exp == 0) {
+        int32_t e = -126;
+        while ((frac & 0x800000) == 0) {
+            frac <<= 1;
+            e--;
+        }
+        frac &= 0x7FFFFF;
+        uint64_t exp64 = (uint64_t)(e + 1023);
+        uint64_t frac64 = (uint64_t)frac << (52 - 23);
+        out.u = sign64 | (exp64 << 52) | frac64;
+        return out.d;
+    }
+    {
+        uint64_t exp64 = (uint64_t)((int32_t)exp - 127 + 1023);
+        uint64_t frac64 = (uint64_t)frac << (52 - 23);
+        out.u = sign64 | (exp64 << 52) | frac64;
+        return out.d;
+    }
 }
 
 #endif

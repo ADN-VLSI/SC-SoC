@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="sc_soc_tb.wdb" id="1">
+         <top_modules>
+            <top_module name="apb_pkg" />
+            <top_module name="axi_pkg" />
+            <top_module name="fpnew_pkg" />
+            <top_module name="rv32imf_fpu_pkg" />
+            <top_module name="rv32imf_pkg" />
+            <top_module name="sc_soc_pkg" />
+            <top_module name="sc_soc_tb" />
+            <top_module name="uart_pkg" />
+            <top_module name="uart_subsystem_pkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="452.001 ns"></ZoomEndTime>
+      <Cursor1Time time="0.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="231"></NameColumnWidth>
+      <ValueColumnWidth column_width="141"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="0" />
+</wave_config>

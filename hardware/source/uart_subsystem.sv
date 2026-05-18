@@ -8,7 +8,7 @@ module uart_subsystem #(
     input  logic                     arst_ni,
 
     input  uart_pkg::uart_axil_req_t req_i,
-    output uart_pkg::uart_axil_rsp_t resp_o,
+    output uart_pkg::uart_axil_resp_t resp_o,
 
     input  logic                     rx_i,
     output logic                     tx_o,
@@ -58,6 +58,7 @@ module uart_subsystem #(
   logic [FIFO_COUNT_W-1:0] tx_fifo_rd_count;
 
   logic tx_data_ready_from_uart;
+  logic tx_idle;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // RX FIFO SIGNALS
@@ -117,6 +118,7 @@ module uart_subsystem #(
       .rx_data_ready_o (rx_data_ready_from_regif),
       .tx_data_cnt_i   (tx_data_cnt),
       .rx_data_cnt_i   (rx_data_cnt),
+      .tx_uart_idle_i  (tx_idle),
       .uart_int_en_o   (uart_int_en)
   );
 
@@ -138,7 +140,7 @@ module uart_subsystem #(
   ) u_rx_clk_div (
       .arst_ni (arst_ni),
       .clk_i   (prescale_clk),
-      .div_i   (uart_cfg.clk_div >> 3),
+      .div_i   (uart_cfg.clk_div >> 2),
       .clk_o   (rx_clk)
   );
 
@@ -187,7 +189,8 @@ module uart_subsystem #(
       .parity_type_i (uart_cfg.ptp),
       .extra_stop_i  (uart_cfg.sb),
       .tx_o          (tx_o),
-      .data_ready_o  (tx_data_ready_from_uart)
+      .data_ready_o  (tx_data_ready_from_uart),
+      .tx_idle_o     (tx_idle)
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////

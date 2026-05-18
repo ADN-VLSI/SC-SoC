@@ -1,11 +1,11 @@
 `ifndef __GUARD_PACKAGE_DEFAULTS_PKG_SV__
 `define __GUARD_PACKAGE_DEFAULTS_PKG_SV__ 0
 
-`include "axi4l/typedef.svh"
+`include "axi/typedef.svh"
 
 package defaults_pkg;
 
-  `AXI4L_ALL(axi4l, 32, 64)
+  `AXI_LITE_TYPEDEF_ALL(axi4l, logic[31:0], logic[63:0], logic[7:0])
 
 endpackage
 

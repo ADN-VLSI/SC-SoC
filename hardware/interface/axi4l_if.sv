@@ -3,7 +3,7 @@
 
 interface axi4l_if #(
     parameter type req_t = defaults_pkg::axi4l_req_t,
-    parameter type rsp_t = defaults_pkg::axi4l_rsp_t
+    parameter type resp_t = defaults_pkg::axi4l_resp_t
 ) (
     // GLOBAL SIGNALS
     input logic arst_ni,
@@ -23,14 +23,14 @@ interface axi4l_if #(
   // TYPEDEFS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `AXI4L_ALL(axi4l, ADDR_WIDTH, DATA_WIDTH)
+  `AXI_LITE_TYPEDEF_ALL(axi4l, logic[ADDR_WIDTH-1:0], logic[DATA_WIDTH-1:0], logic[DATA_WIDTH/8-1:0])
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // SIGNALS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  axi4l_req_t req;
-  axi4l_rsp_t rsp;
+  axi4l_req_t  req;
+  axi4l_resp_t resp;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // VARIABLES
@@ -52,15 +52,15 @@ interface axi4l_if #(
     req <= '0;
   endtask
   
-  task automatic rsp_reset();
-    rsp <= '0;
+  task automatic resp_reset();
+    resp <= '0;
   endtask
 
-  `VALID_READY_METHODS(aw, arst_ni, clk_i, axi4l_aw_chan_t, req.aw, req.aw_valid, rsp.aw_ready, is_edge_aligned)
-  `VALID_READY_METHODS(w,  arst_ni, clk_i, axi4l_w_chan_t,  req.w,  req.w_valid,  rsp.w_ready,  is_edge_aligned)
-  `VALID_READY_METHODS(b,  arst_ni, clk_i, axi4l_b_chan_t,  rsp.b,  rsp.b_valid,  req.b_ready,  is_edge_aligned)
-  `VALID_READY_METHODS(ar, arst_ni, clk_i, axi4l_ar_chan_t, req.ar, req.ar_valid, rsp.ar_ready, is_edge_aligned)
-  `VALID_READY_METHODS(r,  arst_ni, clk_i, axi4l_r_chan_t,  rsp.r,  rsp.r_valid,  req.r_ready,  is_edge_aligned)
+  `VALID_READY_METHODS(aw, arst_ni, clk_i, axi4l_aw_chan_t, req.aw, req.aw_valid, resp.aw_ready, is_edge_aligned)
+  `VALID_READY_METHODS(w,  arst_ni, clk_i, axi4l_w_chan_t,  req.w,  req.w_valid,  resp.w_ready,  is_edge_aligned)
+  `VALID_READY_METHODS(b,  arst_ni, clk_i, axi4l_b_chan_t,  resp.b, resp.b_valid, req.b_ready,   is_edge_aligned)
+  `VALID_READY_METHODS(ar, arst_ni, clk_i, axi4l_ar_chan_t, req.ar, req.ar_valid, resp.ar_ready, is_edge_aligned)
+  `VALID_READY_METHODS(r,  arst_ni, clk_i, axi4l_r_chan_t,  resp.r, resp.r_valid, req.r_ready,   is_edge_aligned)
 
   // send_aw send_w send_b send_ar send_r
   // recv_aw recv_w send_b send_ar send_r
@@ -70,10 +70,10 @@ interface axi4l_if #(
   // ASSERTIONS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.aw, req.aw_valid, rsp.aw_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.w,  req.w_valid,  rsp.w_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, rsp.b,  rsp.b_valid,  req.b_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.ar, req.ar_valid, rsp.ar_ready)
-  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, rsp.r,  rsp.r_valid,  req.r_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.aw, req.aw_valid, resp.aw_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.w,  req.w_valid,  resp.w_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, resp.b, resp.b_valid, req.b_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, req.ar, req.ar_valid, resp.ar_ready)
+  `VALID_READY_PROPERTY_CHECK(arst_ni, clk_i, resp.r, resp.r_valid, req.r_ready)
 
 endinterface

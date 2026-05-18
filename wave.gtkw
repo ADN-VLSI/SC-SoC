@@ -1,0 +1,157 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Thu May 14 07:23:47 2026
+[*]
+[dumpfile] "build/sc_soc_tb.vcd"
+[dumpfile_mtime] "Thu May 14 07:16:44 2026"
+[dumpfile_size] 105154701
+[savefile] "wave.gtkw"
+[timestart] 0
+[size] 1920 1009
+[pos] 1911 -8
+*-18.813040 1030000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] sc_soc_tb.
+[treeopen] sc_soc_tb.u_dut.
+[treeopen] sc_soc_tb.u_dut.u_core.
+[treeopen] sc_soc_tb.u_dut.u_core.core_i.
+[treeopen] sc_soc_tb.u_dut.u_core.core_i.id_stage_i.
+[treeopen] sc_soc_tb.u_dut.u_uart.
+[treeopen] sc_soc_tb.u_dut.u_uart.u_axi4l_regif.
+[sst_width] 259
+[signals_width] 252
+[sst_expanded] 1
+[sst_vpaned_height] 378
+@22
+sc_soc_tb.pc[31:0]
+@c00200
+-data_bus
+@22
+sc_soc_tb.u_dut.u_core.data_addr_o[31:0]
+@28
+sc_soc_tb.u_dut.u_core.data_we_o
+@22
+sc_soc_tb.u_dut.u_core.data_wdata_o[31:0]
+sc_soc_tb.u_dut.u_core.data_be_o[3:0]
+@28
+sc_soc_tb.u_dut.u_core.data_req_o
+sc_soc_tb.u_dut.u_core.data_gnt_i
+@200
+-
+@28
+sc_soc_tb.u_dut.u_core.data_rvalid_i
+@22
+sc_soc_tb.u_dut.u_core.data_rdata_i[31:0]
+@1401200
+-data_bus
+@c00200
+-GPR
+@22
+sc_soc_tb.x_0_zero[31:0]
+sc_soc_tb.x_1_ra[31:0]
+sc_soc_tb.x_2_sp[31:0]
+sc_soc_tb.x_3_gp[31:0]
+sc_soc_tb.x_4_tp[31:0]
+sc_soc_tb.x_5_t0[31:0]
+sc_soc_tb.x_6_t1[31:0]
+sc_soc_tb.x_7_t2[31:0]
+sc_soc_tb.x_8_s0_fp[31:0]
+sc_soc_tb.x_9_s1[31:0]
+sc_soc_tb.x_10_a0[31:0]
+sc_soc_tb.x_11_a1[31:0]
+sc_soc_tb.x_12_a2[31:0]
+sc_soc_tb.x_13_a3[31:0]
+sc_soc_tb.x_14_a4[31:0]
+sc_soc_tb.x_15_a5[31:0]
+sc_soc_tb.x_16_a6[31:0]
+sc_soc_tb.x_17_a7[31:0]
+sc_soc_tb.x_18_s2[31:0]
+sc_soc_tb.x_19_s3[31:0]
+sc_soc_tb.x_20_s4[31:0]
+sc_soc_tb.x_21_s5[31:0]
+sc_soc_tb.x_22_s6[31:0]
+sc_soc_tb.x_23_s7[31:0]
+sc_soc_tb.x_24_s8[31:0]
+sc_soc_tb.x_25_s9[31:0]
+sc_soc_tb.x_26_s10[31:0]
+sc_soc_tb.x_27_s11[31:0]
+sc_soc_tb.x_28_t3[31:0]
+sc_soc_tb.x_29_t4[31:0]
+sc_soc_tb.x_30_t5[31:0]
+sc_soc_tb.x_31_t6[31:0]
+@1401200
+-GPR
+@c00200
+-FPR
+@c00022
+sc_soc_tb.f_0_ft0[31:0]
+@28
+(0)sc_soc_tb.f_0_ft0[31:0]
+(1)sc_soc_tb.f_0_ft0[31:0]
+(2)sc_soc_tb.f_0_ft0[31:0]
+(3)sc_soc_tb.f_0_ft0[31:0]
+(4)sc_soc_tb.f_0_ft0[31:0]
+(5)sc_soc_tb.f_0_ft0[31:0]
+(6)sc_soc_tb.f_0_ft0[31:0]
+(7)sc_soc_tb.f_0_ft0[31:0]
+(8)sc_soc_tb.f_0_ft0[31:0]
+(9)sc_soc_tb.f_0_ft0[31:0]
+(10)sc_soc_tb.f_0_ft0[31:0]
+(11)sc_soc_tb.f_0_ft0[31:0]
+(12)sc_soc_tb.f_0_ft0[31:0]
+(13)sc_soc_tb.f_0_ft0[31:0]
+(14)sc_soc_tb.f_0_ft0[31:0]
+(15)sc_soc_tb.f_0_ft0[31:0]
+(16)sc_soc_tb.f_0_ft0[31:0]
+(17)sc_soc_tb.f_0_ft0[31:0]
+(18)sc_soc_tb.f_0_ft0[31:0]
+(19)sc_soc_tb.f_0_ft0[31:0]
+(20)sc_soc_tb.f_0_ft0[31:0]
+(21)sc_soc_tb.f_0_ft0[31:0]
+(22)sc_soc_tb.f_0_ft0[31:0]
+(23)sc_soc_tb.f_0_ft0[31:0]
+(24)sc_soc_tb.f_0_ft0[31:0]
+(25)sc_soc_tb.f_0_ft0[31:0]
+(26)sc_soc_tb.f_0_ft0[31:0]
+(27)sc_soc_tb.f_0_ft0[31:0]
+(28)sc_soc_tb.f_0_ft0[31:0]
+(29)sc_soc_tb.f_0_ft0[31:0]
+(30)sc_soc_tb.f_0_ft0[31:0]
+(31)sc_soc_tb.f_0_ft0[31:0]
+@1401200
+-group_end
+@22
+sc_soc_tb.f_1_ft1[31:0]
+sc_soc_tb.f_2_ft2[31:0]
+sc_soc_tb.f_3_ft3[31:0]
+sc_soc_tb.f_4_ft4[31:0]
+sc_soc_tb.f_5_ft5[31:0]
+sc_soc_tb.f_6_ft6[31:0]
+sc_soc_tb.f_7_ft7[31:0]
+sc_soc_tb.f_8_fs0[31:0]
+sc_soc_tb.f_9_fs1[31:0]
+sc_soc_tb.f_10_fa0[31:0]
+sc_soc_tb.f_11_fa1[31:0]
+sc_soc_tb.f_12_fa2[31:0]
+sc_soc_tb.f_13_fa3[31:0]
+sc_soc_tb.f_14_fa4[31:0]
+sc_soc_tb.f_15_fa5[31:0]
+sc_soc_tb.f_16_fa6[31:0]
+sc_soc_tb.f_17_fa7[31:0]
+sc_soc_tb.f_18_fs2[31:0]
+sc_soc_tb.f_19_fs3[31:0]
+sc_soc_tb.f_20_fs4[31:0]
+sc_soc_tb.f_21_fs5[31:0]
+sc_soc_tb.f_22_fs6[31:0]
+sc_soc_tb.f_23_fs7[31:0]
+sc_soc_tb.f_24_fs8[31:0]
+sc_soc_tb.f_25_fs9[31:0]
+sc_soc_tb.f_26_fs10[31:0]
+sc_soc_tb.f_27_fs11[31:0]
+sc_soc_tb.f_28_t8[31:0]
+sc_soc_tb.f_29_t9[31:0]
+sc_soc_tb.f_30_t10[31:0]
+sc_soc_tb.f_31_t11[31:0]
+@1401200
+-FPR
+[pattern_trace] 1
+[pattern_trace] 0

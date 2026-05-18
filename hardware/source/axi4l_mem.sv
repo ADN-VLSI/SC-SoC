@@ -13,11 +13,13 @@
 
 `include "package/defaults_pkg.sv"
 
+`define BIG_MEM_SIMULATION 0
+
 module axi4l_mem #(
-    parameter type axi4l_req_t = defaults_pkg::axi4l_req_t,
-    parameter type axi4l_rsp_t = defaults_pkg::axi4l_rsp_t,
-    parameter int  ADDR_WIDTH  = 32,
-    parameter int  DATA_WIDTH  = 64
+    parameter type axi4l_req_t  = defaults_pkg::axi4l_req_t,
+    parameter type axi4l_resp_t = defaults_pkg::axi4l_resp_t,
+    parameter int  ADDR_WIDTH   = 32,
+    parameter int  DATA_WIDTH   = 64
 ) (
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,28 +33,101 @@ module axi4l_mem #(
     // AXIL SIGNALS
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    input  axi4l_req_t axi4l_req_i,
-    output axi4l_rsp_t axi4l_rsp_o
+    input  axi4l_req_t  axi4l_req_i,
+    output axi4l_resp_t axi4l_resp_o
 
 );
+
+`ifdef BIG_MEM_SIMULATION
+
+  `include "axi/typedef.svh"
+
+  `AXI_LITE_TYPEDEF_ALL(axil, logic[ADDR_WIDTH-1:0], logic[DATA_WIDTH-1:0], logic[DATA_WIDTH/8-1:0])
+
+  localparam int AXSIZE = $clog2(DATA_WIDTH / 8);
+
+  logic [7:0] mem[2][longint];
+
+  axil_aw_chan_t aw_q[$];
+  axil_w_chan_t w_q[$];
+  axil_b_chan_t b_q[$];
+  axil_ar_chan_t ar_q[$];
+  axil_r_chan_t r_q[$];
+
+  always @(posedge clk_i or negedge arst_ni) begin
+    if (~arst_ni) begin
+      aw_q.delete();
+      w_q.delete();
+      b_q.delete();
+      ar_q.delete();
+      r_q.delete();
+    end else begin
+      if (axi4l_req_i.aw_valid) begin
+        aw_q.push_back(axi4l_req_i.aw);
+      end
+      if (axi4l_req_i.w_valid) begin
+        w_q.push_back(axi4l_req_i.w);
+      end
+      if (axi4l_req_i.b_ready) begin
+        b_q.delete(0);
+      end
+      if (axi4l_req_i.ar_valid) begin
+        ar_q.push_back(axi4l_req_i.ar);
+      end
+      if (axi4l_req_i.r_ready) begin
+        r_q.delete(0);
+      end
+      if (aw_q.size() && w_q.size()) begin
+        bit [  ADDR_WIDTH-1:0]      addr;
+        bit [DATA_WIDTH/8-1:0][7:0] data;
+        bit [DATA_WIDTH/8-1:0]      strb;
+        addr = aw_q[0].addr;
+        data = w_q[0].data;
+        strb = w_q[0].strb;
+        for (int i = 0; i < AXSIZE; i++) addr[i] = 0;
+        foreach (strb[i]) if (strb[i]) mem[aw_q[0].prot[1]][addr+i] = data[i];
+        aw_q.delete(0);
+        w_q.delete(0);
+        b_q.push_back('0);
+      end
+      if (ar_q.size()) begin
+        bit [  ADDR_WIDTH-1:0]      addr;
+        bit [DATA_WIDTH/8-1:0][7:0] data;
+        addr = ar_q[0].addr;
+        for (int i = 0; i < AXSIZE; i++) addr[i] = 0;
+        for (int i = 0; i < DATA_WIDTH / 8; i++) data[i] = mem[ar_q[0].prot[1]][addr+i];
+        r_q.push_back({data, 2'b00});
+        ar_q.delete(0);
+      end
+    end
+    axi4l_resp_o.aw_ready <= arst_ni;
+    axi4l_resp_o.w_ready  <= arst_ni;
+    axi4l_resp_o.b        <= b_q.size() ? b_q[0] : '0;
+    axi4l_resp_o.b_valid  <= b_q.size() ? '1 : '0;
+    axi4l_resp_o.ar_ready <= arst_ni;
+    axi4l_resp_o.r        <= r_q.size() ? r_q[0] : '0;
+    axi4l_resp_o.r_valid  <= r_q.size() ? '1 : '0;
+  end
+
+`else
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // INTERNAL SIGNALS
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   // AXI Signals
-  axi4l_req_t                    axi4l_req;
-  axi4l_rsp_t                    axi4l_rsp;
+  axi4l_req_t                     axi4l_req;
+  axi4l_resp_t                    axi4l_rsp;
 
   // Write interface
-  logic       [  ADDR_WIDTH-1:0] mem_waddr;
-  logic       [  DATA_WIDTH-1:0] mem_wdata;
-  logic       [DATA_WIDTH/8-1:0] mem_wstrb;
-  logic                          mem_wenable;
+  logic        [  ADDR_WIDTH-1:0] mem_waddr;
+  logic        [  DATA_WIDTH-1:0] mem_wdata;
+  logic        [DATA_WIDTH/8-1:0] mem_wstrb;
+  logic                           mem_wenable;
 
   // Read interface
-  logic       [  ADDR_WIDTH-1:0] mem_raddr;
-  logic       [  DATA_WIDTH-1:0] mem_rdata;
+  logic        [  ADDR_WIDTH-1:0] mem_raddr;
+  logic        [  DATA_WIDTH-1:0] mem_rdata;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // SUBMODULE INSTANTIATIONS
@@ -69,7 +144,7 @@ module axi4l_mem #(
       .clk_i           (clk_i),
       .data_in_i       (axi4l_req_i.aw),
       .data_in_valid_i (axi4l_req_i.aw_valid),
-      .data_in_ready_o (axi4l_rsp_o.aw_ready),
+      .data_in_ready_o (axi4l_resp_o.aw_ready),
       .data_out_o      (axi4l_req.aw),
       .data_out_valid_o(axi4l_req.aw_valid),
       .data_out_ready_i(axi4l_rsp.aw_ready),
@@ -87,7 +162,7 @@ module axi4l_mem #(
       .clk_i           (clk_i),
       .data_in_i       (axi4l_req_i.w),
       .data_in_valid_i (axi4l_req_i.w_valid),
-      .data_in_ready_o (axi4l_rsp_o.w_ready),
+      .data_in_ready_o (axi4l_resp_o.w_ready),
       .data_out_o      (axi4l_req.w),
       .data_out_valid_o(axi4l_req.w_valid),
       .data_out_ready_i(axi4l_rsp.w_ready),
@@ -106,8 +181,8 @@ module axi4l_mem #(
       .data_in_i       (axi4l_rsp.b),
       .data_in_valid_i (axi4l_rsp.b_valid),
       .data_in_ready_o (axi4l_req.b_ready),
-      .data_out_o      (axi4l_rsp_o.b),
-      .data_out_valid_o(axi4l_rsp_o.b_valid),
+      .data_out_o      (axi4l_resp_o.b),
+      .data_out_valid_o(axi4l_resp_o.b_valid),
       .data_out_ready_i(axi4l_req_i.b_ready),
       .count_o         ()
   );
@@ -122,7 +197,7 @@ module axi4l_mem #(
       .clk_i           (clk_i),
       .data_in_i       (axi4l_req_i.ar),
       .data_in_valid_i (axi4l_req_i.ar_valid),
-      .data_in_ready_o (axi4l_rsp_o.ar_ready),
+      .data_in_ready_o (axi4l_resp_o.ar_ready),
       .data_out_o      (axi4l_req.ar),
       .data_out_valid_o(axi4l_req.ar_valid),
       .data_out_ready_i(axi4l_rsp.ar_ready),
@@ -141,8 +216,8 @@ module axi4l_mem #(
       .data_in_i       (axi4l_rsp.r),
       .data_in_valid_i (axi4l_rsp.r_valid),
       .data_in_ready_o (axi4l_req.r_ready),
-      .data_out_o      (axi4l_rsp_o.r),
-      .data_out_valid_o(axi4l_rsp_o.r_valid),
+      .data_out_o      (axi4l_resp_o.r),
+      .data_out_valid_o(axi4l_resp_o.r_valid),
       .data_out_ready_i(axi4l_req_i.r_ready),
       .count_o         ()
   );
@@ -150,14 +225,14 @@ module axi4l_mem #(
   // AXI-Lite memory controller: arbitrates between write and read requests,
   // drives the dual-port memory interface, and generates AXI responses.
   axi4l_mem_ctrlr #(
-      .axi4l_req_t(axi4l_req_t),
-      .axi4l_rsp_t(axi4l_rsp_t),
-      .ADDR_WIDTH(ADDR_WIDTH),
-      .DATA_WIDTH(DATA_WIDTH)
+      .axi4l_req_t (axi4l_req_t),
+      .axi4l_resp_t(axi4l_resp_t),
+      .ADDR_WIDTH  (ADDR_WIDTH),
+      .DATA_WIDTH  (DATA_WIDTH)
   ) ctrlr_inst (
       // AXIL signals
       .axi4l_req_i(axi4l_req),
-      .axi4l_rsp_o(axi4l_rsp),
+      .axi4l_resp_o(axi4l_rsp),
       .waddr_o   (mem_waddr),
       .wdata_o   (mem_wdata),
       .wstrb_o   (mem_wstrb),
@@ -180,5 +255,7 @@ module axi4l_mem #(
       .raddr_i(mem_raddr),
       .rdata_o(mem_rdata)
   );
+
+`endif
 
 endmodule
