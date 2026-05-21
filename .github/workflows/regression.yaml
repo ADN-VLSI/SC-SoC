@@ -1,0 +1,25 @@
+name: regression
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  regression:
+
+    runs-on: ["adn"]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Vivado Regression
+        shell: bash
+        run: |
+          ./regression.sh
+
+      - name: Fail if ci issues
+        shell: bash
+        run: |
+          [[-s ./log/ci_issues.log]] && exit 1 || exit 0
