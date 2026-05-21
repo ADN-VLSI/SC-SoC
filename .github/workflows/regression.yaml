@@ -9,7 +9,7 @@ on:
 jobs:
   regression:
 
-    runs-on: ["adn"]
+    runs-on: [adn]
 
     steps:
       - uses: actions/checkout@v5
