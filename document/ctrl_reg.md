@@ -15,9 +15,10 @@ This document defines the Control register map and bit-field assignments. All re
 | `0x060` | TOHOST         | RW   | 0x00000000  | Host Communication Register (Core to Host) |
 | `0x068` | FROMHOST       | RW   | 0x00000000  | Host Communication Register (Host to Core) |
 | `0x080` | BOOTMODE       | RO   | -           | Boot Mode Configuration                    |
-| `0x0A0` | GPIO_DIR       | RW   | 0x00000000  | GPIO Direction Control                     |
+| `0x0A0` | GPIO_IN        | RO   | -           | GPIO Input Value Status                    |
 | `0x0A4` | GPIO_OUT       | RW   | 0x00000000  | GPIO Output Value Control                  |
-| `0x0A8` | GPIO_IN        | RO   | -           | GPIO Input Value Status                    |
+| `0x0A8` | GPIO_DIR       | RW   | 0x00000000  | GPIO Direction Control                     |
+| `0x0AC` | GPIO_PULL      | RW   | 0x00000000  | GPIO Pull Control                          |
 
 ## SOC_ID
 
