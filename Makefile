@@ -17,6 +17,12 @@ export COMMON_CELLS=$(SC_SOC)/submodule/common_cells
 export RV32IMF=$(SC_SOC)/submodule/rv32imf
 export S1=$(SC_SOC)/submodule/S1
 
+# Absolute paths to the build and log output directories. The build directory contains all generated
+# simulation snapshots and intermediate files, while the log directory contains all simulation logs.
+export BUILD=$(SC_SOC)/build
+export LOG=$(SC_SOC)/log
+export COVERAGE=$(SC_SOC)/coverage
+
 ####################################################################################################
 # CONFIGURATION
 ####################################################################################################
@@ -178,34 +184,29 @@ help:
 	@echo "  make simulate TOP=bin_2_gray_tb COV=1"
 	@echo "  make simulate TOP=bin_2_gray_tb COV=1 CC_COV=1"
 
-# Create the build output directory and add a .gitignore so its contents are not tracked by git
-build:
-	@echo "Creating build directory..."
-	@mkdir build
-	@echo "*" > build/.gitignore
-
-# Create the log output directory and add a .gitignore so simulation logs are not tracked by git
-log:
-	@echo "Creating log directory..."
-	@mkdir -p log
-	@echo "*" > log/.gitignore
-
-# Create the coverage report output directory and exclude its contents from git
-coverage_report:
-	@mkdir -p coverage_report
-	@echo "*" > coverage_report/.gitignore
+# Create the build, log, and coverage directories if they don't exist. Each directory also gets a
+# .gitignore file to avoid accidentally committing generated artifacts.
+$(BUILD) $(LOG) $(COVERAGE):
+	@echo "Creating $@ directory..."
+	@mkdir -p $@
+	@echo "*" > $@/.gitignore
 
 # Remove the entire build directory and all generated artifacts
 .PHONY: clean
 clean:
 	@echo "Cleaning build directory..."
-	@rm -rf build
+	@rm -rf $(BUILD)
 
 # Remove the build directory as well as all log and coverage report artifacts
 .PHONY: clean_full
-clean_full:
+clean_full: clean
+	@echo "Cleaning log directory..."
+	@rm -rf $(LOG)
+	@echo "Cleaning coverage directory..."
+	@rm -rf $(COVERAGE)
+
 	@make -s clean
-	@rm -rf log
+	@rm -rf $(LOG)
 	@rm -rf coverage_report
 
 ##################################################
@@ -219,35 +220,35 @@ clean_full:
 # then re-runs xvlog and updates the SHA-256 snapshot used by __ENV_BUILD__ for future change detection.
 .PHONY: __COMPILE__
 __COMPILE__:
-	@make -s build
-	@rm -rf build/build_*
+	@make -s $(BUILD)
+	@rm -rf $(BUILD)/build_*
 	@echo -e "\033[3;35mCompiling...\033[0m"
 	@make -s APB_COMPILE
 	@make -s AXI_COMPILE
 	@make -s COMMON_CELLS_COMPILE
 	@make -s RV32IMF_COMPILE
 	@make -s S1_COMPILE
-	@echo "-i ${SC_SOC}/hardware/include" > build/flist
-	@echo "-i ${AXI}/include" >> build/flist
-	@echo "-i ${APB}/include" >> build/flist
-	@echo "-i ${COMMON_CELLS}/include" >> build/flist
-	@echo "-i ${SC_SOC}/hardware/testbench" >> build/flist
-	@echo "${APB}/src/apb_pkg.sv" >> build/flist
-	@echo "${AXI}/src/axi_pkg.sv" >> build/flist
-	@find ${SC_SOC}/hardware/interface -maxdepth 1 -name "*" -type f >> build/flist
-	@find ${SC_SOC}/hardware/source -maxdepth 1 -name "*" -type f >> build/flist
-	@find ${SC_SOC}/hardware/testbench -maxdepth 1 -name "*" -type f >> build/flist
-	@cd build; $(XVLOG) -sv -f flist $(XVLOG_DEFS) --nolog $(EW_O)
-	@sha256sum ${SHA_FILES} > build/build_sha
+	@echo "-i ${SC_SOC}/hardware/include" > $(BUILD)/flist
+	@echo "-i ${AXI}/include" >> $(BUILD)/flist
+	@echo "-i ${APB}/include" >> $(BUILD)/flist
+	@echo "-i ${COMMON_CELLS}/include" >> $(BUILD)/flist
+	@echo "-i ${SC_SOC}/hardware/testbench" >> $(BUILD)/flist
+	@echo "${APB}/src/apb_pkg.sv" >> $(BUILD)/flist
+	@echo "${AXI}/src/axi_pkg.sv" >> $(BUILD)/flist
+	@find ${SC_SOC}/hardware/interface -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
+	@find ${SC_SOC}/hardware/source -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
+	@find ${SC_SOC}/hardware/testbench -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
+	@cd $(BUILD); $(XVLOG) -sv -f flist $(XVLOG_DEFS) -log $(LOG)/xvlog_sc_soc.log $(EW_O)
+	@sha256sum ${SHA_FILES} > $(BUILD)/build_sha
 	@echo -e "\033[3;35mCompiled\033[0m"
 
 # Stamp file that records a successful xelab elaboration of TOP. Make treats the file as a
 # build artifact; if it does not exist (or TOP changes) xelab is re-run to produce a new
 # simulation snapshot, then the empty stamp file is written so subsequent runs skip this step.
-build/build_$(TOP):
+$(BUILD)/build_$(TOP):
 	@echo -e "\033[3;35mElaborating $(TOP)...\033[0m"
-	@cd build; $(XELAB) $(TOP) -s $(TOP) -debug all --O3 $(XELAB_FLAGS) --nolog $(EW_O)
-	@echo "" > build/build_$(TOP)
+	@cd $(BUILD); $(XELAB) $(TOP) -s $(TOP) -debug all --O3 $(XELAB_FLAGS) -log $(LOG)/xelab_$(TOP).log $(EW_O)
+	@echo "" > $(BUILD)/build_$(TOP)
 	@echo -e "\033[3;35mElaborated $(TOP)\033[0m"
 
 # Incremental build gate: computes a fresh SHA-256 digest of all tracked source files and
@@ -256,18 +257,20 @@ build/build_$(TOP):
 # is then checked separately via the build/build_$(TOP) stamp file.
 .PHONY: __ENV_BUILD__
 __ENV_BUILD__:
-	@sha256sum ${SHA_FILES} > build/build_sha_new
-	@touch build/build_sha
-	@diff build/build_sha_new build/build_sha &> /dev/null || make -s __COMPILE__
-	@make -s build/build_$(TOP)
+	@make -s $(BUILD)
+	@make -s $(LOG)
+	@sha256sum ${SHA_FILES} > $(BUILD)/build_sha_new
+	@touch $(BUILD)/build_sha
+	@diff $(BUILD)/build_sha_new $(BUILD)/build_sha &> /dev/null || make -s __COMPILE__
+	@make -s $(BUILD)/build_$(TOP)
 
 # Write the xsim plusarg file consumed by every simulation run. TEST selects the named
 # test case inside the testbench, and DEBUG passes an optional verbosity/debug level.
 .PHONY: common_sim_checks
 common_sim_checks:
-	@echo "--testplusarg TEST=$(TEST)" > build/xsim_args
-	@echo "--testplusarg DEBUG=$(DEBUG)" >> build/xsim_args
-	@echo "--testplusarg BDL=$(BDL)" >> build/xsim_args
+	@echo "--testplusarg TEST=$(TEST)" > $(BUILD)/xsim_args
+	@echo "--testplusarg DEBUG=$(DEBUG)" >> $(BUILD)/xsim_args
+	@echo "--testplusarg BDL=$(BDL)" >> $(BUILD)/xsim_args
 ifeq ($(TOP), sc_soc_tb)
 	@make -s test TEST=$(TEST)
 endif
@@ -282,23 +285,23 @@ endif
 .PHONY: simulate
 simulate:
 	@make -s LOGO
-	@make -s build
-	@make -s log
-	@echo "$(TOP)" > build/top
+	@make -s $(BUILD)
+	@make -s $(LOG)
+	@echo "$(TOP)" > $(BUILD)/top
 	@make -s __ENV_BUILD__ TOP=$(TOP)
 	@make -s common_sim_checks TEST=$(TEST) DEBUG=$(DEBUG)
 	@echo -e "\033[3;35mSimulating $(TOP) $(TEST)...\033[0m"
-	@$(eval log_file_name := $(shell echo "$(TOP)_$(TEST).txt" | sed "s/\//___/g"))
-	@cd build; $(XSIM) $(TOP) -f xsim_args $(SIM_ARGS) -log ../log/$(log_file_name) $(EWHL)
+	@$(eval log_file_name := $(shell echo "xsim_$(TOP)_$(TEST).log" | sed "s/\//___/g"))
+	@cd $(BUILD); $(XSIM) $(TOP) -f xsim_args $(SIM_ARGS) -log $(LOG)/$(log_file_name) $(EWHL)
 	@echo -e "\033[3;35mSimulated $(TOP) $(TEST)\033[0m"
 ifeq ($(COV), 1)
 	@make -s coverage_report
 	@echo -e "\033[3;35mGenerating Coverage Report $(TOP)...\033[0m"
-	@cd build; $(XCRG) $(XCRG_FLAGS) -report_format html --nolog -cov_db_name work.$(TOP)
+	@cd $(BUILD); $(XCRG) $(XCRG_FLAGS) -report_format html --nolog -cov_db_name work.$(TOP)
 	@echo -e "\033[3;35mGenerated Coverage Report $(TOP)\033[0m"
-	@mv build/xsim_coverage_report/functionalCoverageReport coverage_report/$(TOP)_$(TEST)_fc
+	@mv $(BUILD)/xsim_coverage_report/functionalCoverageReport coverage_report/$(TOP)_$(TEST)_fc
 ifeq ($(CC_COV), 1)
-	@mv build/cc_report/codeCoverageReport coverage_report/$(TOP)_$(TEST)_cc
+	@mv $(BUILD)/cc_report/codeCoverageReport coverage_report/$(TOP)_$(TEST)_cc
 endif
 endif
 
@@ -316,18 +319,18 @@ endif
 # xvlog and updates the stored commit hash.
 .PHONY: RV32IMF_COMPILE
 RV32IMF_COMPILE:
-	@make -s build
+	@make -s $(BUILD)
 	@git submodule update --init --depth 1 $(RV32IMF)
-	@touch build/rv32imf_commit.txt
-	@echo "$(RV32IMF_COMMIT)" > build/current_rv32imf_commit.txt
-	@if [ -f build/rv32imf_commit.txt ] && [ -f build/current_rv32imf_commit.txt ] && \
-	     [ "$$(cat build/rv32imf_commit.txt)" = "$$(cat build/current_rv32imf_commit.txt)" ]; then \
+	@touch $(BUILD)/rv32imf_commit.txt
+	@echo "$(RV32IMF_COMMIT)" > $(BUILD)/current_rv32imf_commit.txt
+	@if [ -f $(BUILD)/rv32imf_commit.txt ] && [ -f $(BUILD)/current_rv32imf_commit.txt ] && \
+	     [ "$$(cat $(BUILD)/rv32imf_commit.txt)" = "$$(cat $(BUILD)/current_rv32imf_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/rv32imf.f $(EW_O); \
+		cd $(BUILD) && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/rv32imf.f -log $(LOG)/xvlog_rv32imf.log $(EW_O); \
 	fi
-	@echo "$(RV32IMF_COMMIT)" > build/rv32imf_commit.txt
-	@rm -f build/current_rv32imf_commit.txt
+	@echo "$(RV32IMF_COMMIT)" > $(BUILD)/rv32imf_commit.txt
+	@rm -f $(BUILD)/current_rv32imf_commit.txt
 
 ##################################################
 # S1
@@ -335,18 +338,18 @@ RV32IMF_COMPILE:
 
 .PHONY: S1_COMPILE
 S1_COMPILE:
-	@make -s build
+	@make -s $(BUILD)
 	@git submodule update --init --depth 1 $(S1)
-	@touch build/s1_commit.txt
-	@echo "$(S1_COMMIT)" > build/current_s1_commit.txt
-	@if [ -f build/s1_commit.txt ] && [ -f build/current_s1_commit.txt ] && \
-	     [ "$$(cat build/s1_commit.txt)" = "$$(cat build/current_s1_commit.txt)" ]; then \
+	@touch $(BUILD)/s1_commit.txt
+	@echo "$(S1_COMMIT)" > $(BUILD)/current_s1_commit.txt
+	@if [ -f $(BUILD)/s1_commit.txt ] && [ -f $(BUILD)/current_s1_commit.txt ] && \
+	     [ "$$(cat $(BUILD)/s1_commit.txt)" = "$$(cat $(BUILD)/current_s1_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/S1.f $(EW_O); \
+		cd $(BUILD) && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/S1.f -log $(LOG)/xvlog_s1.log $(EW_O); \
 	fi
-	@echo "$(S1_COMMIT)" > build/s1_commit.txt
-	@rm -f build/current_s1_commit.txt
+	@echo "$(S1_COMMIT)" > $(BUILD)/s1_commit.txt
+	@rm -f $(BUILD)/current_s1_commit.txt
 
 ##################################################
 # AXI
@@ -354,18 +357,18 @@ S1_COMPILE:
 
 .PHONY: AXI_COMPILE
 AXI_COMPILE:
-	@make -s build
+	@make -s $(BUILD)
 	@git submodule update --init --depth 1 $(AXI)
-	@touch build/axi_commit.txt
-	@echo "$(AXI_COMMIT)" > build/current_axi_commit.txt
-	@if [ -f build/axi_commit.txt ] && [ -f build/current_axi_commit.txt ] && \
-	     [ "$$(cat build/axi_commit.txt)" = "$$(cat build/current_axi_commit.txt)" ]; then \
+	@touch $(BUILD)/axi_commit.txt
+	@echo "$(AXI_COMMIT)" > $(BUILD)/current_axi_commit.txt
+	@if [ -f $(BUILD)/axi_commit.txt ] && [ -f $(BUILD)/current_axi_commit.txt ] && \
+	     [ "$$(cat $(BUILD)/axi_commit.txt)" = "$$(cat $(BUILD)/current_axi_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/axi.f $(EW_O); \
+		cd $(BUILD) && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/axi.f -log $(LOG)/xvlog_axi.log $(EW_O); \
 	fi
-	@echo "$(AXI_COMMIT)" > build/axi_commit.txt
-	@rm -f build/current_axi_commit.txt
+	@echo "$(AXI_COMMIT)" > $(BUILD)/axi_commit.txt
+	@rm -f $(BUILD)/current_axi_commit.txt
 
 ##################################################
 # APB
@@ -373,18 +376,18 @@ AXI_COMPILE:
 
 .PHONY: APB_COMPILE
 APB_COMPILE:
-	@make -s build
+	@make -s $(BUILD)
 	@git submodule update --init --depth 1 $(APB)
-	@touch build/apb_commit.txt
-	@echo "$(APB_COMMIT)" > build/current_apb_commit.txt
-	@if [ -f build/apb_commit.txt ] && [ -f build/current_apb_commit.txt ] && \
-	     [ "$$(cat build/apb_commit.txt)" = "$$(cat build/current_apb_commit.txt)" ]; then \
+	@touch $(BUILD)/apb_commit.txt
+	@echo "$(APB_COMMIT)" > $(BUILD)/current_apb_commit.txt
+	@if [ -f $(BUILD)/apb_commit.txt ] && [ -f $(BUILD)/current_apb_commit.txt ] && \
+	     [ "$$(cat $(BUILD)/apb_commit.txt)" = "$$(cat $(BUILD)/current_apb_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/apb.f $(EW_O); \
+		cd $(BUILD) && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/apb.f -log $(LOG)/xvlog_apb.log $(EW_O); \
 	fi
-	@echo "$(APB_COMMIT)" > build/apb_commit.txt
-	@rm -f build/current_apb_commit.txt
+	@echo "$(APB_COMMIT)" > $(BUILD)/apb_commit.txt
+	@rm -f $(BUILD)/current_apb_commit.txt
 
 ##################################################
 # COMMON CELLS
@@ -392,18 +395,18 @@ APB_COMPILE:
 
 .PHONY: COMMON_CELLS_COMPILE
 COMMON_CELLS_COMPILE:
-	@make -s build
+	@make -s $(BUILD)
 	@git submodule update --init --depth 1 $(COMMON_CELLS)
-	@touch build/common_cells_commit.txt
-	@echo "$(COMMON_CELLS_COMMIT)" > build/current_common_cells_commit.txt
-	@if [ -f build/common_cells_commit.txt ] && [ -f build/current_common_cells_commit.txt ] && \
-	     [ "$$(cat build/common_cells_commit.txt)" = "$$(cat build/current_common_cells_commit.txt)" ]; then \
+	@touch $(BUILD)/common_cells_commit.txt
+	@echo "$(COMMON_CELLS_COMMIT)" > $(BUILD)/current_common_cells_commit.txt
+	@if [ -f $(BUILD)/common_cells_commit.txt ] && [ -f $(BUILD)/current_common_cells_commit.txt ] && \
+	     [ "$$(cat $(BUILD)/common_cells_commit.txt)" = "$$(cat $(BUILD)/current_common_cells_commit.txt)" ]; then \
 		echo -n ""; \
 	else \
-		cd build && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/common_cells.f $(EW_O); \
+		cd $(BUILD) && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/common_cells.f -log $(LOG)/xvlog_common_cells.log $(EW_O); \
 	fi
-	@echo "$(COMMON_CELLS_COMMIT)" > build/common_cells_commit.txt
-	@rm -f build/current_common_cells_commit.txt
+	@echo "$(COMMON_CELLS_COMMIT)" > $(BUILD)/common_cells_commit.txt
+	@rm -f $(BUILD)/current_common_cells_commit.txt
 
 ####################################################################################################
 # RISC V
@@ -416,7 +419,7 @@ test:
 	@if [ -z "${TEST_PATH}" ]; then echo -e "\033[1;31mTest file ${TEST} not found!\033[0m"; exit 1; fi
 	@if [ $$(echo "${TEST_PATH}" | wc -w) -gt 1 ]; then echo -e "\033[1;31mMultiple test files found for ${TEST}:\n${TEST_PATH}\033[0m"; exit 1; fi
 	@echo -e "\033[3;35mCompiling test program ${TEST_PATH}...\033[0m"
-	@make -s build
+	@make -s $(BUILD)
 	@${RISCV64_GCC} -march=rv32imf -mabi=ilp32f -nostdlib -nostartfiles -T software/linkers/core.ld -o build/prog.elf software/include/startup.S software/include/uart.c ${TEST_PATH} -I software/include
 	@${RISCV64_OBJCOPY} -O verilog build/prog.elf build/prog.hex
 	@${RISCV64_NM} -n build/prog.elf > build/prog.sym

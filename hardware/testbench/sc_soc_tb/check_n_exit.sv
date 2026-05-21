@@ -38,7 +38,7 @@ end
 
 $display("Exit code: 0x%08x (%0d)", exit_code, exit_code);
 
-if (exit_code == 0) $display("\033[1;32m [PASS] %s\033[0m", test_name);
-else                $display("\033[1;31m [FAIL] %s\033[0m", test_name);
+if (exit_code == 0) $display("\033[1;32m [TEST PASSED] %s\033[0m", test_name);
+else                $display("\033[1;31m [TEST FAILED] %s\033[0m", test_name);
 
 $finish;
