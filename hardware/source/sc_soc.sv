@@ -8,7 +8,7 @@ module sc_soc
     input logic                  system_arst_ni,
     input logic                  system_clk_i,
     input logic                  core_clk_i,
-    input logic [ADDR_WIDTH-1:0] boot_addr_i,
+    input logic [ADDR_WIDTH-1:0] boot_addr_i
     input logic [DATA_WIDTH-1:0] hart_id_i,
     //---------------------------REMOVE---------------------------
 
