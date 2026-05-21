@@ -5,7 +5,7 @@ module sc_soc
   import sc_soc_pkg::*;
 (
     //---------------------------REMOVE---------------------------
-    input logic                  system_arst_ni,
+    input logic                  system_arst_ni
     input logic                  system_clk_i,
     input logic                  core_clk_i,
     input logic [ADDR_WIDTH-1:0] boot_addr_i,
