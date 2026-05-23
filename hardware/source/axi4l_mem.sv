@@ -234,15 +234,11 @@ module axi4l_mem #(
       .axi4l_req_i(axi4l_req),
       .axi4l_resp_o(axi4l_rsp),
       .waddr_o   (mem_waddr),
-      .wnsecure_o(),
       .wdata_o   (mem_wdata),
       .wstrb_o   (mem_wstrb),
       .wenable_o (mem_wenable),
-      .werror_i  (1'b0),
       .raddr_o   (mem_raddr),
-      .rnsecure_o(),
-      .rdata_i   (mem_rdata),
-      .rerror_i  (1'b0)
+      .rdata_i   (mem_rdata)
   );
 
   // Dual-port memory: separate write and read ports allow simultaneous
