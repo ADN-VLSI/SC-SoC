@@ -17,7 +17,7 @@
 - Fully combinational — zero-latency, no clock required
 - Single-cycle write transactions (AW + W + B channels all handshake in one cycle)
 - Single-cycle read transactions (AR + R channels handshake in one cycle)
-- Protection-bit access control: unprivileged non-secure accesses (`prot[1:0] == 2'b00`) return **OKAY**; all others return **SLVERR** with write suppression and zeroed read data
+- Protection-bit access control: accesses with `prot[1:0] == 2'b00` return **OKAY** unless the memory interface reports an error; all other cases return **SLVERR**
 
 ---
 
@@ -28,7 +28,7 @@
 | `axi4l_req_t` | type         | `defaults_pkg::axi4l_req_t`  | AXI4-Lite request struct type (packed)             |
 | `axi4l_rsp_t` | type         | `defaults_pkg::axi4l_rsp_t`  | AXI4-Lite response struct type (packed)            |
 | `ADDR_WIDTH`  | int           | 32                           | Width of the address bus in bits                   |
-| `DATA_WIDTH`  | int           | 64                           | Width of the data bus in bits                      |
+| `DATA_WIDTH`  | int           | 32                           | Width of the data bus in bits                   |
 
 ---
 
@@ -46,16 +46,20 @@
 | Name        | Direction | Width            | Description                                          |
 | ----------- | --------- | ---------------- | ---------------------------------------------------- |
 | `waddr_o`   | output    | `ADDR_WIDTH`     | Write address to memory                              |
+| `wnsecure_o`| output    | 1                | Mirrors `aw.prot[1]` onto the memory interface       |
 | `wdata_o`   | output    | `DATA_WIDTH`     | Write data to memory                                 |
 | `wstrb_o`   | output    | `DATA_WIDTH/8`   | Byte write strobe (1 bit per byte)                   |
 | `wenable_o` | output    | 1                | Write enable; asserted only on permitted transactions |
+| `werror_i`  | input     | 1                | Memory-side write error; returns `SLVERR` when high  |
 
 ### Memory Read Interface
 
 | Name      | Direction | Width        | Description              |
 | --------- | --------- | ------------ | ------------------------ |
 | `raddr_o` | output    | `ADDR_WIDTH` | Read address to memory   |
+| `rnsecure_o`| output  | 1            | Mirrors `ar.prot[1]` onto the memory interface |
 | `rdata_i` | input     | `DATA_WIDTH` | Read data from memory    |
+| `rerror_i`| input     | 1            | Memory-side read error; returns `SLVERR` when high |
 
 ---
 
@@ -109,9 +113,10 @@ do_write = aw_valid & w_valid & b_ready
 | `aw_ready`    | Driven by `do_write`                                           |
 | `w_ready`     | Driven by `do_write`                                           |
 | `b_valid`     | Driven by `do_write`                                           |
-| `b.resp`      | `OKAY (2'b00)` when `aw.prot[1:0] == 2'b00`, else `SLVERR (2'b11)` |
-| `wenable_o`   | Asserted only when `do_write` is high **and** `b.resp == OKAY` |
+| `b.resp`      | `OKAY (2'b00)` when `aw.prot[1:0] == 2'b00` and `werror_i == 0`, else `SLVERR (2'b11)` |
+| `wenable_o`   | Asserted only when `do_write` is high **and** `aw.prot[1:0] == 2'b00` |
 | `waddr_o`     | Combinationally wired from `aw.addr`                           |
+| `wnsecure_o`  | Combinationally wired from `aw.prot[1]`                        |
 | `wdata_o`     | Combinationally wired from `w.data`                            |
 | `wstrb_o`     | Combinationally wired from `w.strb`                            |
 
@@ -129,20 +134,21 @@ ar_ready = r_ready
 | ---------- | -------------------------------------------------------------- |
 | `ar_ready` | Driven directly by `r_ready`                                   |
 | `r_valid`  | Driven directly by `ar_valid`                                  |
-| `r.resp`   | `OKAY (2'b00)` when `ar.prot[1:0] == 2'b00`, else `SLVERR (2'b11)` |
+| `r.resp`   | `OKAY (2'b00)` when `ar.prot[1:0] == 2'b00` and `rerror_i == 0`, else `SLVERR (2'b11)` |
 | `r.data`   | Forwarded from `rdata_i` on OKAY; `'0` on SLVERR (prevents data leakage) |
 | `raddr_o`  | Combinationally wired from `ar.addr`                           |
+| `rnsecure_o`| Combinationally wired from `ar.prot[1]`                       |
 
 > **Note:** `r_valid` is asserted the same cycle as `ar_valid`, relying on the connected memory to present valid read data within the same clock cycle.
 
 ### Protection Policy
 
-Both paths enforce the same rule using `prot[1:0]`:
+Both paths enforce the same rule using `prot[1:0]`, and also convert memory-side errors into AXI `SLVERR` responses:
 
-| `prot[1:0]` | Privilege | Security  | Result  |
-| ----------- | --------- | --------- | ------- |
-| `2'b00`     | Unprivileged | Non-secure | **OKAY** — access permitted |
-| Any other   | Privileged or Secure | — | **SLVERR** — access denied; write suppressed, read data zeroed |
+| Condition | Result |
+| --------- | ------ |
+| `prot[1:0] == 2'b00` and memory error input low | **OKAY** — access permitted |
+| Any other case | **SLVERR** — access denied or downstream memory reported an error |
 
 ---
 
@@ -198,10 +204,14 @@ axi4l_mem_ctrlr #(
     .axi4l_req_i (axi4l_req),
     .axi4l_rsp_o (axi4l_rsp),
     .waddr_o     (mem_waddr),
+    .wnsecure_o  (mem_wnsecure),
     .wdata_o     (mem_wdata),
     .wstrb_o     (mem_wstrb),
     .wenable_o   (mem_we),
+    .werror_i    (mem_werror),
     .raddr_o     (mem_raddr),
-    .rdata_i     (mem_rdata)
+    .rnsecure_o  (mem_rnsecure),
+    .rdata_i     (mem_rdata),
+    .rerror_i    (mem_rerror)
 );
 ```

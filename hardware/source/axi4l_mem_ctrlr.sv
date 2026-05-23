@@ -7,9 +7,9 @@
 //   Write path:
 //     A write is accepted when all three write channels (AW, W, B) can complete
 //     simultaneously (do_write). The AXI protection bits are used to decide
-//     whether the access is permitted; unprivileged non-secure accesses
-//     (aw_prot[1:0] == 2'b00) receive OKAY, all others receive SLVERR and
-//     the memory write-enable is suppressed.
+//     whether the access is permitted; accesses with aw_prot[1:0] == 2'b00
+//     receive OKAY unless the memory interface reports an error, while all
+//     other accesses receive SLVERR and the memory write-enable is suppressed.
 //
 //   Read path:
 //     A read address is accepted whenever the read-data channel is free
@@ -26,7 +26,7 @@ module axi4l_mem_ctrlr #(
     parameter type axi4l_req_t = defaults_pkg::axi4l_req_t,
     parameter type axi4l_resp_t = defaults_pkg::axi4l_resp_t,
     parameter int  ADDR_WIDTH  = 32,
-    parameter int  DATA_WIDTH  = 64
+    parameter int  DATA_WIDTH  = 32
 ) (
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,13 +42,17 @@ module axi4l_mem_ctrlr #(
 
     // Write interface
     output logic [  ADDR_WIDTH-1:0] waddr_o,
+    output logic                    wnsecure_o,
     output logic [  DATA_WIDTH-1:0] wdata_o,
     output logic [DATA_WIDTH/8-1:0] wstrb_o,
     output logic                    wenable_o,
+    input  logic                    werror_i,
 
     // Read interface
     output logic [ADDR_WIDTH-1:0] raddr_o,
-    input  logic [DATA_WIDTH-1:0] rdata_i
+    output logic                   rnsecure_o,
+    input  logic [DATA_WIDTH-1:0]  rdata_i,
+    input  logic                   rerror_i
 );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,23 +81,25 @@ module axi4l_mem_ctrlr #(
   // Drive BVALID alongside BREADY so the handshake completes in one cycle.
   always_comb axi4l_resp_o.b_valid = do_write;
 
-  // Access permission check: only unprivileged non-secure accesses
-  // (aw_prot[1:0] == 2'b00) are allowed; anything else returns SLVERR (2'b11).
+  // Access permission check: only accesses with prot[1:0] == 2'b00 are allowed;
+  // anything else returns SLVERR (2'b11).
   always_comb begin
     axi4l_resp_o.b.resp = 2'b11;  // default: SLVERR
-    if (axi4l_req_i.aw.prot[1:0] == 2'b00) begin
+    if ((axi4l_req_i.aw.prot[1:0] == 2'b00) && !werror_i) begin
       axi4l_resp_o.b.resp = 2'b00;  // OKAY
     end
   end
 
-  // Pass write address, data, and strobe directly to the memory.
+  // Pass write address, security attribute, data, and strobe directly to the memory.
   always_comb waddr_o = axi4l_req_i.aw.addr;
+  always_comb wnsecure_o = axi4l_req_i.aw.prot[1];
   always_comb wdata_o = axi4l_req_i.w.data;
   always_comb wstrb_o = axi4l_req_i.w.strb;
 
-  // Only drive the memory write-enable when the transaction is valid AND the
-  // response is OKAY — suppresses writes for rejected (SLVERR) accesses.
-  always_comb wenable_o = do_write && (axi4l_resp_o.b.resp == 2'b00);
+  // Only drive the memory write-enable when the transaction is valid and the
+  // protection check passes — suppresses writes for rejected accesses while
+  // still allowing the downstream memory interface to report write errors.
+  always_comb wenable_o = do_write && (axi4l_req_i.aw.prot[1:0] == 2'b00);
 
   // --- Read path ------------------------------------------------------------
 
@@ -106,16 +112,18 @@ module axi4l_mem_ctrlr #(
   always_comb raddr_o = axi4l_req_i.ar.addr;
 
   // Access permission check: mirrors the write-side policy.
-  // On a protected access, return SLVERR and zero data rather than
+  // On a rejected access or memory error, return SLVERR and zero data rather than
   // leaking memory contents.
   always_comb begin
     axi4l_resp_o.r.resp = 2'b11;  // default: SLVERR
     axi4l_resp_o.r.data = '0;  // default: zero (prevent data leak on rejected reads)
-    if (axi4l_req_i.ar.prot[1:0] == 2'b00) begin
+    if ((axi4l_req_i.ar.prot[1:0] == 2'b00) && !rerror_i) begin
       axi4l_resp_o.r.resp = 2'b00;  // OKAY
       axi4l_resp_o.r.data = rdata_i;  // forward memory read data
     end
   end
+
+  always_comb rnsecure_o = axi4l_req_i.ar.prot[1];
 
   // Assert RVALID combinationally with ARVALID — relies on the downstream
   // memory presenting valid data within the same clock cycle.
