@@ -26,10 +26,7 @@ module axi4l_ctrl_regif
     input  logic [31:0] gpio_in_i,
     output logic [31:0] gpio_out_o,
     output logic [31:0] gpio_dir_o,
-    output logic [31:0] gpio_pull_o,
-
-    output logic [31:0] tohost_o,
-    output logic [31:0] fromhost_o
+    output logic [31:0] gpio_pull_o
 );
 
   // ---------------------------------------------------------------------------
@@ -42,7 +39,7 @@ module axi4l_ctrl_regif
   axi4l_fifo #(
       .axi4l_req_t (axil_req_t),
       .axi4l_resp_t(axil_resp_t),
-      .ADDR_WIDTH  (32),
+      .ADDR_WIDTH  (8),
       .DATA_WIDTH  (32),
       .FIFO_SIZE   (2)
   ) u_axi4l_fifo (
@@ -58,12 +55,12 @@ module axi4l_ctrl_regif
   // AXI4-Lite to local memory-interface bridge
   // ---------------------------------------------------------------------------
 
-  logic       [31:0] mem_waddr;
+  logic       [ 7:0] mem_waddr;
   logic       [31:0] mem_wdata;
   logic       [ 3:0] mem_wstrb;
   logic              mem_wenable;
   logic              mem_werror;
-  logic       [31:0] mem_raddr;
+  logic       [ 7:0] mem_raddr;
   logic       [31:0] mem_rdata;
   logic              mem_rerror;
   logic              mem_read_active;
@@ -75,7 +72,7 @@ module axi4l_ctrl_regif
   axi4l_to_memif #(
       .axi4l_req_t (axil_req_t),
       .axi4l_resp_t(axil_resp_t),
-      .ADDR_WIDTH  (32),
+      .ADDR_WIDTH  (8),
       .DATA_WIDTH  (32)
   ) u_axi4l_to_memif (
       .axi4l_req_i (fifo_req),
@@ -138,8 +135,6 @@ module axi4l_ctrl_regif
   assign core_hart_id_o   = core_hart_id_q;
   assign core_rst_en_o    = core_clk_rst_q[0];
   assign core_clk_en_o    = core_clk_rst_q[1];
-  assign tohost_o         = tohost_q;
-  assign fromhost_o       = fromhost_q;
   assign gpio_out_o       = gpio_out_q;
   assign gpio_dir_o       = gpio_dir_q;
   assign gpio_pull_o      = gpio_pull_q;

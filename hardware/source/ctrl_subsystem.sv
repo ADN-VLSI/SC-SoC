@@ -22,12 +22,13 @@ module ctrl_subsystem (
   logic [ 4:0] pll_ref_div;
   logic [13:0] pll_fb_div;
 
-  assign pll_ref_div = 16;
-  assign pll_fb_div  = 100;
-
   logic pll_clk_o;
   logic pll_locked;
+  logic core_rst_en;
   logic core_clk_en;
+
+  always_comb system_arst_no = glob_arst_ni;
+  always_comb core_arst_no   = glob_arst_ni & (~core_rst_en);
 
   axi4l_ctrl_regif #(
       .axil_req_t (ctrl_pkg::ctrl_axil_req_t),
@@ -39,7 +40,7 @@ module ctrl_subsystem (
       .resp_o(resp_o),
       .core_boot_addr_o(boot_addr_o),
       .core_hart_id_o(hart_id_o),
-      .core_rst_en_o(core_arst_no),
+      .core_rst_en_o(core_rst_en),
       .core_clk_en_o(core_clk_en),
       .pll_ref_div_o(pll_ref_div),
       .pll_fb_div_o(pll_fb_div),
@@ -47,9 +48,7 @@ module ctrl_subsystem (
       .gpio_in_i(),  // TODO
       .gpio_out_o(),  // TODO
       .gpio_dir_o(),  // TODO
-      .gpio_pull_o(),  // TODO
-      .tohost_o(),
-      .fromhost_o()
+      .gpio_pull_o()  // TODO
   );
 
   pll #(
@@ -79,37 +78,3 @@ module ctrl_subsystem (
   );
 
 endmodule
-
-/*
-
-module axi4l_ctrl_regif
-  import ctrl_pkg::*;
-#(
-    parameter type axil_req_t  = logic,
-    parameter type axil_resp_t = logic
-) (
-    input logic clk_i,
-    input logic arst_ni,
-
-    input  axil_req_t  req_i,
-    output axil_resp_t resp_o,
-
-    output logic [31:0] core_boot_addr_o,
-    output logic [31:0] core_hart_id_o,
-    output logic        core_rst_en_o,
-    output logic        core_clk_en_o,
-
-    output logic [ 4:0] pll_ref_div_o,
-    output logic [13:0] pll_fb_div_o,
-
-    input logic bootmode_i,
-
-    input  logic [31:0] gpio_in_i,
-    output logic [31:0] gpio_out_o,
-    output logic [31:0] gpio_dir_o,
-    output logic [31:0] gpio_pull_o,
-
-    output logic [31:0] tohost_o,
-    output logic [31:0] fromhost_o
-);
-*/
