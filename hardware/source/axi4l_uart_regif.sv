@@ -79,8 +79,19 @@ module axi4l_uart_regif
   // INTERNAL SIGNALS
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  logic     wr_en;
-  logic     rd_en;
+  logic [5:0] mem_waddr;
+  logic [31:0] mem_wdata;
+  logic [3:0] mem_wstrb;
+  logic mem_wenable;
+  logic mem_werror;
+  logic [5:0] mem_raddr;
+  logic [31:0] mem_rdata;
+  logic mem_rerror;
+  logic mem_write_ok;
+  logic mem_read_active;
+  (* unused = "true" *) logic mem_wnsecure_unused;
+  (* unused = "true" *) logic mem_rnsecure_unused;
+  uart_axil_resp_t mem_resp;
 
   uart_id_t tx_id_in;
   logic     tx_id_in_valid;
@@ -97,114 +108,129 @@ module axi4l_uart_regif
   logic     rx_id_out_ready;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // WRITE / READ FIRE — combinational
+  // AXI4-Lite to local memory-interface bridge
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
+  axi4l_to_memif #(
+      .axi4l_req_t (uart_axil_req_t),
+      .axi4l_resp_t(uart_axil_resp_t),
+      .ADDR_WIDTH  (6),
+      .DATA_WIDTH  (32)
+  ) u_axi4l_to_memif (
+      .axi4l_req_i (fifo_req),
+      .axi4l_resp_o(mem_resp),
+      .waddr_o     (mem_waddr),
+      .wnsecure_o  (mem_wnsecure_unused),
+      .wdata_o     (mem_wdata),
+      .wstrb_o     (mem_wstrb),
+      .wenable_o   (mem_wenable),
+      .werror_i    (mem_werror),
+      .raddr_o     (mem_raddr),
+      .rnsecure_o  (mem_rnsecure_unused),
+      .rdata_i     (mem_rdata),
+      .rerror_i    (mem_rerror)
+  );
+
+  // Keep legacy SLVERR encoding (2'b10) at this block boundary.
   always_comb begin
-    wr_en              = fifo_req.aw_valid && fifo_req.w_valid && fifo_req.b_ready;
-    fifo_resp.aw_ready = wr_en;
-    fifo_resp.w_ready  = wr_en;
-    fifo_resp.b_valid  = wr_en;
+    fifo_resp        = mem_resp;
+    fifo_resp.b.resp = (mem_resp.b.resp == 2'b11) ? 2'b10 : mem_resp.b.resp;
+    fifo_resp.r.resp = (mem_resp.r.resp == 2'b11) ? 2'b10 : mem_resp.r.resp;
   end
 
-  always_comb begin
-    rd_en              = fifo_req.ar_valid && fifo_req.r_ready;
-    fifo_resp.ar_ready = rd_en;
-    fifo_resp.r_valid  = rd_en;
-  end
 
-
-  always_comb tx_data_o = fifo_req.w.data;
-  always_comb tx_id_in = fifo_req.w.data;
-  always_comb rx_id_in = fifo_req.w.data;
+  always_comb tx_data_o = mem_wdata;
+  always_comb tx_id_in  = mem_wdata;
+  always_comb rx_id_in  = mem_wdata;
+  always_comb mem_read_active = mem_resp.r_valid && mem_resp.ar_ready;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // READ DATA MUX — combinational
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
-    fifo_resp.r.data = '0;
-    fifo_resp.r.resp = 2'b10;  // default SLVERR
+    mem_rdata      = '0;
+    mem_rerror     = 1'b1;
     rx_data_ready_o  = 1'b0;
     tx_id_out_ready  = 1'b0;
     rx_id_out_ready  = 1'b0;
 
-    if (rd_en) begin
-      case (fifo_req.ar.addr)
+    if (mem_read_active) begin
+      case (mem_raddr)
 
         UART_CTRL_OFFSET: begin
-          fifo_resp.r.data = uart_ctrl_o;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = uart_ctrl_o;
+          mem_rerror = 1'b0;
         end
 
         UART_CFG_OFFSET: begin
-          fifo_resp.r.data = uart_cfg_o;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = uart_cfg_o;
+          mem_rerror = 1'b0;
         end
 
         UART_STAT_OFFSET: begin
-          fifo_resp.r.data = uart_stat_o;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = uart_stat_o;
+          mem_rerror = 1'b0;
         end
 
         UART_TXR_OFFSET: begin
-          fifo_resp.r.data = '0;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = '0;
+          mem_rerror = 1'b0;
         end
 
         UART_TXGP_OFFSET: begin
           if (tx_id_out_valid) begin
-            fifo_resp.r.data = {'0, tx_id_out};  // 8-bit ID → 32-bit
-            fifo_resp.r.resp = 2'b00;
+            mem_rdata  = {'0, tx_id_out};  // 8-bit ID → 32-bit
+            mem_rerror = 1'b0;
             // tx_id_out_ready stays 0 — peek, no pop
           end
         end
 
         UART_TXG_OFFSET: begin
           if (tx_id_out_valid) begin
-            fifo_resp.r.data = {'0, tx_id_out};
-            fifo_resp.r.resp = 2'b00;
+            mem_rdata = {'0, tx_id_out};
+            mem_rerror = 1'b0;
             tx_id_out_ready  = '1;  // consuming read — pop TXQ
           end
         end
 
         UART_TXD_OFFSET: begin
-          fifo_resp.r.data = '0;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = '0;
+          mem_rerror = 1'b0;
         end
 
         UART_RXR_OFFSET: begin
-          fifo_resp.r.data = '0;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = '0;
+          mem_rerror = 1'b0;
         end
 
         UART_RXGP_OFFSET: begin
           if (rx_id_out_valid) begin
-            fifo_resp.r.data = {'0, rx_id_out};
-            fifo_resp.r.resp = 2'b00;
+            mem_rdata  = {'0, rx_id_out};
+            mem_rerror = 1'b0;
             // rx_id_out_ready stays 0 — peek, no pop
           end
         end
 
         UART_RXG_OFFSET: begin
           if (rx_id_out_valid) begin
-            fifo_resp.r.data = {'0, rx_id_out};
-            fifo_resp.r.resp = 2'b00;
+            mem_rdata = {'0, rx_id_out};
+            mem_rerror = 1'b0;
             rx_id_out_ready  = '1;  // consuming read — pop RXQ
           end
         end
 
         UART_RXD_OFFSET: begin
           if (rx_data_valid_i) begin
-            fifo_resp.r.data = {'0, rx_data_i};  // 8-bit byte → 32-bit
-            fifo_resp.r.resp = 2'b00;
+            mem_rdata = {'0, rx_data_i};  // 8-bit byte → 32-bit
+            mem_rerror = 1'b0;
             rx_data_ready_o  = '1;  // pop RX CDC FIFO
           end
         end
 
         UART_INT_EN_OFFSET: begin
-          fifo_resp.r.data = uart_int_en_o;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = uart_int_en_o;
+          mem_rerror = 1'b0;
         end
 
         default: begin
@@ -215,50 +241,52 @@ module axi4l_uart_regif
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // WRITE RESPONSE + WO PULSES — combinational
+  // WRITE ERROR + WO PULSES — combinational
   // strb must be 4'b1111 — partial writes rejected
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   always_comb begin
-    fifo_resp.b.resp = 2'b10;  // default SLVERR
+    mem_werror      = 1'b1;
     tx_data_valid_o  = 1'b0;
     tx_id_in_valid   = 1'b0;
     rx_id_in_valid   = 1'b0;
 
-    if (fifo_req.w.strb == 4'b1111 && wr_en) begin
-      case (fifo_req.aw.addr)
+    // axi4l_to_memif intentionally does not enforce byte strobe policy.
+    // This register interface requires full-word writes only.
+    if (mem_wstrb == 4'b1111 && mem_wenable) begin
+      case (mem_waddr)
 
         UART_CTRL_OFFSET: begin
-          fifo_resp.b.resp = 2'b00;
+          mem_werror = 1'b0;
         end
 
         UART_CFG_OFFSET: begin
-          if (tx_data_cnt_i == '0 && rx_data_cnt_i == '0) fifo_resp.b.resp = 2'b00;
+          if (tx_data_cnt_i == '0 && rx_data_cnt_i == '0) mem_werror = 1'b0;
         end
 
         UART_TXR_OFFSET: begin
           if (tx_id_in_ready) begin
-            fifo_resp.b.resp = 2'b00;
+            mem_werror      = 1'b0;
             tx_id_in_valid   = '1;
           end
         end
 
         UART_TXD_OFFSET: begin
           if (tx_data_ready_i) begin
-            fifo_resp.b.resp = 2'b00;
+            mem_werror      = 1'b0;
             tx_data_valid_o  = '1;
           end
         end
 
         UART_RXR_OFFSET: begin
           if (rx_id_in_ready) begin
-            fifo_resp.b.resp = 2'b00;
+            mem_werror      = 1'b0;
             rx_id_in_valid   = '1;
           end
         end
 
         UART_INT_EN_OFFSET: begin
-          fifo_resp.b.resp = 2'b00;
+          mem_werror = 1'b0;
         end
 
         default: begin
@@ -267,6 +295,8 @@ module axi4l_uart_regif
       endcase
     end
   end
+
+  always_comb mem_write_ok = mem_wenable && !mem_werror;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // SEQUENTIAL — CTRL CFG INT registers
@@ -278,11 +308,11 @@ module axi4l_uart_regif
       uart_ctrl_o   <= '0;
       uart_cfg_o    <= 32'h0003_405B;
       uart_int_en_o <= '0;
-    end else if (fifo_resp.b.resp == 2'b00) begin
-      case (fifo_req.aw.addr)
-        UART_CTRL_OFFSET: uart_ctrl_o <= fifo_req.w.data;
-        UART_CFG_OFFSET: uart_cfg_o <= fifo_req.w.data;
-        UART_INT_EN_OFFSET: uart_int_en_o <= fifo_req.w.data;
+    end else if (mem_write_ok) begin
+      case (mem_waddr)
+        UART_CTRL_OFFSET: uart_ctrl_o <= mem_wdata;
+        UART_CFG_OFFSET: uart_cfg_o <= mem_wdata;
+        UART_INT_EN_OFFSET: uart_int_en_o <= mem_wdata;
         default: begin
         end
       endcase

@@ -74,6 +74,7 @@ module axi4l_uart_regif (
   - `uart_axil_req_t`
   - `uart_axil_rsp_t`
 - Each AXI channel (**AW, W, AR, B, R**) is buffered using FIFOs (`axi4l_fifo`)
+- AXI-to-local memory-style handshake/permission mapping is centralized through `axi4l_to_memif`
 - Handshake follows AXI4-Lite protocol semantics
 
 ---

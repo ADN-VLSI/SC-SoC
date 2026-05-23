@@ -53,24 +53,51 @@ module axi4l_ctrl_regif
   );
 
   // ---------------------------------------------------------------------------
-  // Channel enable signals
+  // AXI4-Lite to local memory-interface bridge
   // ---------------------------------------------------------------------------
 
-  logic wr_en;
-  logic rd_en;
+  logic [31:0] mem_waddr;
+  logic [31:0] mem_wdata;
+  logic [ 3:0] mem_wstrb;
+  logic        mem_wenable;
+  logic        mem_werror;
+  logic [31:0] mem_raddr;
+  logic [31:0] mem_rdata;
+  logic        mem_rerror;
+  logic        mem_read_active;
+  logic        mem_write_ok;
+  (* unused = "true" *) logic mem_wnsecure_unused;
+  (* unused = "true" *) logic mem_rnsecure_unused;
+  axil_resp_t  mem_resp;
 
+  axi4l_to_memif #(
+      .axi4l_req_t (axil_req_t),
+      .axi4l_resp_t(axil_resp_t),
+      .ADDR_WIDTH  (32),
+      .DATA_WIDTH  (32)
+  ) u_axi4l_to_memif (
+      .axi4l_req_i (fifo_req),
+      .axi4l_resp_o(mem_resp),
+      .waddr_o     (mem_waddr),
+      .wnsecure_o  (mem_wnsecure_unused),
+      .wdata_o     (mem_wdata),
+      .wstrb_o     (mem_wstrb),
+      .wenable_o   (mem_wenable),
+      .werror_i    (mem_werror),
+      .raddr_o     (mem_raddr),
+      .rnsecure_o  (mem_rnsecure_unused),
+      .rdata_i     (mem_rdata),
+      .rerror_i    (mem_rerror)
+  );
+
+  // Keep legacy SLVERR encoding (2'b10) at this block boundary.
   always_comb begin
-    wr_en              = fifo_req.aw_valid && fifo_req.w_valid && fifo_req.b_ready;
-    fifo_resp.aw_ready = wr_en;
-    fifo_resp.w_ready  = wr_en;
-    fifo_resp.b_valid  = wr_en;
+    fifo_resp          = mem_resp;
+    fifo_resp.b.resp   = (mem_resp.b.resp == 2'b11) ? 2'b10 : mem_resp.b.resp;
+    fifo_resp.r.resp   = (mem_resp.r.resp == 2'b11) ? 2'b10 : mem_resp.r.resp;
   end
 
-  always_comb begin
-    rd_en              = fifo_req.ar_valid && fifo_req.r_ready;
-    fifo_resp.ar_ready = rd_en;
-    fifo_resp.r_valid  = rd_en;
-  end
+  always_comb mem_read_active = mem_resp.r_valid && mem_resp.ar_ready;
 
   // ---------------------------------------------------------------------------
   // GPIO_IN two-stage synchronizer
@@ -131,31 +158,28 @@ module axi4l_ctrl_regif
       gpio_out_q       <= 32'h0000_0000;
       gpio_dir_q       <= 32'h0000_0000;
       gpio_pull_q      <= 32'h0000_0000;
-    end else if (fifo_resp.b.resp == 2'b00) begin
-      case (fifo_req.aw.addr)
-        CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= fifo_req.w.data;
-        CTRL_CORE_HART_ID_OFFSET:   core_hart_id_q <= fifo_req.w.data;
-        CTRL_CORE_CLK_RST_OFFSET:   core_clk_rst_q <= {30'b0, fifo_req.w.data[1:0]};
-        CTRL_TOHOST_OFFSET:         tohost_q <= fifo_req.w.data;
-        CTRL_FROMHOST_OFFSET:       fromhost_q <= fifo_req.w.data;
-        CTRL_GPIO_OUT_OFFSET:       gpio_out_q <= fifo_req.w.data;
-        CTRL_GPIO_DIR_OFFSET:       gpio_dir_q <= fifo_req.w.data;
-        CTRL_GPIO_PULL_OFFSET:      gpio_pull_q <= fifo_req.w.data;
+    end else if (mem_write_ok) begin
+      case (mem_waddr)
+        CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= mem_wdata;
+        CTRL_CORE_HART_ID_OFFSET:   core_hart_id_q <= mem_wdata;
+        CTRL_CORE_CLK_RST_OFFSET:   core_clk_rst_q <= {30'b0, mem_wdata[1:0]};
+        CTRL_TOHOST_OFFSET:         tohost_q <= mem_wdata;
+        CTRL_FROMHOST_OFFSET:       fromhost_q <= mem_wdata;
+        CTRL_GPIO_OUT_OFFSET:       gpio_out_q <= mem_wdata;
+        CTRL_GPIO_DIR_OFFSET:       gpio_dir_q <= mem_wdata;
+        CTRL_GPIO_PULL_OFFSET:      gpio_pull_q <= mem_wdata;
         default: begin
         end
       endcase
     end
   end
 
-  // ---------------------------------------------------------------------------
-  // Write response logic
-  // ---------------------------------------------------------------------------
-
   always_comb begin
-    fifo_resp.b.resp = 2'b10;  // SLVERR by default
-
-    if (wr_en && fifo_req.w.strb == 4'b1111 && fifo_req.aw.prot[1] == 0) begin
-      case (fifo_req.aw.addr)
+    mem_werror = 1'b1;
+    // axi4l_to_memif intentionally does not enforce byte strobe policy.
+    // Control registers in this block only accept full-word writes.
+    if (mem_wstrb == 4'b1111) begin
+      case (mem_waddr)
         CTRL_CORE_BOOT_ADDR_OFFSET,
             CTRL_CORE_HART_ID_OFFSET,
             CTRL_CORE_CLK_RST_OFFSET,
@@ -164,88 +188,91 @@ module axi4l_ctrl_regif
             CTRL_GPIO_OUT_OFFSET,
             CTRL_GPIO_DIR_OFFSET,
             CTRL_GPIO_PULL_OFFSET:
-        fifo_resp.b.resp = 2'b00;  // OKAY
-        default: fifo_resp.b.resp = 2'b10;  // SLVERR
+        mem_werror = 1'b0;
+        default: begin
+        end
       endcase
     end
   end
 
+  always_comb mem_write_ok = mem_wenable && !mem_werror;
+
   // ---------------------------------------------------------------------------
-  // Read mux logic
+  // Read mux/error logic
   // ---------------------------------------------------------------------------
 
   always_comb begin
-    fifo_resp.r.data = 32'h0000_0000;
-    fifo_resp.r.resp = 2'b10;  // SLVERR by default
+    mem_rdata  = 32'h0000_0000;
+    mem_rerror = 1'b1;
 
-    if (rd_en && fifo_req.ar.prot[1] == 0) begin
-      case (fifo_req.ar.addr)
+    if (mem_read_active) begin
+      case (mem_raddr)
         CTRL_SOC_ID_OFFSET: begin
-          fifo_resp.r.data = CTRL_SOC_ID_RESET;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = CTRL_SOC_ID_RESET;
+          mem_rerror = 1'b0;
         end
 
         CTRL_REV_ID_OFFSET: begin
-          fifo_resp.r.data = CTRL_REV_ID_RESET;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = CTRL_REV_ID_RESET;
+          mem_rerror = 1'b0;
         end
 
         CTRL_CORE_BOOT_ADDR_OFFSET: begin
-          fifo_resp.r.data = core_boot_addr_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = core_boot_addr_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_CORE_HART_ID_OFFSET: begin
-          fifo_resp.r.data = core_hart_id_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = core_hart_id_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_CORE_CLK_RST_OFFSET: begin
-          fifo_resp.r.data = core_clk_rst_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = core_clk_rst_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_PLL_CFG_OFFSET: begin
           // PLL_CFG is a read-only constant; no writable fields.
-          fifo_resp.r.data = CTRL_PLL_CFG_RESET;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = CTRL_PLL_CFG_RESET;
+          mem_rerror = 1'b0;
         end
 
         CTRL_TOHOST_OFFSET: begin
-          fifo_resp.r.data = tohost_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = tohost_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_FROMHOST_OFFSET: begin
-          fifo_resp.r.data = fromhost_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = fromhost_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_BOOTMODE_OFFSET: begin
-          fifo_resp.r.data = {31'b0, bootmode_i};
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = {31'b0, bootmode_i};
+          mem_rerror = 1'b0;
         end
 
         CTRL_GPIO_IN_OFFSET: begin
           // gpio_in_sync_q is the output of the two-stage synchronizer;
           // gpio_in_i must never be read directly from this domain.
-          fifo_resp.r.data = gpio_in_sync_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = gpio_in_sync_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_GPIO_OUT_OFFSET: begin
-          fifo_resp.r.data = gpio_out_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = gpio_out_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_GPIO_DIR_OFFSET: begin
-          fifo_resp.r.data = gpio_dir_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = gpio_dir_q;
+          mem_rerror = 1'b0;
         end
 
         CTRL_GPIO_PULL_OFFSET: begin
-          fifo_resp.r.data = gpio_pull_q;
-          fifo_resp.r.resp = 2'b00;
+          mem_rdata  = gpio_pull_q;
+          mem_rerror = 1'b0;
         end
 
         default: begin
