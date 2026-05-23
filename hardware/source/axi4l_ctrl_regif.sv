@@ -1,6 +1,3 @@
-`include "package/sc_soc_pkg.sv"
-`include "package/ctrl_reg_pkg.sv"
-
 module axi4l_ctrl_regif
   import sc_soc_pkg::*;
   import ctrl_reg_pkg::*;
@@ -24,8 +21,12 @@ module axi4l_ctrl_regif
     output logic [31:0] gpio_pull_o,
 
     output logic [31:0] tohost_o,
-    output logic [31:0] fromhost_o     // Software-written register; exposed to SoC fabric.
+    output logic [31:0] fromhost_o
 );
+
+// ---------------------------------------------------------------------------
+// AXI4-Lite FIFO (decouples slave handshake from register logic)
+// ---------------------------------------------------------------------------
 
 axil_req_t  fifo_req;
 axil_resp_t fifo_resp;
@@ -66,6 +67,26 @@ always_comb begin
 end
 
 // ---------------------------------------------------------------------------
+// GPIO_IN two-stage synchronizer
+// gpio_in_i arrives from asynchronous pad logic. Two capture flops clocked
+// by clk_i reduce metastability probability to a safe level before the value
+// is read back through the AXI register interface.
+// ---------------------------------------------------------------------------
+
+(* ASYNC_REG = "TRUE" *) logic [31:0] gpio_in_meta_q;
+(* ASYNC_REG = "TRUE" *) logic [31:0] gpio_in_sync_q;
+
+always_ff @(posedge clk_i or negedge arst_ni) begin
+    if (!arst_ni) begin
+        gpio_in_meta_q <= 32'h0000_0000;
+        gpio_in_sync_q <= 32'h0000_0000;
+    end else begin
+        gpio_in_meta_q <= gpio_in_i;
+        gpio_in_sync_q <= gpio_in_meta_q;
+    end
+end
+
+// ---------------------------------------------------------------------------
 // Register storage
 // ---------------------------------------------------------------------------
 
@@ -73,7 +94,7 @@ logic [31:0] core_boot_addr_q;
 logic [31:0] core_hart_id_q;
 logic [31:0] core_clk_rst_q;
 logic [31:0] tohost_q;
-logic [31:0] fromhost_q;    // RW per register map; host path reads this value.
+logic [31:0] fromhost_q;
 logic [31:0] gpio_out_q;
 logic [31:0] gpio_dir_q;
 logic [31:0] gpio_pull_q;
@@ -196,7 +217,9 @@ always_comb begin
             end
 
             CTRL_GPIO_IN_OFFSET: begin
-                fifo_resp.r.data = gpio_in_i;
+                // gpio_in_sync_q is the output of the two-stage synchronizer;
+                // gpio_in_i must never be read directly from this domain.
+                fifo_resp.r.data = gpio_in_sync_q;
                 fifo_resp.r.resp = 2'b00;
             end
 
