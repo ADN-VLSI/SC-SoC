@@ -118,7 +118,7 @@ Verify PLL_CFG assembles `pll_ref_div_i[4:0]` at bits `[4:0]` and `pll_fb_div_i[
 
 | Check | Expected |
 | --- | --- |
-| First read | `0x00007D10`, `r.resp = OKAY` |
+| First read | `0x00000C90`, `r.resp = OKAY` |
 | Second read `[4:0]` | Matches `pll_ref_div_i` |
 | Second read `[18:5]` | Matches `pll_fb_div_i` |
 | `[31:19]` | Always `0` |

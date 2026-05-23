@@ -11,7 +11,7 @@ This document defines the Control register map and bit-field assignments. All re
 | `0x020` | CORE_BOOT_ADDR | RW   | 0x40000000  | Core Boot Address Configuration            |
 | `0x024` | CORE_HART_ID   | RW   | 0x00000000  | Core Hardware Thread ID                    |
 | `0x028` | CORE_CLK_RST   | RW   | 0x00000000  | Core Clock and Reset Control               |
-| `0x040` | PLL_CFG        | RO   | 0x00007D10  | PLL Configuration Register                 |
+| `0x040` | PLL_CFG        | RO   | 0x00000C90  | PLL Configuration Register                 |
 | `0x060` | TOHOST         | RW   | 0x00000000  | Host Communication Register (Core to Host) |
 | `0x068` | FROMHOST       | RW   | 0x00000000  | Host Communication Register (Host to Core) |
 | `0x080` | BOOTMODE       | RO   | -           | Boot Mode Configuration                    |

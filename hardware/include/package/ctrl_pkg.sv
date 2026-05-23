@@ -21,7 +21,7 @@ package ctrl_pkg;
         localparam int CTRL_SOC_ID_RESET         = 32'h4467_0931;    // Defining Constants
         localparam int CTRL_REV_ID_RESET         = 32'h0000_0001;    // Defining Constants 
         localparam int CTRL_CORE_BOOT_ADDR_RESET = 32'h4000_0000;    // Defining Constants 
-        localparam int CTRL_PLL_CFG_RESET        = 32'h0000_7D10;    // Defining Constants 
+        localparam int CTRL_PLL_CFG_RESET        = 32'h0000_0C90;    // Defining Constants 
 
         // AXI4-Lite types: ADDR=6 DATA=32
         `AXI_LITE_TYPEDEF_ALL(ctrl_axil, logic[7:0], logic[31:0], logic[3:0])
