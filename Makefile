@@ -113,9 +113,9 @@ XVLOG_DEFS += -d SIMULATION
 # FILE DISCOVERY AND BUILD CONFIGURATION
 ####################################################################################################
 
-# List of all tracked hardware files whose SHA-256 checksums are used to detect changes and trigger
-# incremental recompilation / elaboration only when needed
-SHA_FILES = $(shell find $(SC_SOC)/hardware/ -name "*.sv" -type f)
+# Stream hardware file hashes directly from find so Make does not expand every path into a single
+# variable. Sorting the output keeps the snapshot stable across runs.
+SHA_FILES_CMD = find "$(SC_SOC)/hardware" -type f -name "*.sv" -exec sha256sum {} + | LC_ALL=C sort
 
 ####################################################################################################
 # TOOLS
@@ -239,7 +239,7 @@ __COMPILE__:
 	@find ${SC_SOC}/hardware/source -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
 	@find ${SC_SOC}/hardware/testbench -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
 	@cd $(BUILD); $(XVLOG) -sv -f flist $(XVLOG_DEFS) -log $(LOG)/xvlog_sc_soc.log $(EW_O)
-	@sha256sum ${SHA_FILES} > $(BUILD)/build_sha
+	@$(SHA_FILES_CMD) > $(BUILD)/build_sha
 	@echo -e "\033[3;35mCompiled\033[0m"
 
 # Stamp file that records a successful xelab elaboration of TOP. Make treats the file as a
@@ -259,7 +259,7 @@ $(BUILD)/build_$(TOP):
 __ENV_BUILD__:
 	@make -s $(BUILD)
 	@make -s $(LOG)
-	@sha256sum ${SHA_FILES} > $(BUILD)/build_sha_new
+	@$(SHA_FILES_CMD) > $(BUILD)/build_sha_new
 	@touch $(BUILD)/build_sha
 	@diff $(BUILD)/build_sha_new $(BUILD)/build_sha &> /dev/null || make -s __COMPILE__
 	@make -s $(BUILD)/build_$(TOP)

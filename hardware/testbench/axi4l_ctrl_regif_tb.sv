@@ -61,6 +61,8 @@ module axi4l_ctrl_regif_tb;
   logic        core_rst_en_o;
   logic        core_clk_en_o;
   logic [31:0] tohost_o;
+  logic [14:0] pll_fb_div_o;
+  logic [ 4:0] pll_ref_div_o;
   logic [31:0] fromhost_o;
   logic [31:0] gpio_out_o;
   logic [31:0] gpio_dir_o;
@@ -136,6 +138,8 @@ module axi4l_ctrl_regif_tb;
     .gpio_dir_o      (gpio_dir_o),
     .gpio_pull_o     (gpio_pull_o),
     .tohost_o        (tohost_o),
+    .pll_ref_div_o   (pll_ref_div_o),
+    .pll_fb_div_o    (pll_fb_div_o),
     .fromhost_o      (fromhost_o)
   );
 
@@ -244,9 +248,11 @@ module axi4l_ctrl_regif_tb;
     $dumpfile("axi4l_ctrl_regif_tb.vcd");
     $dumpvars(0, axi4l_ctrl_regif_tb);
 
+    #20;
+
     // Default sideband stimulus
-    bootmode_i  = 1'b0;
-    gpio_in_i   = 32'h0000_0000;
+    bootmode_i  <= 1'b0;
+    gpio_in_i   <= 32'h0000_0000;
 
     // Reset sequence
     clk_i   <= 1'b0;

@@ -18,7 +18,7 @@ package ctrl_reg_pkg;
         localparam logic [31:0] CTRL_GPIO_OUT_OFFSET       = 32'h0A4;         // Defining Register Offsets
         localparam logic [31:0] CTRL_GPIO_PULL_OFFSET      = 32'h0AC;         // Defining Register Offsets
 
-        localparam logic [31:0] CTRL_SOC_ID_RESET         = 32'h4467_0931;    // Defining Constants    //
+        localparam logic [31:0] CTRL_SOC_ID_RESET         = 32'h4467_0931;    // Defining Constants
         localparam logic [31:0] CTRL_REV_ID_RESET         = 32'h0000_0001;    // Defining Constants 
         localparam logic [31:0] CTRL_CORE_BOOT_ADDR_RESET = 32'h4000_0000;    // Defining Constants 
         localparam logic [31:0] CTRL_PLL_CFG_RESET        = 32'h0000_7D10;    // Defining Constants 
