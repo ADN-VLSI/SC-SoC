@@ -2,7 +2,7 @@
 
 ## Overview
 
-`axi4l_mem_ctrlr` is a **purely combinational** AXI4-Lite memory controller. It performs single-cycle write and read transactions with **no internal state** — there are no registers, FIFOs, or outstanding-transaction tracking inside the module.
+`axi4l_mem_ctrlr` is a **purely combinational** AXI4-Lite memory controller. It now uses the shared `axi4l_to_memif` bridge internally, with memory-error inputs tied low, to perform single-cycle write and read transactions with **no internal state**.
 
 ---
 
@@ -15,6 +15,7 @@
 ## Key Features
 
 - Fully combinational — zero-latency, no clock required
+- Reuses `axi4l_to_memif` internally for handshake/protection mapping
 - Single-cycle write transactions (AW + W + B channels all handshake in one cycle)
 - Single-cycle read transactions (AR + R channels handshake in one cycle)
 - Protection-bit access control: unprivileged non-secure accesses (`prot[1:0] == 2'b00`) return **OKAY**; all others return **SLVERR** with write suppression and zeroed read data

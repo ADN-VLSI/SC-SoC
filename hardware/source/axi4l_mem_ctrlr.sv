@@ -51,74 +51,27 @@ module axi4l_mem_ctrlr #(
     input  logic [DATA_WIDTH-1:0] rdata_i
 );
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  // INTERNAL SIGNALS
-  ////////////////////////////////////////////////////////////////////////////////////////////////
+  logic wnsecure_unused;
+  logic rnsecure_unused;
 
-  // do_write: asserted when a full write transaction can complete in a single
-  // cycle — both address and data must be presented by the master (aw_valid &
-  // w_valid) AND the master must be ready to accept the response (b_ready).
-  logic do_write;
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  // COMBINATIONAL LOGIC
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-
-  // --- Write path -----------------------------------------------------------
-
-  // Gate write acceptance on all three write channels being simultaneously ready.
-  always_comb do_write = axi4l_req_i.aw_valid & axi4l_req_i.w_valid & axi4l_req_i.b_ready;
-
-  // Deassert AW/W ready until the response channel is also free, preventing
-  // a situation where data is consumed but the response can't be sent.
-  always_comb axi4l_resp_o.aw_ready = do_write;
-  always_comb axi4l_resp_o.w_ready = do_write;
-
-  // Drive BVALID alongside BREADY so the handshake completes in one cycle.
-  always_comb axi4l_resp_o.b_valid = do_write;
-
-  // Access permission check: only unprivileged non-secure accesses
-  // (aw_prot[1:0] == 2'b00) are allowed; anything else returns SLVERR (2'b11).
-  always_comb begin
-    axi4l_resp_o.b.resp = 2'b11;  // default: SLVERR
-    if (axi4l_req_i.aw.prot[1:0] == 2'b00) begin
-      axi4l_resp_o.b.resp = 2'b00;  // OKAY
-    end
-  end
-
-  // Pass write address, data, and strobe directly to the memory.
-  always_comb waddr_o = axi4l_req_i.aw.addr;
-  always_comb wdata_o = axi4l_req_i.w.data;
-  always_comb wstrb_o = axi4l_req_i.w.strb;
-
-  // Only drive the memory write-enable when the transaction is valid AND the
-  // response is OKAY — suppresses writes for rejected (SLVERR) accesses.
-  always_comb wenable_o = do_write && (axi4l_resp_o.b.resp == 2'b00);
-
-  // --- Read path ------------------------------------------------------------
-
-  // Accept a new read address only when the data channel is free, so the
-  // combinationally produced read data can be forwarded to the master
-  // in the same cycle without being overwritten.
-  always_comb axi4l_resp_o.ar_ready = axi4l_req_i.r_ready;
-
-  // Drive the memory read address directly from the incoming AR channel.
-  always_comb raddr_o = axi4l_req_i.ar.addr;
-
-  // Access permission check: mirrors the write-side policy.
-  // On a protected access, return SLVERR and zero data rather than
-  // leaking memory contents.
-  always_comb begin
-    axi4l_resp_o.r.resp = 2'b11;  // default: SLVERR
-    axi4l_resp_o.r.data = '0;  // default: zero (prevent data leak on rejected reads)
-    if (axi4l_req_i.ar.prot[1:0] == 2'b00) begin
-      axi4l_resp_o.r.resp = 2'b00;  // OKAY
-      axi4l_resp_o.r.data = rdata_i;  // forward memory read data
-    end
-  end
-
-  // Assert RVALID combinationally with ARVALID — relies on the downstream
-  // memory presenting valid data within the same clock cycle.
-  always_comb axi4l_resp_o.r_valid = axi4l_req_i.ar_valid;
+  axi4l_to_memif #(
+      .axi4l_req_t (axi4l_req_t),
+      .axi4l_resp_t(axi4l_resp_t),
+      .ADDR_WIDTH  (ADDR_WIDTH),
+      .DATA_WIDTH  (DATA_WIDTH)
+  ) u_axi4l_to_memif (
+      .axi4l_req_i (axi4l_req_i),
+      .axi4l_resp_o(axi4l_resp_o),
+      .waddr_o     (waddr_o),
+      .wnsecure_o  (wnsecure_unused),
+      .wdata_o     (wdata_o),
+      .wstrb_o     (wstrb_o),
+      .wenable_o   (wenable_o),
+      .werror_i    (1'b0),
+      .raddr_o     (raddr_o),
+      .rnsecure_o  (rnsecure_unused),
+      .rdata_i     (rdata_i),
+      .rerror_i    (1'b0)
+  );
 
 endmodule
