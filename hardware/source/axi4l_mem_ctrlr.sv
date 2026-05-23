@@ -51,8 +51,8 @@ module axi4l_mem_ctrlr #(
     input  logic [DATA_WIDTH-1:0] rdata_i
 );
 
-  logic wnsecure_unused;
-  logic rnsecure_unused;
+  (* unused = "true" *) logic wnsecure_unused;
+  (* unused = "true" *) logic rnsecure_unused;
 
   axi4l_to_memif #(
       .axi4l_req_t (axi4l_req_t),

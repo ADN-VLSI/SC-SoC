@@ -66,8 +66,8 @@ module axi4l_ctrl_regif
   logic        mem_rerror;
   logic        mem_read_active;
   logic        mem_write_ok;
-  logic        mem_wnsecure_unused;
-  logic        mem_rnsecure_unused;
+  (* unused = "true" *) logic mem_wnsecure_unused;
+  (* unused = "true" *) logic mem_rnsecure_unused;
   axil_resp_t  mem_resp;
 
   axi4l_to_memif #(
