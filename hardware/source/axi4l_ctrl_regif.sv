@@ -126,7 +126,7 @@ always_ff @(posedge clk_i or negedge arst_ni) begin
         gpio_out_q       <= 32'h0000_0000;
         gpio_dir_q       <= 32'h0000_0000;
         gpio_pull_q      <= 32'h0000_0000;
-    end else if (wr_en && fifo_req.w.strb == 4'b1111) begin
+    end else if (fifo_resp.b.resp == 2'b00) begin
         case (fifo_req.aw.addr)
             CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= fifo_req.w.data;
             CTRL_CORE_HART_ID_OFFSET:   core_hart_id_q   <= fifo_req.w.data;
@@ -148,7 +148,7 @@ end
 always_comb begin
     fifo_resp.b.resp = 2'b10; // SLVERR by default
 
-    if (wr_en && fifo_req.w.strb == 4'b1111) begin
+    if (wr_en && fifo_req.w.strb == 4'b1111 && fifo_req.aw.prot[1] == 0) begin
         case (fifo_req.aw.addr)
             CTRL_CORE_BOOT_ADDR_OFFSET,
             CTRL_CORE_HART_ID_OFFSET,
@@ -171,7 +171,7 @@ always_comb begin
     fifo_resp.r.data = 32'h0000_0000;
     fifo_resp.r.resp = 2'b10; // SLVERR by default
 
-    if (rd_en) begin
+    if (rd_en && fifo_req.ar.prot[1] == 0) begin
         case (fifo_req.ar.addr)
             CTRL_SOC_ID_OFFSET: begin
                 fifo_resp.r.data = CTRL_SOC_ID_RESET;
