@@ -1,3 +1,6 @@
+`include "package/sc_soc_pkg.sv"
+`include "package/ctrl_reg_pkg.sv"
+
 module axi4l_ctrl_regif
   import sc_soc_pkg::*;
   import ctrl_reg_pkg::*;
@@ -21,7 +24,7 @@ module axi4l_ctrl_regif
     output logic [31:0] gpio_pull_o,
 
     output logic [31:0] tohost_o,
-    output logic [31:0] fromhost_o
+    output logic [31:0] fromhost_o     // Software-written register; exposed to SoC fabric.
 );
 
 // ---------------------------------------------------------------------------
@@ -94,7 +97,7 @@ logic [31:0] core_boot_addr_q;
 logic [31:0] core_hart_id_q;
 logic [31:0] core_clk_rst_q;
 logic [31:0] tohost_q;
-logic [31:0] fromhost_q;
+logic [31:0] fromhost_q;    // RW per register map; host path reads this value.
 logic [31:0] gpio_out_q;
 logic [31:0] gpio_dir_q;
 logic [31:0] gpio_pull_q;
@@ -127,7 +130,7 @@ always_ff @(posedge clk_i or negedge arst_ni) begin
         case (fifo_req.aw.addr)
             CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= fifo_req.w.data;
             CTRL_CORE_HART_ID_OFFSET:   core_hart_id_q   <= fifo_req.w.data;
-            CTRL_CORE_CLK_RST_OFFSET:   core_clk_rst_q   <= fifo_req.w.data;
+            CTRL_CORE_CLK_RST_OFFSET:   core_clk_rst_q   <= {30'b0, fifo_req.w.data[1:0]};
             CTRL_TOHOST_OFFSET:         tohost_q         <= fifo_req.w.data;
             CTRL_FROMHOST_OFFSET:       fromhost_q       <= fifo_req.w.data;
             CTRL_GPIO_OUT_OFFSET:       gpio_out_q       <= fifo_req.w.data;
