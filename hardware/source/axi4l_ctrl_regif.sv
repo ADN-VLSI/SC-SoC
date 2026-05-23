@@ -64,6 +64,7 @@ module axi4l_ctrl_regif
   logic [31:0] mem_raddr;
   logic [31:0] mem_rdata;
   logic        mem_rerror;
+  logic        mem_read_active;
   logic        mem_write_ok;
   logic        mem_wnsecure_unused;
   logic        mem_rnsecure_unused;
@@ -95,6 +96,8 @@ module axi4l_ctrl_regif
     fifo_resp.b.resp   = (mem_resp.b.resp == 2'b11) ? 2'b10 : mem_resp.b.resp;
     fifo_resp.r.resp   = (mem_resp.r.resp == 2'b11) ? 2'b10 : mem_resp.r.resp;
   end
+
+  always_comb mem_read_active = mem_resp.r_valid && mem_resp.ar_ready;
 
   // ---------------------------------------------------------------------------
   // GPIO_IN two-stage synchronizer
@@ -202,7 +205,8 @@ module axi4l_ctrl_regif
     mem_rdata  = 32'h0000_0000;
     mem_rerror = 1'b1;
 
-    case (mem_raddr)
+    if (mem_read_active) begin
+      case (mem_raddr)
         CTRL_SOC_ID_OFFSET: begin
           mem_rdata  = CTRL_SOC_ID_RESET;
           mem_rerror = 1'b0;
@@ -273,7 +277,8 @@ module axi4l_ctrl_regif
 
         default: begin
         end
-    endcase
+      endcase
+    end
   end
 
 endmodule

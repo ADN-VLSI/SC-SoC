@@ -88,7 +88,7 @@ module axi4l_uart_regif
   logic [31:0] mem_rdata;
   logic mem_rerror;
   logic mem_write_ok;
-  logic mem_rd_fire;
+  logic mem_read_active;
   logic mem_wnsecure_unused;
   logic mem_rnsecure_unused;
   uart_axil_resp_t mem_resp;
@@ -142,7 +142,7 @@ module axi4l_uart_regif
   always_comb tx_data_o = mem_wdata;
   always_comb tx_id_in  = mem_wdata;
   always_comb rx_id_in  = mem_wdata;
-  always_comb mem_rd_fire = mem_resp.r_valid && mem_resp.ar_ready;
+  always_comb mem_read_active = mem_resp.r_valid && mem_resp.ar_ready;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // READ DATA MUX — combinational
@@ -155,7 +155,7 @@ module axi4l_uart_regif
     tx_id_out_ready  = 1'b0;
     rx_id_out_ready  = 1'b0;
 
-    if (mem_rd_fire) begin
+    if (mem_read_active) begin
       case (mem_raddr)
 
         UART_CTRL_OFFSET: begin
