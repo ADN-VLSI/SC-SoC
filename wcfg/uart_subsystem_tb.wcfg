@@ -7,7 +7,6 @@
          <top_modules>
             <top_module name="\$unit_axi4l_if_sv_850808134 " />
             <top_module name="uart_pkg" />
-            <top_module name="uart_subsystem_pkg" />
             <top_module name="uart_subsystem_tb" />
          </top_modules>
       </db_ref>

@@ -4,6 +4,9 @@
 
 package uart_pkg;
 
+  parameter int UART_FIFO_DEPTH = 16;
+  parameter int UART_FIFO_COUNT_W = $clog2(UART_FIFO_DEPTH) + 1;
+
   // Register offsets
   parameter int UART_CTRL_OFFSET   = 'h00;
   parameter int UART_CFG_OFFSET    = 'h04;

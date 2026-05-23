@@ -1,5 +1,4 @@
 `include "package/uart_pkg.sv"
-`include "package/uart_subsystem_pkg.sv"
 `include "vip/simple_axil_m_driver.svh"
 `include "uart_subsystem_tb/methods/motasim.sv"
 module uart_subsystem_tb;
@@ -10,7 +9,7 @@ module uart_subsystem_tb;
     // PARAMETERS
     ////////////////////////////////////////////////////////////////////////////
 
-    localparam int FIFO_DEPTH       = uart_subsystem_pkg::UART_FIFO_DEPTH;
+    localparam int FIFO_DEPTH       = uart_pkg::UART_FIFO_DEPTH;
     localparam int BAUD_RATE        = 115741;
     localparam int STABILISE_CYCLES = 20000;
 

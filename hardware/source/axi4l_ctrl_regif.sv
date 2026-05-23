@@ -1,10 +1,12 @@
 `include "package/sc_soc_pkg.sv"
-`include "package/ctrl_reg_pkg.sv"
+`include "package/ctrl_pkg.sv"
 
 module axi4l_ctrl_regif
-  import sc_soc_pkg::*;
-  import ctrl_reg_pkg::*;
-(
+  import ctrl_pkg::*;
+#(
+    parameter type axil_req_t  = logic,
+    parameter type axil_resp_t = logic
+) (
     input logic clk_i,
     input logic arst_ni,
 
@@ -17,7 +19,7 @@ module axi4l_ctrl_regif
     output logic        core_clk_en_o,
 
     output logic [ 4:0] pll_ref_div_o,
-    output logic [14:0] pll_fb_div_o,
+    output logic [13:0] pll_fb_div_o,
 
     input logic bootmode_i,
 
@@ -56,19 +58,19 @@ module axi4l_ctrl_regif
   // AXI4-Lite to local memory-interface bridge
   // ---------------------------------------------------------------------------
 
-  logic [31:0] mem_waddr;
-  logic [31:0] mem_wdata;
-  logic [ 3:0] mem_wstrb;
-  logic        mem_wenable;
-  logic        mem_werror;
-  logic [31:0] mem_raddr;
-  logic [31:0] mem_rdata;
-  logic        mem_rerror;
-  logic        mem_read_active;
-  logic        mem_write_ok;
-  (* unused = "true" *) logic mem_wnsecure_unused;
-  (* unused = "true" *) logic mem_rnsecure_unused;
-  axil_resp_t  mem_resp;
+  logic       [31:0] mem_waddr;
+  logic       [31:0] mem_wdata;
+  logic       [ 3:0] mem_wstrb;
+  logic              mem_wenable;
+  logic              mem_werror;
+  logic       [31:0] mem_raddr;
+  logic       [31:0] mem_rdata;
+  logic              mem_rerror;
+  logic              mem_read_active;
+  logic              mem_write_ok;
+  (* unused = "true" *)logic              mem_wnsecure_unused;
+  (* unused = "true" *)logic              mem_rnsecure_unused;
+  axil_resp_t        mem_resp;
 
   axi4l_to_memif #(
       .axi4l_req_t (axil_req_t),
@@ -92,9 +94,9 @@ module axi4l_ctrl_regif
 
   // Keep legacy SLVERR encoding (2'b10) at this block boundary.
   always_comb begin
-    fifo_resp          = mem_resp;
-    fifo_resp.b.resp   = (mem_resp.b.resp == 2'b11) ? 2'b10 : mem_resp.b.resp;
-    fifo_resp.r.resp   = (mem_resp.r.resp == 2'b11) ? 2'b10 : mem_resp.r.resp;
+    fifo_resp        = mem_resp;
+    fifo_resp.b.resp = (mem_resp.b.resp == 2'b11) ? 2'b10 : mem_resp.b.resp;
+    fifo_resp.r.resp = (mem_resp.r.resp == 2'b11) ? 2'b10 : mem_resp.r.resp;
   end
 
   always_comb mem_read_active = mem_resp.r_valid && mem_resp.ar_ready;

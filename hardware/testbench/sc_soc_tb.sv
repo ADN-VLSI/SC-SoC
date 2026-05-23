@@ -9,6 +9,7 @@ module sc_soc_tb;
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   logic                       system_arst_ni;
+  logic                       core_arst_ni;
   logic      [ADDR_WIDTH-1:0] boot_addr_i;
   logic      [DATA_WIDTH-1:0] hart_id_i;
 
@@ -41,7 +42,7 @@ module sc_soc_tb;
 
   `CLOCK(system_clk_i, 10ns)
   `CLOCK(core_clk_i, 10ns)
-  `CLOCK(xtal_in, 62.5ns)
+  `CLOCK(xtal_i, 62.5ns)
   `CLOCK(apb_clk_i, 25ns)
   `undef CLOCK
 
@@ -84,12 +85,13 @@ module sc_soc_tb;
       // TODO REMOVE
       .system_arst_ni(system_arst_ni),
       .system_clk_i  (system_clk_i),
+      .core_arst_ni  (core_arst_ni),
       .core_clk_i    (core_clk_i),
       .boot_addr_i   (boot_addr_i),
       .hart_id_i     (hart_id_i),
 
       // real ports
-      .xtal_in     (xtal_in),
+      .xtal_i      (xtal_i),
       .glob_arst_ni(glob_arst_ni),
       .apb_arst_ni (apb_arst_ni),
       .apb_clk_i   (apb_clk_i),
@@ -107,6 +109,7 @@ module sc_soc_tb;
   task automatic apply_reset(input realtime duration = 100ns);
     #(duration);
     system_arst_ni <= '0;
+    core_arst_ni   <= '0;
     glob_arst_ni   <= '0;
     apb_arst_ni    <= '0;
     boot_addr_i    <= '0;
@@ -115,6 +118,7 @@ module sc_soc_tb;
     #(duration);
     system_arst_ni <= '1;
     glob_arst_ni   <= '1;
+    core_arst_ni   <= '1;
     apb_arst_ni    <= '1;
     #(duration);
   endtask
@@ -289,7 +293,7 @@ module sc_soc_tb;
     load_symbols("prog.sym");
 
     system_clk_i_enable();
-    xtal_in_enable();
+    xtal_i_enable();
     apb_clk_i_enable();
     apply_reset();
 

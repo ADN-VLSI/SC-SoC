@@ -1,8 +1,7 @@
 `include "package/uart_pkg.sv"
-`include "package/uart_subsystem_pkg.sv"
 
 module uart_subsystem #(
-    parameter int FIFO_DEPTH = uart_subsystem_pkg::UART_FIFO_DEPTH
+    parameter int FIFO_DEPTH = uart_pkg::UART_FIFO_DEPTH
 ) (
     input  logic                     clk_i,
     input  logic                     arst_ni,

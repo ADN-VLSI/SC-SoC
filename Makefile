@@ -15,6 +15,7 @@ export APB=$(SC_SOC)/submodule/apb
 export AXI=$(SC_SOC)/submodule/axi
 export COMMON_CELLS=$(SC_SOC)/submodule/common_cells
 export RV32IMF=$(SC_SOC)/submodule/rv32imf
+export SOC=$(SC_SOC)/submodule/SoC
 export S1=$(SC_SOC)/submodule/S1
 
 # Absolute paths to the build and log output directories. The build directory contains all generated
@@ -96,6 +97,9 @@ COMMON_CELLS_COMMIT = $(shell git submodule status -- $(COMMON_CELLS) | awk '{pr
 
 # Get RV32IMF submodule commit hash only
 RV32IMF_COMMIT = $(shell git submodule status -- $(RV32IMF) | awk '{print $$1}')
+
+# Get SOC submodule commit hash only
+SOC_COMMIT = $(shell git submodule status -- $(SOC) | awk '{print $$1}')
 
 # Get S1 submodule commit hash only
 S1_COMMIT = $(shell git submodule status -- $(S1) | awk '{print $$1}')
@@ -227,6 +231,7 @@ __COMPILE__:
 	@make -s AXI_COMPILE
 	@make -s COMMON_CELLS_COMPILE
 	@make -s RV32IMF_COMPILE
+	@make -s SOC_COMPILE
 	@make -s S1_COMPILE
 	@echo "-i ${SC_SOC}/hardware/include" > $(BUILD)/flist
 	@echo "-i ${AXI}/include" >> $(BUILD)/flist
@@ -331,6 +336,25 @@ RV32IMF_COMPILE:
 	fi
 	@echo "$(RV32IMF_COMMIT)" > $(BUILD)/rv32imf_commit.txt
 	@rm -f $(BUILD)/current_rv32imf_commit.txt
+
+##################################################
+# SOC
+##################################################
+
+.PHONY: SOC_COMPILE
+SOC_COMPILE:
+	@make -s $(BUILD)
+	@git submodule update --init --depth 1 $(SOC)
+	@touch $(BUILD)/soc_commit.txt
+	@echo "$(SOC_COMMIT)" > $(BUILD)/current_soc_commit.txt
+	@if [ -f $(BUILD)/soc_commit.txt ] && [ -f $(BUILD)/current_soc_commit.txt ] && \
+	     [ "$$(cat $(BUILD)/soc_commit.txt)" = "$$(cat $(BUILD)/current_soc_commit.txt)" ]; then \
+		echo -n ""; \
+	else \
+		cd $(BUILD) && $(XVLOG) -sv -f $(SC_SOC)/hardware/filelist/SOC.f -log $(LOG)/xvlog_soc.log $(EW_O); \
+	fi
+	@echo "$(SOC_COMMIT)" > $(BUILD)/soc_commit.txt
+	@rm -f $(BUILD)/current_soc_commit.txt
 
 ##################################################
 # S1
