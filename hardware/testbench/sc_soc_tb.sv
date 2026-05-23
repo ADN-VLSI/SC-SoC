@@ -5,19 +5,13 @@ module sc_soc_tb;
   import uart_pkg::*;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
-  // SIGNALS — TODO REMOVE
-  //////////////////////////////////////////////////////////////////////////////////////////////////
-
-  logic                       system_arst_ni;
-  logic      [ADDR_WIDTH-1:0] boot_addr_i;
-  logic      [DATA_WIDTH-1:0] hart_id_i;
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////
   // SIGNALS
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  logic                       glob_arst_ni;
-  logic                       apb_arst_ni;
+  logic        glob_arst_ni;
+  logic        apb_arst_ni;
+  logic        bootmode_i;
+  wire  [31:0] gpio_io;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // CLOCK MACRO
@@ -39,9 +33,7 @@ module sc_soc_tb;
         ``__NAME__``_state = en;                                                                   \
       endfunction                                                                                  \
 
-  `CLOCK(system_clk_i, 10ns)
-  `CLOCK(core_clk_i, 10ns)
-  `CLOCK(xtal_in, 62.5ns)
+  `CLOCK(xtal_i, 62.5ns)
   `CLOCK(apb_clk_i, 25ns)
   `undef CLOCK
 
@@ -81,22 +73,16 @@ module sc_soc_tb;
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   sc_soc u_dut (
-      // TODO REMOVE
-      .system_arst_ni(system_arst_ni),
-      .system_clk_i  (system_clk_i),
-      .core_clk_i    (core_clk_i),
-      .boot_addr_i   (boot_addr_i),
-      .hart_id_i     (hart_id_i),
-
-      // real ports
-      .xtal_in     (xtal_in),
+      .xtal_i      (xtal_i),
       .glob_arst_ni(glob_arst_ni),
       .apb_arst_ni (apb_arst_ni),
       .apb_clk_i   (apb_clk_i),
       .apb_req_i   (apb_intf.req),
       .apb_resp_o  (apb_intf.resp),
       .uart_tx_o   (uart_intf.rx),
-      .uart_rx_i   (uart_intf.tx)
+      .uart_rx_i   (uart_intf.tx),
+      .bootmode_i  (bootmode_i),
+      .gpio_io     (gpio_io)
   );
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,14 +92,11 @@ module sc_soc_tb;
   // RESET
   task automatic apply_reset(input realtime duration = 100ns);
     #(duration);
-    system_arst_ni <= '0;
     glob_arst_ni   <= '0;
     apb_arst_ni    <= '0;
-    boot_addr_i    <= '0;
-    hart_id_i      <= '0;
+    bootmode_i     <= '0;
     apb_intf.req_reset();
     #(duration);
-    system_arst_ni <= '1;
     glob_arst_ni   <= '1;
     apb_arst_ni    <= '1;
     #(duration);
@@ -288,19 +271,20 @@ module sc_soc_tb;
 
     load_symbols("prog.sym");
 
-    system_clk_i_enable();
-    xtal_in_enable();
+    xtal_i_enable();
     apb_clk_i_enable();
     apply_reset();
 
     start_uart_monitoring();
 
-    boot_addr_i <= sym["_start"];
-    repeat (10) @(posedge apb_clk_i);
+    while ($realtime < 15us) #1us;
+
+    apb_intf.apb_write('h1_0020, sym["_start"]); // BOOT ADDR
+    apb_intf.apb_write('h1_0024, 0); // HART ID
 
     load_program("prog.hex");
 
-    core_clk_i_enable();
+    apb_intf.apb_write('h1_0028, 2); // CORE CLK EN
 
     `include "sc_soc_tb/runtest.sv"
 

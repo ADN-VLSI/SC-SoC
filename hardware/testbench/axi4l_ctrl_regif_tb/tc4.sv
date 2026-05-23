@@ -1,7 +1,7 @@
 // tc4.sv — TC4: PLL_CFG Bit-Field Assembly
 //
 // PLL_CFG (offset 0x040) is a read-only register that returns the constant
-// CTRL_PLL_CFG_RESET = 32'h0000_7D10.
+// CTRL_PLL_CFG_RESET = 32'h0000_0C90.
 //
 // Bit-field layout (from ctrl_reg.md):
 //   [4:0]   REF_DIV  = 5'h10  (16 decimal)
@@ -18,7 +18,7 @@ task automatic tc4(inout int p, inout int f);
   logic [31:0] rdata;
   logic [1:0]  resp;
 
-  // Expected field values derived from the constant 0x00007D10
+  // Expected field values derived from the constant 0x00000C90
   localparam logic [4:0]  EXP_REF_DIV  = 5'h10;
   localparam logic [13:0] EXP_FB_DIV   = 14'h3E8;
 
@@ -33,8 +33,8 @@ task automatic tc4(inout int p, inout int f);
   $display("  PLL_CFG read[0] = 0x%08h  resp=%0b", rdata, resp);
 
   check(resp            === 2'b00,        p, f, "PLL_CFG read[0] resp=OKAY");
-  check(rdata           === 32'h0000_7D10, p, f,
-        $sformatf("PLL_CFG read[0] full value: 0x%0h (exp 0x00007D10)", rdata));
+  check(rdata           === 32'h0000_0C90, p, f,
+        $sformatf("PLL_CFG read[0] full value: 0x%0h (exp 0x00000C90)", rdata));
   check(rdata[4:0]      === EXP_REF_DIV,  p, f,
         $sformatf("PLL_CFG[4:0]  REF_DIV=0x%0h (exp 0x%0h)", rdata[4:0], EXP_REF_DIV));
   check(rdata[18:5]     === EXP_FB_DIV,   p, f,

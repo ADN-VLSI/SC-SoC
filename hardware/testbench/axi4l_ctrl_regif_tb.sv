@@ -20,7 +20,7 @@
 // =============================================================================
 
 `include "package/sc_soc_pkg.sv"
-`include "package/ctrl_reg_pkg.sv"
+`include "package/ctrl_pkg.sv"
 `include "axi/typedef.svh"
 
 module axi4l_ctrl_regif_tb;
@@ -29,7 +29,7 @@ module axi4l_ctrl_regif_tb;
   // Imports
   // ---------------------------------------------------------------------------
   import sc_soc_pkg::*;
-  import ctrl_reg_pkg::*;
+  import ctrl_pkg::*;
 
   // ---------------------------------------------------------------------------
   // Local parameters
@@ -61,7 +61,7 @@ module axi4l_ctrl_regif_tb;
   logic        core_rst_en_o;
   logic        core_clk_en_o;
   logic [31:0] tohost_o;
-  logic [14:0] pll_fb_div_o;
+  logic [13:0] pll_fb_div_o;
   logic [ 4:0] pll_ref_div_o;
   logic [31:0] fromhost_o;
   logic [31:0] gpio_out_o;
@@ -123,7 +123,12 @@ module axi4l_ctrl_regif_tb;
   // ---------------------------------------------------------------------------
   // DUT
   // ---------------------------------------------------------------------------
-  axi4l_ctrl_regif u_dut (
+  axi4l_ctrl_regif
+  #(
+    .axil_req_t  (axil_req_t),
+    .axil_resp_t (axil_resp_t)
+)
+  u_dut (
     .clk_i           (clk_i),
     .arst_ni         (arst_ni),
     .req_i           (dut_req),

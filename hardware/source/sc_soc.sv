@@ -4,16 +4,9 @@
 module sc_soc
   import sc_soc_pkg::*;
 (
-    //---------------------------REMOVE---------------------------
-    input logic                  system_arst_ni,
-    input logic                  system_clk_i,
-    input logic                  core_clk_i,
-    input logic [ADDR_WIDTH-1:0] boot_addr_i,
-    input logic [DATA_WIDTH-1:0] hart_id_i,
-    //---------------------------REMOVE---------------------------
 
     // Clock and Reset
-    input logic xtal_in,      // 16MHz Crystal oscillator input
+    input logic xtal_i,       // 16MHz Crystal oscillator input
     input logic glob_arst_ni, // active low asynchronous reset
 
     // APB3 Interface
@@ -24,8 +17,15 @@ module sc_soc
 
     // UART Interface
     output logic uart_tx_o,  // UART transmit output
-    input  logic uart_rx_i   // UART receive input
+    input  logic uart_rx_i,  // UART receive input
+
+    input logic        bootmode_i,  // Boot mode input
+    inout wire  [31:0] gpio_io      // GPIO bidirectional pins
 );
+
+  logic                                         system_clk;
+  logic                      [  ADDR_WIDTH-1:0] boot_addr;
+  logic                      [  DATA_WIDTH-1:0] hart_id;
 
   logic                                         instr_req;
   logic                                         instr_gnt;
@@ -51,17 +51,19 @@ module sc_soc
   uart_pkg::uart_axil_req_t                     uart_req;
   uart_pkg::uart_axil_resp_t                    uart_resp;
 
+  ctrl_pkg::ctrl_axil_req_t                     ctrl_req;
+  ctrl_pkg::ctrl_axil_resp_t                    ctrl_resp;
+
   always_comb begin  // TODO REMOVE
     axil_master_port_resp[2] = '0;
-    axil_master_port_resp[3] = '0;
   end
 
   rv32imf u_core (
-      .clk_i              (core_clk_i),
-      .rst_ni             (system_arst_ni),
-      .boot_addr_i        (boot_addr_i),
+      .clk_i              (core_clk),
+      .rst_ni             (core_arst_n),
+      .boot_addr_i        (boot_addr),
       .dm_halt_addr_i     ('0),
-      .hart_id_i          (hart_id_i),
+      .hart_id_i          (hart_id),
       .dm_exception_addr_i('0),
       .instr_req_o        (instr_req),
       .instr_gnt_i        (instr_gnt),
@@ -76,9 +78,9 @@ module sc_soc
       .data_addr_o        (data_addr),
       .data_wdata_o       (data_wdata),
       .data_rdata_i       (data_rdata),
-      .irq_i              ('0),              // TODO
-      .irq_ack_o          (),                // TODO
-      .irq_id_o           ()                 // TODO
+      .irq_i              ('0),            // TODO
+      .irq_ack_o          (),              // TODO
+      .irq_id_o           ()               // TODO
   );
 
   s1_obi_2_axil #(
@@ -87,8 +89,8 @@ module sc_soc
       .axil_req_t (axil_req_t),
       .axil_resp_t(axil_resp_t)
   ) i_bus (
-      .clk_i      (system_clk_i),
-      .arst_ni    (system_arst_ni),
+      .clk_i      (core_clk),
+      .arst_ni    (core_arst_n),
       .addr_i     (instr_addr),
       .we_i       ('0),
       .wdata_i    ('0),
@@ -107,8 +109,8 @@ module sc_soc
       .axil_req_t (axil_req_t),
       .axil_resp_t(axil_resp_t)
   ) d_bus (
-      .clk_i      (system_clk_i),
-      .arst_ni    (system_arst_ni),
+      .clk_i      (core_clk),
+      .arst_ni    (core_arst_n),
       .addr_i     (data_addr),
       .we_i       (data_we),
       .wdata_i    (data_wdata),
@@ -132,8 +134,8 @@ module sc_soc
       .axi_resp_t(axil_resp_t),
       .rule_t    (axi_pkg::xbar_rule_32_t)
   ) NoC (
-      .clk_i                (system_clk_i),
-      .rst_ni               (system_arst_ni),
+      .clk_i                (system_clk),
+      .rst_ni               (system_arst_n),
       .test_i               ('0),
       .slv_ports_req_i      (axil_slave_port_req),
       .slv_ports_resp_o     (axil_slave_port_resp),
@@ -150,8 +152,8 @@ module sc_soc
       .ADDR_WIDTH  (ADDR_WIDTH),
       .DATA_WIDTH  (DATA_WIDTH)
   ) u_ram (
-      .arst_ni     (system_arst_ni),
-      .clk_i       (system_clk_i),
+      .arst_ni     (system_arst_n),
+      .clk_i       (system_clk),
       .axi4l_req_i (axil_master_port_req[0]),
       .axi4l_resp_o(axil_master_port_resp[0])
   );
@@ -173,8 +175,8 @@ module sc_soc
       .apb_arst_ni(apb_arst_ni),
       .apb_req_i  (apb_req_i),
       .apb_resp_o (apb_resp_o),
-      .axi_clk_i  (system_clk_i),
-      .axi_arst_ni(system_arst_ni),
+      .axi_clk_i  (system_clk),
+      .axi_arst_ni(system_arst_n),
       .axi_req_o  (axil_slave_port_req[2]),
       .axi_resp_i (axil_slave_port_resp[2])
   );
@@ -193,13 +195,41 @@ module sc_soc
   );
 
   uart_subsystem u_uart (
-      .clk_i   (system_clk_i),
-      .arst_ni (system_arst_ni),
+      .clk_i   (system_clk),
+      .arst_ni (system_arst_n),
       .req_i   (uart_req),
       .resp_o  (uart_resp),
       .rx_i    (uart_rx_i),
       .tx_o    (uart_tx_o),
-      .int_en_o()                 // TODO
+      .int_en_o()                // TODO
+  );
+
+  axil_addr_shifter #(
+      .slv_port_req_t (axil_req_t),
+      .slv_port_resp_t(axil_resp_t),
+      .mst_port_req_t (ctrl_pkg::ctrl_axil_req_t),
+      .mst_port_resp_t(ctrl_pkg::ctrl_axil_resp_t),
+      .SHIFT          (-CTRL_BASE)
+  ) aas_ctrl (
+      .slv_port_req_i (axil_master_port_req[3]),
+      .slv_port_resp_o(axil_master_port_resp[3]),
+      .mst_port_req_o (ctrl_req),
+      .mst_port_resp_i(ctrl_resp)
+  );
+
+  ctrl_subsystem u_ctrl (
+      .xtal_i        (xtal_i),
+      .glob_arst_ni  (glob_arst_ni),
+      .system_arst_no(system_arst_n),
+      .system_clk_o  (system_clk),
+      .req_i         (ctrl_req),
+      .resp_o        (ctrl_resp),
+      .boot_addr_o   (boot_addr),
+      .hart_id_o     (hart_id),
+      .core_clk_o    (core_clk),
+      .core_arst_no  (core_arst_n),
+      .bootmode_i    (bootmode_i),
+      .gpio_io       (gpio_io)
   );
 
 endmodule

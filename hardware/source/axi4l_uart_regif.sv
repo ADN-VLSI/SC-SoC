@@ -1,5 +1,5 @@
 `include "package/uart_pkg.sv"
-`include "package/uart_subsystem_pkg.sv"
+`include "package/uart_pkg.sv"
 
 module axi4l_uart_regif
 
@@ -24,8 +24,8 @@ module axi4l_uart_regif
   import uart_pkg::UART_RXG_OFFSET;
   import uart_pkg::UART_RXD_OFFSET;
   import uart_pkg::UART_INT_EN_OFFSET;
-  import uart_subsystem_pkg::UART_FIFO_DEPTH;
-  import uart_subsystem_pkg::UART_FIFO_COUNT_W;
+  import uart_pkg::UART_FIFO_DEPTH;
+  import uart_pkg::UART_FIFO_COUNT_W;
 
 (
     input logic clk_i,
@@ -327,10 +327,10 @@ module axi4l_uart_regif
     uart_stat_o.reserved = '0;
     uart_stat_o.tx_cnt   = tx_data_cnt_i.count;
     uart_stat_o.tx_empty = (tx_data_cnt_i == '0) & tx_uart_idle_i;
-    uart_stat_o.tx_full  = (tx_data_cnt_i.count == uart_subsystem_pkg::UART_FIFO_DEPTH);
+    uart_stat_o.tx_full  = (tx_data_cnt_i.count == uart_pkg::UART_FIFO_DEPTH);
     uart_stat_o.rx_cnt   = rx_data_cnt_i.count;
     uart_stat_o.rx_empty = (rx_data_cnt_i == '0);
-    uart_stat_o.rx_full  = (rx_data_cnt_i.count == uart_subsystem_pkg::UART_FIFO_DEPTH);
+    uart_stat_o.rx_full  = (rx_data_cnt_i.count == uart_pkg::UART_FIFO_DEPTH);
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////

@@ -13,7 +13,6 @@
             <top_module name="sc_soc_pkg" />
             <top_module name="sc_soc_tb" />
             <top_module name="uart_pkg" />
-            <top_module name="uart_subsystem_pkg" />
          </top_modules>
       </db_ref>
    </db_ref_list>

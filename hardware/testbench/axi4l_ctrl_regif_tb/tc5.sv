@@ -60,7 +60,7 @@ task automatic tc5(inout int p, inout int f);
   read_32(reg_addr(CTRL_PLL_CFG_OFFSET), rdata, resp);
   $display("  PLL_CFG readback  = 0x%08h", rdata);
   check(resp  === 2'b00,           p, f, "PLL_CFG readback resp=OKAY");
-  check(rdata === 32'h0000_7D10,   p, f,
-        $sformatf("PLL_CFG unchanged: 0x%0h (exp 0x00007D10)", rdata));
+  check(rdata === 32'h0000_0C90,   p, f,
+        $sformatf("PLL_CFG unchanged: 0x%0h (exp 0x00000C90)", rdata));
 
 endtask

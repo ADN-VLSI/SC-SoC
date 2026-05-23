@@ -11,6 +11,14 @@ interface apb_if (
     apb_req_t req;
     apb_resp_t resp;
 
+    bit is_edge_aligned;
+
+    always @ (posedge clk_i) begin
+        is_edge_aligned = '1;
+        #1ns;
+        is_edge_aligned = '0;
+    end
+
     task automatic req_reset();
         req <= '0;
     endtask
@@ -20,6 +28,7 @@ interface apb_if (
         input logic [31:0] data,
         input logic [3:0] strb = 4'hF
     );
+            wait(is_edge_aligned); // Ensure the transaction starts on an edge-aligned cycle
             req.paddr <= addr;
             req.pprot <= 3'b000; // Normal, secure, data access
             req.psel <= '1;
@@ -39,6 +48,7 @@ interface apb_if (
         input  logic [31:0] addr,
         output logic [31:0] data
     );
+            wait(is_edge_aligned); // Ensure the transaction starts on an edge-aligned cycle
             req.paddr <= addr;
             req.pprot <= 3'b000; // Normal, secure, data access
             req.psel <= '1;
