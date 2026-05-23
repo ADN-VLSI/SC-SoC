@@ -173,6 +173,8 @@ module axi4l_ctrl_regif
 
   always_comb begin
     mem_werror = 1'b1;
+    // axi4l_to_memif intentionally does not enforce byte strobe policy.
+    // Control registers in this block only accept full-word writes.
     if (mem_wstrb == 4'b1111) begin
       case (mem_waddr)
         CTRL_CORE_BOOT_ADDR_OFFSET,

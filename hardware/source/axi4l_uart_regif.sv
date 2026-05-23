@@ -142,7 +142,7 @@ module axi4l_uart_regif
   always_comb tx_data_o = mem_wdata;
   always_comb tx_id_in  = mem_wdata;
   always_comb rx_id_in  = mem_wdata;
-  always_comb mem_rd_fire = fifo_req.ar_valid && mem_resp.ar_ready;
+  always_comb mem_rd_fire = mem_resp.r_valid && mem_resp.ar_ready;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // READ DATA MUX — combinational
@@ -251,6 +251,8 @@ module axi4l_uart_regif
     tx_id_in_valid   = 1'b0;
     rx_id_in_valid   = 1'b0;
 
+    // axi4l_to_memif intentionally does not enforce byte strobe policy.
+    // This register interface requires full-word writes only.
     if (mem_wstrb == 4'b1111 && mem_wenable) begin
       case (mem_waddr)
 
