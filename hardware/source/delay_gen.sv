@@ -35,7 +35,7 @@ module delay_gen #(
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Counter to track the number of real-time clock cycles elapsed
-  logic [$clog2(DELAY_CYCLES)-1:0] counter;
+  logic [$clog2(DELAY_CYCLES+1)-1:0] counter;
 
   // Flag indicating when the counter has reached the programmed delay
   logic counter_done;
@@ -69,6 +69,8 @@ module delay_gen #(
     end else begin
       if (enable_i) begin
         enable_o <= counter_done;
+      end else begin
+        enable_o <= '0;  // If enable_i goes low, reset the output immediately
       end
     end
   end

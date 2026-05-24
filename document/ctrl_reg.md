@@ -66,11 +66,11 @@ The CORE_HART_ID register holds the hardware thread identifier exposed by the co
 
 The CORE_CLK_RST register controls core clocking and reset-related behavior. Software can use this register to manage the core operating state through a single control word.
 
-| Bits   | Reset Value | Field       | Description                        |
-| ------ | ----------- | ----------- | ---------------------------------- |
-| `0`    | 0x00000000  | CORE_RST_EN | Core clock and reset control value |
-| `1`    | 0x00000000  | CORE_CLK_EN | Core clock and reset control value |
-| `31:2` | 0x00000000  | RESERVED    | Core clock and reset control value |
+| Bits   | Reset Value | Field       | Description                           |
+| ------ | ----------- | ----------- | ------------------------------------- |
+| `0`    | 0x00000000  | CORE_RST_EN | Active HIGH core reset enable control |
+| `1`    | 0x00000000  | CORE_CLK_EN | Active HIGH core clock enable control |
+| `31:2` | 0x00000000  | RESERVED    | Reserved for future use               |
 
 ## PLL_CFG
 

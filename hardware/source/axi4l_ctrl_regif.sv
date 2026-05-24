@@ -149,7 +149,7 @@ module axi4l_ctrl_regif
     if (!arst_ni) begin
       core_boot_addr_q <= CTRL_CORE_BOOT_ADDR_RESET;
       core_hart_id_q   <= 32'h0000_0000;
-      core_clk_rst_q   <= 32'h0000_0000;
+      core_clk_rst_q   <= bootmode_i ? 32'h0000_0002 : 32'h0000_0000;
       tohost_q         <= 32'h0000_0000;
       fromhost_q       <= 32'h0000_0000;
       gpio_out_q       <= 32'h0000_0000;

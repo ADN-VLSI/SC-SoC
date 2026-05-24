@@ -18,17 +18,46 @@ module ctrl_subsystem (
     inout wire [31:0] gpio_io
 );
 
-
-  logic [ 4:0] pll_ref_div;
+  logic [4:0] pll_ref_div;
   logic [13:0] pll_fb_div;
 
   logic pll_clk_o;
   logic pll_locked;
+
+  logic allow_sys_clk;
+  logic allow_core_clk;
+
   logic core_rst_en;
   logic core_clk_en;
 
-  always_comb system_arst_no = glob_arst_ni;
-  always_comb core_arst_no   = glob_arst_ni & (~core_rst_en);
+  logic [31:0] gpio_dir;
+  logic [31:0] gpio_out;
+  logic [31:0] gpio_pull;
+  logic [31:0] gpio_in;
+
+  logic core_reset_n;
+
+  delay_gen #(
+      .DELAY_CYCLES(8)
+  ) sys_rst_delay (
+      .arst_ni(glob_arst_ni),
+      .real_time_clk_i(xtal_i),
+      .clk_i(xtal_i),
+      .enable_i(glob_arst_ni),
+      .enable_o(system_arst_no)
+  );
+
+  delay_gen #(
+      .DELAY_CYCLES(8)
+  ) core_rst_delay (
+      .arst_ni(core_reset_n),
+      .real_time_clk_i(xtal_i),
+      .clk_i(xtal_i),
+      .enable_i(core_reset_n),
+      .enable_o(core_arst_no)
+  );
+
+  always_comb core_reset_n = glob_arst_ni & (~core_rst_en);
 
   axi4l_ctrl_regif #(
       .axil_req_t (ctrl_pkg::ctrl_axil_req_t),
@@ -45,10 +74,10 @@ module ctrl_subsystem (
       .pll_ref_div_o(pll_ref_div),
       .pll_fb_div_o(pll_fb_div),
       .bootmode_i(bootmode_i),
-      .gpio_in_i(),  // TODO
-      .gpio_out_o(),  // TODO
-      .gpio_dir_o(),  // TODO
-      .gpio_pull_o()  // TODO
+      .gpio_in_i(gpio_in),
+      .gpio_out_o(gpio_out),
+      .gpio_dir_o(gpio_dir),
+      .gpio_pull_o(gpio_pull)
   );
 
   pll #(
@@ -63,18 +92,48 @@ module ctrl_subsystem (
       .locked_o (pll_locked)
   );
 
+  delay_gen #(
+      .DELAY_CYCLES(8)
+  ) sys_clk_delay (
+      .arst_ni(system_arst_no),
+      .real_time_clk_i(xtal_i),
+      .clk_i(pll_clk_o),
+      .enable_i(pll_locked),
+      .enable_o(allow_sys_clk)
+  );
+
   clk_gate u_clk_gate_sys (
       .arst_ni(glob_arst_ni),
-      .en_i   (pll_locked),
-      .clk_i (pll_clk_o),
-      .clk_o (system_clk_o)
+      .en_i   (allow_sys_clk),
+      .clk_i  (pll_clk_o),
+      .clk_o  (system_clk_o)
+  );
+
+  delay_gen #(
+      .DELAY_CYCLES(8)
+  ) core_clk_delay (
+      .arst_ni(core_arst_no),
+      .real_time_clk_i(xtal_i),
+      .clk_i(pll_clk_o),
+      .enable_i(core_clk_en),
+      .enable_o(allow_core_clk)
   );
 
   clk_gate u_clk_gate_core (
       .arst_ni(glob_arst_ni),
-      .en_i   (core_clk_en),
-      .clk_i (system_clk_o),
-      .clk_o (core_clk_o)
+      .en_i   (allow_core_clk),
+      .clk_i  (system_clk_o),
+      .clk_o  (core_clk_o)
+  );
+
+  gpio #(
+      .GPIO_WIDTH(32)
+  ) u_gpio (
+      .gpio_dir_i (gpio_dir),
+      .gpio_out_i (gpio_out),
+      .gpio_pull_i(gpio_pull),
+      .gpio_in_o  (gpio_in),
+      .gpio_pin_io(gpio_io)
   );
 
 endmodule
