@@ -212,7 +212,8 @@ module axi4l_ctrl_regif
         mem_werror = 1'b0;
         CTRL_DMA_SRC_ADDR_OFFSET,
             CTRL_DMA_DST_ADDR_OFFSET:
-        mem_werror = |mem_wdata[1:0];
+        // No realignment in DMA bringup path: reject unaligned byte addresses.
+        mem_werror = (mem_wdata[1:0] != 2'b00);
         default: begin
         end
       endcase
