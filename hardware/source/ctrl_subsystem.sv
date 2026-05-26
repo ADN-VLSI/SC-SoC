@@ -41,8 +41,6 @@ module ctrl_subsystem (
   logic [31:0] gpio_out;
   logic [31:0] gpio_pull;
   logic [31:0] gpio_in;
-  (* unused = "true" *) logic [31:0] tohost_reg;
-  (* unused = "true" *) logic [31:0] fromhost_reg;
 
   logic core_reset_n;
 
@@ -87,8 +85,8 @@ module ctrl_subsystem (
       .gpio_out_o(gpio_out),
       .gpio_dir_o(gpio_dir),
       .gpio_pull_o(gpio_pull),
-      .tohost_o(tohost_reg),
-      .fromhost_o(fromhost_reg),
+      .tohost_o(),
+      .fromhost_o(),
       .dma_src_addr_o(dma_src_addr_o),
       .dma_dst_addr_o(dma_dst_addr_o),
       .dma_num_words_o(dma_num_words_o),
