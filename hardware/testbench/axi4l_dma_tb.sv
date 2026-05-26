@@ -46,12 +46,12 @@ module axi4l_dma_tb;
       .axi4l_resp_o(dma_resp)
   );
 
-  task automatic check(input logic ok, inout int p, inout int f, input string msg);
+  task automatic check(input logic ok, inout int pass_count, inout int fail_count, input string msg);
     if (ok) begin
-      p++;
+      pass_count++;
       $display("  [PASS] %s", msg);
     end else begin
-      f++;
+      fail_count++;
       $display("  [FAIL] %s", msg);
     end
   endtask
