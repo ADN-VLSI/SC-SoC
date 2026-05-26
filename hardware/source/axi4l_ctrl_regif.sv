@@ -197,7 +197,7 @@ module axi4l_ctrl_regif
           CTRL_DMA_DST_ADDR_OFFSET:   dma_dst_addr_q <= mem_wdata;
           CTRL_DMA_NUM_WORDS_OFFSET: begin
             dma_num_words_q <= mem_wdata;
-            dma_start_pulse_q <= (mem_wdata != 32'h0000_0000) && !dma_busy_i;
+            dma_start_pulse_q <= (mem_wdata != 32'h0000_0000);
           end
           default: begin
           end
