@@ -182,7 +182,8 @@ module axi4l_ctrl_regif
       dma_num_words_q  <= CTRL_DMA_NUM_WORDS_RESET;
       dma_start_pulse_q <= 1'b0;
     end else begin
-      dma_start_pulse_q <= 1'b0;
+      dma_start_pulse_q <= mem_write_ok && (mem_waddr == CTRL_DMA_NUM_WORDS_OFFSET) &&
+          (mem_wdata != 32'h0000_0000);
       if (mem_write_ok) begin
         case (mem_waddr)
           CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= mem_wdata;
@@ -197,7 +198,6 @@ module axi4l_ctrl_regif
           CTRL_DMA_DST_ADDR_OFFSET:   dma_dst_addr_q <= mem_wdata;
           CTRL_DMA_NUM_WORDS_OFFSET: begin
             dma_num_words_q <= mem_wdata;
-            dma_start_pulse_q <= (mem_wdata != 32'h0000_0000);
           end
           default: begin
           end

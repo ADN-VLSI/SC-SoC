@@ -12,6 +12,7 @@ task automatic tc11(inout int p, inout int f);
   logic [31:0] src_before;
   logic [31:0] dst_before;
   logic        start_pulse_observed;
+  logic        start_pulse_timeout;
   p = 0; f = 0;
 
   $display("\n-- TC11: DMA Register + Status Plumbing --");
@@ -48,6 +49,7 @@ task automatic tc11(inout int p, inout int f);
   write_32(reg_addr(CTRL_DMA_DST_ADDR_OFFSET), 32'h2000_0080, resp);
   check(resp === 2'b00, p, f, "DMA_DST_ADDR aligned write resp=OKAY");
   start_pulse_observed = 1'b0;
+  start_pulse_timeout  = 1'b0;
   fork
     begin
       write_32(reg_addr(CTRL_DMA_NUM_WORDS_OFFSET), 32'h0000_0010, resp);
@@ -56,9 +58,14 @@ task automatic tc11(inout int p, inout int f);
       @(posedge dma_start_pulse_o);
       start_pulse_observed = 1'b1;
     end
+    begin
+      repeat (20) @(posedge clk_i);
+      if (!start_pulse_observed) start_pulse_timeout = 1'b1;
+    end
   join
   check(resp === 2'b00, p, f, "DMA_NUM_WORDS write resp=OKAY");
   check(start_pulse_observed === 1'b1, p, f, "DMA start pulse asserted on non-zero length write");
+  check(start_pulse_timeout === 1'b0, p, f, "DMA start pulse observed before timeout");
   @(posedge clk_i);
 
   read_32(reg_addr(CTRL_DMA_SRC_ADDR_OFFSET), rdata, resp);
