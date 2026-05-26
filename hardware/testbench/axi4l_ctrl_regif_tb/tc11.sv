@@ -1,4 +1,4 @@
-// tc11.sv — TC11: DMA Register Bringup
+// tc11.sv -- TC11: DMA Register Bringup
 //
 // Verifies:
 //   1. DMA source/destination/word-count reset values.

@@ -210,8 +210,7 @@ module axi4l_ctrl_regif
             CTRL_GPIO_PULL_OFFSET,
             CTRL_DMA_NUM_WORDS_OFFSET:
         mem_werror = 1'b0;
-        CTRL_DMA_SRC_ADDR_OFFSET,
-            CTRL_DMA_DST_ADDR_OFFSET:
+        CTRL_DMA_SRC_ADDR_OFFSET, CTRL_DMA_DST_ADDR_OFFSET:
         // No realignment in DMA bringup path: reject unaligned byte addresses.
         mem_werror = (mem_wdata[1:0] != 2'b00);
         default: begin
