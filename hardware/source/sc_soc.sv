@@ -60,6 +60,7 @@ module sc_soc
   logic                      [  DATA_WIDTH-1:0] dma_dst_addr;
   logic                      [  DATA_WIDTH-1:0] dma_num_words;
   logic                                         dma_start_pulse;
+  // DMA idle status is preserved locally until SoC-level interrupt aggregation is added.
   logic                                         dma_busy;
   (* unused = "true" *) logic                  dma_idle_irq;
   logic                      [  DATA_WIDTH-1:0] dma_words_remaining;
