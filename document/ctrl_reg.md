@@ -173,7 +173,7 @@ The DMA_DST_ADDR register holds the destination address for the single DMA chann
 
 `Offset:0x0B8` `Type:RW`
 
-The DMA_NUM_WORDS register programs the transfer length in 32-bit words for the single DMA channel bringup path.
+The DMA_NUM_WORDS register programs the transfer length in 32-bit words for the single DMA channel. A successful non-zero write arms a DMA transfer using the current `DMA_SRC_ADDR` and `DMA_DST_ADDR` values.
 
 | Bits   | Reset Value | Field | Description                  |
 | ------ | ----------- | ----- | ---------------------------- |
@@ -183,9 +183,30 @@ The DMA_NUM_WORDS register programs the transfer length in 32-bit words for the 
 
 `Offset:0x0BC` `Type:RO`
 
-DMA_IDLE_IRQ exposes a simple idle interrupt indication. Bit 0 is `1` when DMA is idle (`DMA_NUM_WORDS == 0`) and `0` otherwise.
+DMA_IDLE_IRQ exposes a simple idle interrupt indication. Bit 0 is `1` when the DMA engine is idle and `0` while a transfer is in progress.
 
 | Bits   | Reset Value | Field | Description              |
 | ------ | ----------- | ----- | ------------------------ |
 | `0`    | 0x1         | IDLE  | DMA idle interrupt state |
 | `31:1` | 0x0         | RSVD  | Reserved                 |
+
+## DMA_BUSY
+
+`Offset:0x0C0` `Type:RO`
+
+DMA_BUSY exposes the live DMA busy status. Bit 0 is asserted from transfer start until the final write response is accepted.
+
+| Bits   | Reset Value | Field | Description       |
+| ------ | ----------- | ----- | ----------------- |
+| `0`    | 0x0         | BUSY  | DMA active status |
+| `31:1` | 0x0         | RSVD  | Reserved          |
+
+## DMA_WORDS_REMAINING
+
+`Offset:0x0C4` `Type:RO`
+
+DMA_WORDS_REMAINING reports the number of 32-bit destination writes that have not yet completed.
+
+| Bits   | Reset Value | Field | Description                    |
+| ------ | ----------- | ----- | ------------------------------ |
+| `31:0` | 0x00000000  | WORDS | Remaining 32-bit words in DMA |

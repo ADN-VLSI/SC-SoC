@@ -21,6 +21,8 @@ package ctrl_pkg;
         localparam int CTRL_DMA_DST_ADDR_OFFSET   = 32'h0B4;         // Defining Register Offsets
         localparam int CTRL_DMA_NUM_WORDS_OFFSET  = 32'h0B8;         // Defining Register Offsets
         localparam int CTRL_DMA_IDLE_IRQ_OFFSET   = 32'h0BC;         // Defining Register Offsets
+        localparam int CTRL_DMA_BUSY_OFFSET       = 32'h0C0;         // Defining Register Offsets
+        localparam int CTRL_DMA_WORDS_REMAINING_OFFSET = 32'h0C4;    // Defining Register Offsets
 
         localparam int CTRL_SOC_ID_RESET         = 32'h4467_0931;    // Defining Constants
         localparam int CTRL_REV_ID_RESET         = 32'h0000_0001;    // Defining Constants 

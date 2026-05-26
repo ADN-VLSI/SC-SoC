@@ -34,6 +34,9 @@ module axi4l_ctrl_regif
     output logic [31:0] dma_src_addr_o,
     output logic [31:0] dma_dst_addr_o,
     output logic [31:0] dma_num_words_o,
+    output logic        dma_start_pulse_o,
+    input  logic        dma_busy_i,
+    input  logic [31:0] dma_words_remaining_i,
     output logic        dma_idle_irq_o
 );
 
@@ -154,7 +157,9 @@ module axi4l_ctrl_regif
   assign dma_src_addr_o   = dma_src_addr_q;
   assign dma_dst_addr_o   = dma_dst_addr_q;
   assign dma_num_words_o  = dma_num_words_q;
-  assign dma_idle_irq_o   = (dma_num_words_q == 32'h0000_0000);
+  assign dma_start_pulse_o = mem_write_ok && (mem_waddr == CTRL_DMA_NUM_WORDS_OFFSET) &&
+      (mem_wdata != 32'h0000_0000) && !dma_busy_i;
+  assign dma_idle_irq_o   = ~dma_busy_i;
   assign pll_fb_div_o     = CTRL_PLL_CFG_RESET[18:5];
   assign pll_ref_div_o    = CTRL_PLL_CFG_RESET[4:0];
 
@@ -316,6 +321,16 @@ module axi4l_ctrl_regif
 
         CTRL_DMA_IDLE_IRQ_OFFSET: begin
           mem_rdata  = {31'b0, dma_idle_irq_o};
+          mem_rerror = 1'b0;
+        end
+
+        CTRL_DMA_BUSY_OFFSET: begin
+          mem_rdata  = {31'b0, dma_busy_i};
+          mem_rerror = 1'b0;
+        end
+
+        CTRL_DMA_WORDS_REMAINING_OFFSET: begin
+          mem_rdata  = dma_words_remaining_i;
           mem_rerror = 1'b0;
         end
 

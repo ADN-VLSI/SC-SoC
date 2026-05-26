@@ -18,7 +18,7 @@ package sc_soc_pkg;
   localparam int CTRL_BASE = 32'h0001_0000;
   localparam int CTRL_LEN  = 32'h0000_1000;
 
-  localparam int SLAVE_PORTS = 3;
+  localparam int SLAVE_PORTS = 4;
   localparam int MASTER_PORTS = 4;
 
   `APB_TYPEDEF_ALL(apb, logic[ADDR_WIDTH-1:0], logic[DATA_WIDTH-1:0], logic[DATA_WIDTH/8-1:0])

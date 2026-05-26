@@ -17,7 +17,7 @@
 //   TC8  — Partial write rejection
 //   TC9  — Unmapped address handling
 //   TC10 — AXI FIFO back-pressure
-//   TC11 — DMA register bringup
+//   TC11 — DMA register + status plumbing
 // =============================================================================
 
 `include "package/sc_soc_pkg.sv"
@@ -71,11 +71,14 @@ module axi4l_ctrl_regif_tb;
   logic [31:0] dma_src_addr_o;
   logic [31:0] dma_dst_addr_o;
   logic [31:0] dma_num_words_o;
+  logic        dma_start_pulse_o;
   logic        dma_idle_irq_o;
 
   // Sideband inputs (TB → DUT)
   logic        bootmode_i;
   logic [31:0] gpio_in_i;
+  logic        dma_busy_i;
+  logic [31:0] dma_words_remaining_i;
 
   // ---------------------------------------------------------------------------
   // AXI4-Lite interface (parameterised with testbench's my_* types)
@@ -154,6 +157,9 @@ module axi4l_ctrl_regif_tb;
     .dma_src_addr_o  (dma_src_addr_o),
     .dma_dst_addr_o  (dma_dst_addr_o),
     .dma_num_words_o (dma_num_words_o),
+    .dma_start_pulse_o(dma_start_pulse_o),
+    .dma_busy_i      (dma_busy_i),
+    .dma_words_remaining_i(dma_words_remaining_i),
     .dma_idle_irq_o  (dma_idle_irq_o)
   );
 
@@ -268,6 +274,8 @@ module axi4l_ctrl_regif_tb;
     // Default sideband stimulus
     bootmode_i  <= 1'b0;
     gpio_in_i   <= 32'h0000_0000;
+    dma_busy_i  <= 1'b0;
+    dma_words_remaining_i <= 32'h0000_0000;
 
     // Reset sequence
     clk_i   <= 1'b0;

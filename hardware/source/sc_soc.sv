@@ -24,6 +24,9 @@ module sc_soc
 );
 
   logic                                         system_clk;
+  logic                                         system_arst_n;
+  logic                                         core_clk;
+  logic                                         core_arst_n;
   logic                      [  ADDR_WIDTH-1:0] boot_addr;
   logic                      [  DATA_WIDTH-1:0] hart_id;
 
@@ -53,6 +56,12 @@ module sc_soc
 
   ctrl_pkg::ctrl_axil_req_t                     ctrl_req;
   ctrl_pkg::ctrl_axil_resp_t                    ctrl_resp;
+  logic                      [  DATA_WIDTH-1:0] dma_src_addr;
+  logic                      [  DATA_WIDTH-1:0] dma_dst_addr;
+  logic                      [  DATA_WIDTH-1:0] dma_num_words;
+  logic                                         dma_start_pulse;
+  logic                                         dma_busy;
+  logic                      [  DATA_WIDTH-1:0] dma_words_remaining;
 
   always_comb begin  // TODO REMOVE
     axil_master_port_resp[2] = '0;
@@ -228,8 +237,31 @@ module sc_soc
       .hart_id_o     (hart_id),
       .core_clk_o    (core_clk),
       .core_arst_no  (core_arst_n),
+      .dma_src_addr_o(dma_src_addr),
+      .dma_dst_addr_o(dma_dst_addr),
+      .dma_num_words_o(dma_num_words),
+      .dma_start_pulse_o(dma_start_pulse),
+      .dma_busy_i(dma_busy),
+      .dma_words_remaining_i(dma_words_remaining),
       .bootmode_i    (bootmode_i),
       .gpio_io       (gpio_io)
+  );
+
+  axi4l_dma #(
+      .axil_req_t (axil_req_t),
+      .axil_resp_t(axil_resp_t)
+  ) u_dma (
+      .clk_i                (system_clk),
+      .arst_ni              (system_arst_n),
+      .dma_start_i          (dma_start_pulse),
+      .dma_src_addr_i       (dma_src_addr),
+      .dma_dst_addr_i       (dma_dst_addr),
+      .dma_num_words_i      (dma_num_words),
+      .dma_busy_o           (dma_busy),
+      .dma_words_remaining_o(dma_words_remaining),
+      .dma_idle_irq_o       (),
+      .req_o                (axil_slave_port_req[3]),
+      .resp_i               (axil_slave_port_resp[3])
   );
 
 endmodule

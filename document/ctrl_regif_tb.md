@@ -242,23 +242,25 @@ Verify the internal `axi4l_fifo` correctly stalls and drains under back-pressure
 
 ---
 
-### TC11 — DMA Register Bringup
+### TC11 — DMA Register + Status Plumbing
 
 #### Objective
-Verify single-channel DMA bringup registers (`DMA_SRC_ADDR`, `DMA_DST_ADDR`, `DMA_NUM_WORDS`) and the simple idle interrupt behavior.
+Verify single-channel DMA programming registers plus DMA status readback plumbing (`DMA_BUSY`, `DMA_WORDS_REMAINING`, `DMA_IDLE_IRQ`).
 
 #### Test Steps
 - Read all DMA registers after reset and check defaults.
 - Perform aligned writes to source and destination address registers and verify readback.
+- Program `DMA_NUM_WORDS` and confirm the register interface emits a start pulse.
 - Attempt misaligned source/destination writes and verify SLVERR with no register update.
-- Program `DMA_NUM_WORDS` to non-zero and then back to zero; check `DMA_IDLE_IRQ` in each state.
+- Drive DMA status inputs to active and idle values; check `DMA_BUSY`, `DMA_WORDS_REMAINING`, and `DMA_IDLE_IRQ`.
 
 #### Pass Criteria
 
 | Check | Expected |
 | --- | --- |
-| Reset readbacks | SRC/DST/WORDS = `0x0`, IDLE_IRQ = `1` |
+| Reset readbacks | SRC/DST/WORDS = `0x0`, BUSY = `0`, WORDS_REMAINING = `0`, IDLE_IRQ = `1` |
 | Aligned SRC/DST writes | OKAY, values retained |
+| Non-zero `DMA_NUM_WORDS` write | OKAY, `dma_start_pulse_o` asserted |
 | Misaligned SRC/DST writes | SLVERR, values unchanged |
-| `DMA_NUM_WORDS != 0` | `DMA_IDLE_IRQ = 0` |
-| `DMA_NUM_WORDS == 0` | `DMA_IDLE_IRQ = 1` |
+| Active DMA status input | `DMA_BUSY = 1`, `DMA_WORDS_REMAINING` mirrors input, `DMA_IDLE_IRQ = 0` |
+| Idle DMA status input | `DMA_BUSY = 0`, `DMA_WORDS_REMAINING = 0`, `DMA_IDLE_IRQ = 1` |

@@ -12,6 +12,13 @@ module ctrl_subsystem (
     output logic [31:0] hart_id_o,
     output logic        core_clk_o,
     output logic        core_arst_no,
+    output logic [31:0] dma_src_addr_o,
+    output logic [31:0] dma_dst_addr_o,
+    output logic [31:0] dma_num_words_o,
+    output logic        dma_start_pulse_o,
+
+    input logic        dma_busy_i,
+    input logic [31:0] dma_words_remaining_i,
 
     input logic bootmode_i,
 
@@ -34,6 +41,8 @@ module ctrl_subsystem (
   logic [31:0] gpio_out;
   logic [31:0] gpio_pull;
   logic [31:0] gpio_in;
+  (* unused = "true" *) logic [31:0] tohost_unused;
+  (* unused = "true" *) logic [31:0] fromhost_unused;
 
   logic core_reset_n;
 
@@ -77,7 +86,16 @@ module ctrl_subsystem (
       .gpio_in_i(gpio_in),
       .gpio_out_o(gpio_out),
       .gpio_dir_o(gpio_dir),
-      .gpio_pull_o(gpio_pull)
+      .gpio_pull_o(gpio_pull),
+      .tohost_o(tohost_unused),
+      .fromhost_o(fromhost_unused),
+      .dma_src_addr_o(dma_src_addr_o),
+      .dma_dst_addr_o(dma_dst_addr_o),
+      .dma_num_words_o(dma_num_words_o),
+      .dma_start_pulse_o(dma_start_pulse_o),
+      .dma_busy_i(dma_busy_i),
+      .dma_words_remaining_i(dma_words_remaining_i),
+      .dma_idle_irq_o()
   );
 
   pll #(

@@ -1,19 +1,20 @@
-// tc11.sv -- TC11: DMA Register Bringup
+// tc11.sv -- TC11: DMA Register + Status Plumbing
 //
 // Verifies:
 //   1. DMA source/destination/word-count reset values.
 //   2. Aligned source/destination writes are accepted.
 //   3. Misaligned source/destination writes are rejected (no realignment).
-//   4. DMA idle interrupt reports idle when num_words == 0.
+//   4. DMA start pulse/status readback plumbing is exposed through CTRL space.
 // -----------------------------------------------------------------------------
 task automatic tc11(inout int p, inout int f);
   logic [31:0] rdata;
   logic [1:0]  resp;
   logic [31:0] src_before;
   logic [31:0] dst_before;
+  logic        start_seen;
   p = 0; f = 0;
 
-  $display("\n-- TC11: DMA Register Bringup --");
+  $display("\n-- TC11: DMA Register + Status Plumbing --");
 
   // Reset defaults
   read_32(reg_addr(CTRL_DMA_SRC_ADDR_OFFSET), rdata, resp);
@@ -33,13 +34,31 @@ task automatic tc11(inout int p, inout int f);
   check(rdata === 32'h0000_0001, p, f, "DMA idle interrupt asserted at reset");
   check(dma_idle_irq_o === 1'b1, p, f, "dma_idle_irq_o asserted at reset");
 
+  read_32(reg_addr(CTRL_DMA_BUSY_OFFSET), rdata, resp);
+  check(resp  === 2'b00, p, f, "DMA_BUSY reset read resp=OKAY");
+  check(rdata === 32'h0000_0000, p, f, "DMA busy deasserted at reset");
+
+  read_32(reg_addr(CTRL_DMA_WORDS_REMAINING_OFFSET), rdata, resp);
+  check(resp  === 2'b00, p, f, "DMA_WORDS_REMAINING reset read resp=OKAY");
+  check(rdata === 32'h0000_0000, p, f, "DMA words remaining reset value");
+
   // Aligned writes
   write_32(reg_addr(CTRL_DMA_SRC_ADDR_OFFSET), 32'h2000_0040, resp);
   check(resp === 2'b00, p, f, "DMA_SRC_ADDR aligned write resp=OKAY");
   write_32(reg_addr(CTRL_DMA_DST_ADDR_OFFSET), 32'h2000_0080, resp);
   check(resp === 2'b00, p, f, "DMA_DST_ADDR aligned write resp=OKAY");
-  write_32(reg_addr(CTRL_DMA_NUM_WORDS_OFFSET), 32'h0000_0010, resp);
+  start_seen = 1'b0;
+  fork
+    begin
+      write_32(reg_addr(CTRL_DMA_NUM_WORDS_OFFSET), 32'h0000_0010, resp);
+    end
+    begin
+      @(posedge dma_start_pulse_o);
+      start_seen = 1'b1;
+    end
+  join
   check(resp === 2'b00, p, f, "DMA_NUM_WORDS write resp=OKAY");
+  check(start_seen === 1'b1, p, f, "DMA start pulse asserted on non-zero length write");
   @(posedge clk_i);
 
   read_32(reg_addr(CTRL_DMA_SRC_ADDR_OFFSET), rdata, resp);
@@ -52,10 +71,22 @@ task automatic tc11(inout int p, inout int f);
   check(rdata === 32'h2000_0080, p, f, "DMA_DST_ADDR aligned value retained");
   check(dma_dst_addr_o === 32'h2000_0080, p, f, "dma_dst_addr_o aligned value");
 
+  dma_busy_i            <= 1'b1;
+  dma_words_remaining_i <= 32'h0000_0010;
+  @(posedge clk_i);
+
+  read_32(reg_addr(CTRL_DMA_BUSY_OFFSET), rdata, resp);
+  check(resp  === 2'b00, p, f, "DMA_BUSY active read resp=OKAY");
+  check(rdata === 32'h0000_0001, p, f, "DMA busy asserted when status input is high");
+
+  read_32(reg_addr(CTRL_DMA_WORDS_REMAINING_OFFSET), rdata, resp);
+  check(resp  === 2'b00, p, f, "DMA_WORDS_REMAINING active read resp=OKAY");
+  check(rdata === 32'h0000_0010, p, f, "DMA words remaining mirrors status input");
+
   read_32(reg_addr(CTRL_DMA_IDLE_IRQ_OFFSET), rdata, resp);
   check(resp  === 2'b00, p, f, "DMA_IDLE_IRQ active transfer read resp=OKAY");
-  check(rdata === 32'h0000_0000, p, f, "DMA idle interrupt deasserted when words!=0");
-  check(dma_idle_irq_o === 1'b0, p, f, "dma_idle_irq_o deasserted when words!=0");
+  check(rdata === 32'h0000_0000, p, f, "DMA idle interrupt deasserted when busy=1");
+  check(dma_idle_irq_o === 1'b0, p, f, "dma_idle_irq_o deasserted when busy=1");
 
   // Misaligned writes must be rejected and values must not change
   read_32(reg_addr(CTRL_DMA_SRC_ADDR_OFFSET), src_before, resp);
@@ -82,13 +113,23 @@ task automatic tc11(inout int p, inout int f);
   check(rdata === dst_before, p, f, "DMA_DST_ADDR unchanged after misaligned write");
 
   // Return to idle
+  dma_busy_i            <= 1'b0;
+  dma_words_remaining_i <= 32'h0000_0000;
   write_32(reg_addr(CTRL_DMA_NUM_WORDS_OFFSET), 32'h0000_0000, resp);
   check(resp === 2'b00, p, f, "DMA_NUM_WORDS clear write resp=OKAY");
   @(posedge clk_i);
 
+  read_32(reg_addr(CTRL_DMA_BUSY_OFFSET), rdata, resp);
+  check(resp  === 2'b00, p, f, "DMA_BUSY idle read resp=OKAY");
+  check(rdata === 32'h0000_0000, p, f, "DMA busy deasserted when idle");
+
+  read_32(reg_addr(CTRL_DMA_WORDS_REMAINING_OFFSET), rdata, resp);
+  check(resp  === 2'b00, p, f, "DMA_WORDS_REMAINING idle read resp=OKAY");
+  check(rdata === 32'h0000_0000, p, f, "DMA words remaining returns to zero");
+
   read_32(reg_addr(CTRL_DMA_IDLE_IRQ_OFFSET), rdata, resp);
   check(resp  === 2'b00, p, f, "DMA_IDLE_IRQ idle read resp=OKAY");
-  check(rdata === 32'h0000_0001, p, f, "DMA idle interrupt asserted when words==0");
-  check(dma_idle_irq_o === 1'b1, p, f, "dma_idle_irq_o asserted when words==0");
+  check(rdata === 32'h0000_0001, p, f, "DMA idle interrupt asserted when busy==0");
+  check(dma_idle_irq_o === 1'b1, p, f, "dma_idle_irq_o asserted when busy==0");
 
 endtask
