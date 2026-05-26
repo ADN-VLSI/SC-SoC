@@ -19,6 +19,10 @@ This document defines the Control register map and bit-field assignments. All re
 | `0x0A4` | GPIO_OUT       | RW   | 0x00000000  | GPIO Output Value Control                  |
 | `0x0A8` | GPIO_DIR       | RW   | 0x00000000  | GPIO Direction Control                     |
 | `0x0AC` | GPIO_PULL      | RW   | 0x00000000  | GPIO Pull Control                          |
+| `0x0B0` | DMA_SRC_ADDR   | RW   | 0x00000000  | DMA source address (32-bit aligned)        |
+| `0x0B4` | DMA_DST_ADDR   | RW   | 0x00000000  | DMA destination address (32-bit aligned)   |
+| `0x0B8` | DMA_NUM_WORDS  | RW   | 0x00000000  | DMA transfer length in 32-bit words        |
+| `0x0BC` | DMA_IDLE_IRQ   | RO   | 0x00000001  | DMA idle interrupt status                  |
 
 ## SOC_ID
 
@@ -144,3 +148,44 @@ The GPIO_IN register reports the sampled input values from the GPIO interface. S
 | Bits   | Reset Value | Field | Description             |
 | ------ | ----------- | ----- | ----------------------- |
 | `31:0` | -           | DATA  | GPIO input value status |
+
+## DMA_SRC_ADDR
+
+`Offset:0x0B0` `Type:RW`
+
+The DMA_SRC_ADDR register holds the source address for the single DMA channel. Writes must be 32-bit aligned (`ADDR[1:0] == 2'b00`); misaligned writes are rejected with SLVERR and do not modify the register.
+
+| Bits   | Reset Value | Field | Description             |
+| ------ | ----------- | ----- | ----------------------- |
+| `31:0` | 0x00000000  | ADDR  | DMA source byte address |
+
+## DMA_DST_ADDR
+
+`Offset:0x0B4` `Type:RW`
+
+The DMA_DST_ADDR register holds the destination address for the single DMA channel. Writes must be 32-bit aligned (`ADDR[1:0] == 2'b00`); misaligned writes are rejected with SLVERR and do not modify the register.
+
+| Bits   | Reset Value | Field | Description                  |
+| ------ | ----------- | ----- | ---------------------------- |
+| `31:0` | 0x00000000  | ADDR  | DMA destination byte address |
+
+## DMA_NUM_WORDS
+
+`Offset:0x0B8` `Type:RW`
+
+The DMA_NUM_WORDS register programs the transfer length in 32-bit words for the single DMA channel bringup path.
+
+| Bits   | Reset Value | Field | Description                  |
+| ------ | ----------- | ----- | ---------------------------- |
+| `31:0` | 0x00000000  | WORDS | Number of 32-bit words to transfer |
+
+## DMA_IDLE_IRQ
+
+`Offset:0x0BC` `Type:RO`
+
+DMA_IDLE_IRQ exposes a simple idle interrupt indication. Bit 0 is `1` when DMA is idle (`DMA_NUM_WORDS == 0`) and `0` otherwise.
+
+| Bits   | Reset Value | Field | Description              |
+| ------ | ----------- | ----- | ------------------------ |
+| `0`    | 0x1         | IDLE  | DMA idle interrupt state |
+| `31:1` | 0x0         | RSVD  | Reserved                 |

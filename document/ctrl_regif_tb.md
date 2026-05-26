@@ -239,3 +239,26 @@ Verify the internal `axi4l_fifo` correctly stalls and drains under back-pressure
 | `ar_ready` when FIFO full | Deasserted |
 | All write responses after drain | OKAY, in order |
 | All read responses after drain | OKAY, correct data, in order |
+
+---
+
+### TC11 — DMA Register Bringup
+
+#### Objective
+Verify single-channel DMA bringup registers (`DMA_SRC_ADDR`, `DMA_DST_ADDR`, `DMA_NUM_WORDS`) and the simple idle interrupt behavior.
+
+#### Test Steps
+- Read all DMA registers after reset and check defaults.
+- Perform aligned writes to source and destination address registers and verify readback.
+- Attempt misaligned source/destination writes and verify SLVERR with no register update.
+- Program `DMA_NUM_WORDS` to non-zero and then back to zero; check `DMA_IDLE_IRQ` in each state.
+
+#### Pass Criteria
+
+| Check | Expected |
+| --- | --- |
+| Reset readbacks | SRC/DST/WORDS = `0x0`, IDLE_IRQ = `1` |
+| Aligned SRC/DST writes | OKAY, values retained |
+| Misaligned SRC/DST writes | SLVERR, values unchanged |
+| `DMA_NUM_WORDS != 0` | `DMA_IDLE_IRQ = 0` |
+| `DMA_NUM_WORDS == 0` | `DMA_IDLE_IRQ = 1` |

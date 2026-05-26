@@ -17,6 +17,7 @@
 //   TC8  — Partial write rejection
 //   TC9  — Unmapped address handling
 //   TC10 — AXI FIFO back-pressure
+//   TC11 — DMA register bringup
 // =============================================================================
 
 `include "package/sc_soc_pkg.sv"
@@ -67,6 +68,10 @@ module axi4l_ctrl_regif_tb;
   logic [31:0] gpio_out_o;
   logic [31:0] gpio_dir_o;
   logic [31:0] gpio_pull_o;
+  logic [31:0] dma_src_addr_o;
+  logic [31:0] dma_dst_addr_o;
+  logic [31:0] dma_num_words_o;
+  logic        dma_idle_irq_o;
 
   // Sideband inputs (TB → DUT)
   logic        bootmode_i;
@@ -145,7 +150,11 @@ module axi4l_ctrl_regif_tb;
     .tohost_o        (tohost_o),
     .pll_ref_div_o   (pll_ref_div_o),
     .pll_fb_div_o    (pll_fb_div_o),
-    .fromhost_o      (fromhost_o)
+    .fromhost_o      (fromhost_o),
+    .dma_src_addr_o  (dma_src_addr_o),
+    .dma_dst_addr_o  (dma_dst_addr_o),
+    .dma_num_words_o (dma_num_words_o),
+    .dma_idle_irq_o  (dma_idle_irq_o)
   );
 
   // ---------------------------------------------------------------------------
@@ -234,6 +243,7 @@ module axi4l_ctrl_regif_tb;
   `include "axi4l_ctrl_regif_tb/tc8.sv"
   `include "axi4l_ctrl_regif_tb/tc9.sv"
   `include "axi4l_ctrl_regif_tb/tc10.sv"
+  `include "axi4l_ctrl_regif_tb/tc11.sv"
 
   // ---------------------------------------------------------------------------
   // Main initial block
@@ -246,7 +256,7 @@ module axi4l_ctrl_regif_tb;
     automatic int test_number = 0;
 
     if (!$value$plusargs("TEST=%d", test_number))
-      $fatal(1, "Must specify test with +TEST=N  (0-10).");
+      $fatal(1, "Must specify test with +TEST=N  (0-11).");
 
     $display("=== axi4l_ctrl_regif_tb  TEST=%0d ===", test_number);
     $timeformat(-9, 1, " ns", 20);
@@ -287,7 +297,8 @@ module axi4l_ctrl_regif_tb;
         8:  tc8 (p, f);
         9:  tc9 (p, f);
         10: tc10(p, f);
-        default: $fatal(1, "Invalid TEST=%0d  (valid 0-10)", test_number);
+        11: tc11(p, f);
+        default: $fatal(1, "Invalid TEST=%0d  (valid 0-11)", test_number);
       endcase
 
       $display("TC%0d iteration result: PASS=%0d  FAIL=%0d", test_number, p, f);

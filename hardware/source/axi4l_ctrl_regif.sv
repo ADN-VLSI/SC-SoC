@@ -26,7 +26,15 @@ module axi4l_ctrl_regif
     input  logic [31:0] gpio_in_i,
     output logic [31:0] gpio_out_o,
     output logic [31:0] gpio_dir_o,
-    output logic [31:0] gpio_pull_o
+    output logic [31:0] gpio_pull_o,
+
+    output logic [31:0] tohost_o,
+    output logic [31:0] fromhost_o,
+
+    output logic [31:0] dma_src_addr_o,
+    output logic [31:0] dma_dst_addr_o,
+    output logic [31:0] dma_num_words_o,
+    output logic        dma_idle_irq_o
 );
 
   // ---------------------------------------------------------------------------
@@ -130,6 +138,9 @@ module axi4l_ctrl_regif
   logic [31:0] gpio_out_q;
   logic [31:0] gpio_dir_q;
   logic [31:0] gpio_pull_q;
+  logic [31:0] dma_src_addr_q;
+  logic [31:0] dma_dst_addr_q;
+  logic [31:0] dma_num_words_q;
 
   assign core_boot_addr_o = core_boot_addr_q;
   assign core_hart_id_o   = core_hart_id_q;
@@ -138,6 +149,12 @@ module axi4l_ctrl_regif
   assign gpio_out_o       = gpio_out_q;
   assign gpio_dir_o       = gpio_dir_q;
   assign gpio_pull_o      = gpio_pull_q;
+  assign tohost_o         = tohost_q;
+  assign fromhost_o       = fromhost_q;
+  assign dma_src_addr_o   = dma_src_addr_q;
+  assign dma_dst_addr_o   = dma_dst_addr_q;
+  assign dma_num_words_o  = dma_num_words_q;
+  assign dma_idle_irq_o   = (dma_num_words_q == 32'h0000_0000);
   assign pll_fb_div_o     = CTRL_PLL_CFG_RESET[18:5];
   assign pll_ref_div_o    = CTRL_PLL_CFG_RESET[4:0];
 
@@ -155,6 +172,9 @@ module axi4l_ctrl_regif
       gpio_out_q       <= 32'h0000_0000;
       gpio_dir_q       <= 32'h0000_0000;
       gpio_pull_q      <= 32'h0000_0000;
+      dma_src_addr_q   <= CTRL_DMA_SRC_ADDR_RESET;
+      dma_dst_addr_q   <= CTRL_DMA_DST_ADDR_RESET;
+      dma_num_words_q  <= CTRL_DMA_NUM_WORDS_RESET;
     end else if (mem_write_ok) begin
       case (mem_waddr)
         CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= mem_wdata;
@@ -165,6 +185,9 @@ module axi4l_ctrl_regif
         CTRL_GPIO_OUT_OFFSET:       gpio_out_q <= mem_wdata;
         CTRL_GPIO_DIR_OFFSET:       gpio_dir_q <= mem_wdata;
         CTRL_GPIO_PULL_OFFSET:      gpio_pull_q <= mem_wdata;
+        CTRL_DMA_SRC_ADDR_OFFSET:   dma_src_addr_q <= mem_wdata;
+        CTRL_DMA_DST_ADDR_OFFSET:   dma_dst_addr_q <= mem_wdata;
+        CTRL_DMA_NUM_WORDS_OFFSET:  dma_num_words_q <= mem_wdata;
         default: begin
         end
       endcase
@@ -184,8 +207,12 @@ module axi4l_ctrl_regif
             CTRL_FROMHOST_OFFSET,
             CTRL_GPIO_OUT_OFFSET,
             CTRL_GPIO_DIR_OFFSET,
-            CTRL_GPIO_PULL_OFFSET:
+            CTRL_GPIO_PULL_OFFSET,
+            CTRL_DMA_NUM_WORDS_OFFSET:
         mem_werror = 1'b0;
+        CTRL_DMA_SRC_ADDR_OFFSET,
+            CTRL_DMA_DST_ADDR_OFFSET:
+        mem_werror = |mem_wdata[1:0];
         default: begin
         end
       endcase
@@ -269,6 +296,26 @@ module axi4l_ctrl_regif
 
         CTRL_GPIO_PULL_OFFSET: begin
           mem_rdata  = gpio_pull_q;
+          mem_rerror = 1'b0;
+        end
+
+        CTRL_DMA_SRC_ADDR_OFFSET: begin
+          mem_rdata  = dma_src_addr_q;
+          mem_rerror = 1'b0;
+        end
+
+        CTRL_DMA_DST_ADDR_OFFSET: begin
+          mem_rdata  = dma_dst_addr_q;
+          mem_rerror = 1'b0;
+        end
+
+        CTRL_DMA_NUM_WORDS_OFFSET: begin
+          mem_rdata  = dma_num_words_q;
+          mem_rerror = 1'b0;
+        end
+
+        CTRL_DMA_IDLE_IRQ_OFFSET: begin
+          mem_rdata  = {31'b0, dma_idle_irq_o};
           mem_rerror = 1'b0;
         end
 
