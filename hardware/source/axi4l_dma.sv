@@ -1,7 +1,7 @@
 module axi4l_dma #(
-    parameter type axil_req_t  = logic,
-    parameter type axil_resp_t = logic,
-    parameter int  FIFO_SIZE   = 2
+    parameter type axi4l_req_t  = logic,
+    parameter type axi4l_resp_t = logic,
+    parameter int  FIFO_SIZE    = 2
 ) (
     input logic clk_i,
     input logic arst_ni,
@@ -15,11 +15,12 @@ module axi4l_dma #(
     output logic [31:0] dma_words_remaining_o,
     output logic        dma_idle_irq_o,
 
-    output axil_req_t  req_o,
-    input  axil_resp_t resp_i
+    output axi4l_req_t  req_o,
+    input  axi4l_resp_t resp_i
 );
 
   localparam int FIFO_DEPTH = 2 ** FIFO_SIZE;
+  localparam int FIFO_COUNT_WIDTH = FIFO_SIZE + 2;
 
   logic [31:0] src_base_addr_q;
   logic [31:0] dst_base_addr_q;
@@ -40,7 +41,9 @@ module axi4l_dma #(
 
   logic [31:0] src_addr;
   logic [31:0] dst_addr;
-  logic [FIFO_SIZE+1:0] buffered_words;
+  logic [FIFO_COUNT_WIDTH-1:0] write_fifo_count_ext;
+  logic [FIFO_COUNT_WIDTH-1:0] reads_inflight_ext;
+  logic [FIFO_COUNT_WIDTH-1:0] buffered_words;
   logic                  src_agu_valid;
   logic                  dst_agu_valid;
   logic                  ar_handshake;
@@ -55,7 +58,9 @@ module axi4l_dma #(
   assign src_addr = src_base_addr_q + (src_words_issued_q << 2);
   assign dst_addr = dst_base_addr_q + (dst_words_issued_q << 2);
 
-  assign buffered_words = {{1'b0}, write_fifo_count} + {{1'b0}, reads_inflight_q};
+  assign write_fifo_count_ext = {{(FIFO_COUNT_WIDTH - (FIFO_SIZE + 1)) {1'b0}}, write_fifo_count};
+  assign reads_inflight_ext = {{(FIFO_COUNT_WIDTH - (FIFO_SIZE + 1)) {1'b0}}, reads_inflight_q};
+  assign buffered_words = write_fifo_count_ext + reads_inflight_ext;
   assign src_agu_valid  = dma_busy_q && (src_words_issued_q < total_words_q) &&
       (buffered_words < FIFO_DEPTH);
   assign dst_agu_valid  = dma_busy_q && (dst_words_issued_q < total_words_q);

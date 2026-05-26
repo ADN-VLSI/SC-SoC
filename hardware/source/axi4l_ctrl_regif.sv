@@ -144,6 +144,7 @@ module axi4l_ctrl_regif
   logic [31:0] dma_src_addr_q;
   logic [31:0] dma_dst_addr_q;
   logic [31:0] dma_num_words_q;
+  logic        dma_start_pulse_q;
 
   assign core_boot_addr_o = core_boot_addr_q;
   assign core_hart_id_o   = core_hart_id_q;
@@ -157,8 +158,7 @@ module axi4l_ctrl_regif
   assign dma_src_addr_o   = dma_src_addr_q;
   assign dma_dst_addr_o   = dma_dst_addr_q;
   assign dma_num_words_o  = dma_num_words_q;
-  assign dma_start_pulse_o = mem_write_ok && (mem_waddr == CTRL_DMA_NUM_WORDS_OFFSET) &&
-      (mem_wdata != 32'h0000_0000) && !dma_busy_i;
+  assign dma_start_pulse_o = dma_start_pulse_q;
   assign dma_idle_irq_o   = ~dma_busy_i;
   assign pll_fb_div_o     = CTRL_PLL_CFG_RESET[18:5];
   assign pll_ref_div_o    = CTRL_PLL_CFG_RESET[4:0];
@@ -180,22 +180,29 @@ module axi4l_ctrl_regif
       dma_src_addr_q   <= CTRL_DMA_SRC_ADDR_RESET;
       dma_dst_addr_q   <= CTRL_DMA_DST_ADDR_RESET;
       dma_num_words_q  <= CTRL_DMA_NUM_WORDS_RESET;
-    end else if (mem_write_ok) begin
-      case (mem_waddr)
-        CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= mem_wdata;
-        CTRL_CORE_HART_ID_OFFSET:   core_hart_id_q <= mem_wdata;
-        CTRL_CORE_CLK_RST_OFFSET:   core_clk_rst_q <= {30'b0, mem_wdata[1:0]};
-        CTRL_TOHOST_OFFSET:         tohost_q <= mem_wdata;
-        CTRL_FROMHOST_OFFSET:       fromhost_q <= mem_wdata;
-        CTRL_GPIO_OUT_OFFSET:       gpio_out_q <= mem_wdata;
-        CTRL_GPIO_DIR_OFFSET:       gpio_dir_q <= mem_wdata;
-        CTRL_GPIO_PULL_OFFSET:      gpio_pull_q <= mem_wdata;
-        CTRL_DMA_SRC_ADDR_OFFSET:   dma_src_addr_q <= mem_wdata;
-        CTRL_DMA_DST_ADDR_OFFSET:   dma_dst_addr_q <= mem_wdata;
-        CTRL_DMA_NUM_WORDS_OFFSET:  dma_num_words_q <= mem_wdata;
-        default: begin
-        end
-      endcase
+      dma_start_pulse_q <= 1'b0;
+    end else begin
+      dma_start_pulse_q <= 1'b0;
+      if (mem_write_ok) begin
+        case (mem_waddr)
+          CTRL_CORE_BOOT_ADDR_OFFSET: core_boot_addr_q <= mem_wdata;
+          CTRL_CORE_HART_ID_OFFSET:   core_hart_id_q <= mem_wdata;
+          CTRL_CORE_CLK_RST_OFFSET:   core_clk_rst_q <= {30'b0, mem_wdata[1:0]};
+          CTRL_TOHOST_OFFSET:         tohost_q <= mem_wdata;
+          CTRL_FROMHOST_OFFSET:       fromhost_q <= mem_wdata;
+          CTRL_GPIO_OUT_OFFSET:       gpio_out_q <= mem_wdata;
+          CTRL_GPIO_DIR_OFFSET:       gpio_dir_q <= mem_wdata;
+          CTRL_GPIO_PULL_OFFSET:      gpio_pull_q <= mem_wdata;
+          CTRL_DMA_SRC_ADDR_OFFSET:   dma_src_addr_q <= mem_wdata;
+          CTRL_DMA_DST_ADDR_OFFSET:   dma_dst_addr_q <= mem_wdata;
+          CTRL_DMA_NUM_WORDS_OFFSET: begin
+            dma_num_words_q <= mem_wdata;
+            dma_start_pulse_q <= (mem_wdata != 32'h0000_0000) && !dma_busy_i;
+          end
+          default: begin
+          end
+        endcase
+      end
     end
   end
 

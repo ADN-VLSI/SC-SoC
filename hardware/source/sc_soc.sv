@@ -248,8 +248,8 @@ module sc_soc
   );
 
   axi4l_dma #(
-      .axil_req_t (axil_req_t),
-      .axil_resp_t(axil_resp_t)
+      .axi4l_req_t (axil_req_t),
+      .axi4l_resp_t(axil_resp_t)
   ) u_dma (
       .clk_i                (system_clk),
       .arst_ni              (system_arst_n),
