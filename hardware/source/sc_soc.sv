@@ -62,7 +62,7 @@ module sc_soc
   logic                                         dma_start_pulse;
   // DMA idle status is preserved locally until SoC-level interrupt aggregation is added.
   logic                                         dma_busy;
-  (* unused = "true" *) logic                  dma_idle_irq;
+  (* unused = "true" *) logic                  dma_idle_irq_unused;
   logic                      [  DATA_WIDTH-1:0] dma_words_remaining;
 
   always_comb begin  // TODO REMOVE
@@ -261,7 +261,7 @@ module sc_soc
       .dma_num_words_i      (dma_num_words),
       .dma_busy_o           (dma_busy),
       .dma_words_remaining_o(dma_words_remaining),
-      .dma_idle_irq_o       (dma_idle_irq),
+      .dma_idle_irq_o       (dma_idle_irq_unused),
       .req_o                (axil_slave_port_req[3]),
       .resp_i               (axil_slave_port_resp[3])
   );
