@@ -1,3 +1,5 @@
+`include "package/ctrl_pkg.sv"
+
 module ctrl_subsystem (
     input logic xtal_i,       // 16MHz Crystal oscillator input
     input logic glob_arst_ni, // active low asynchronous reset
