@@ -1,5 +1,7 @@
 `include "package/sc_soc_pkg.sv"
 `include "package/uart_pkg.sv"
+`include "package/ctrl_pkg.sv"
+
 
 module sc_soc
   import sc_soc_pkg::*;
