@@ -14,6 +14,7 @@ _start:
     la sp, __stack_top
     csrc 0x320, 1
     call uart_init
+    call gpio_init
     call main
 
 _exit:

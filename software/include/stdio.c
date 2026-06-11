@@ -5,6 +5,7 @@
 #include "string.h"
 #include "unistd.h"
 #include "uart.h"
+#include "gpio.h"
 
 static void pos_putc(char c);
 static char *fgets_internal(char *s, int n, FILE *stream);
