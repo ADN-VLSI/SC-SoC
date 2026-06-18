@@ -1,0 +1,78 @@
+<svg host="app.diagrams.net" xmlns="http://www.w3.org/2000/svg" version="1.1" width="1040px" height="600px" viewBox="0 0 1040 600" content='&lt;mxfile host="app.diagrams.net"&gt;&lt;diagram name="Page-1"&gt;&lt;mxGraphModel dx="1040" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1040" pageHeight="600" math="0" shadow="0"&gt;&lt;root&gt;&lt;mxCell id="0"/&gt;&lt;mxCell id="1" parent="0"/&gt;&lt;mxCell id="xbar" value="AXI4-Lite crossbar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#6fb1fc;" vertex="1" parent="1"&gt;&lt;mxGeometry x="20" y="200" width="150" height="150" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="shift" value="Address shift subtract CLINT_BASE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"&gt;&lt;mxGeometry x="230" y="215" width="180" height="90" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="clint" value="axi4l_clint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0efff;strokeColor=#8f83f3;" vertex="1" parent="1"&gt;&lt;mxGeometry x="460" y="70" width="310" height="430" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="regif" value="axi4l_clint_regif" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff5ee;strokeColor=#5ab79d;" vertex="1" parent="1"&gt;&lt;mxGeometry x="515" y="150" width="200" height="120" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="pack" value="IRQ vector pack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"&gt;&lt;mxGeometry x="530" y="335" width="170" height="85" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="core" value="rv32imf core irq_i[31:0]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff0eb;strokeColor=#e69585;" vertex="1" parent="1"&gt;&lt;mxGeometry x="855" y="235" width="160" height="120" as="geometry"/&gt;&lt;/mxCell&gt;&lt;/root&gt;&lt;/mxGraphModel&gt;&lt;/diagram&gt;&lt;/mxfile&gt;'>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#444"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#a23b2a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1040" height="600" fill="#ffffff"/>
+
+  <rect x="25" y="205" width="145" height="165" rx="8" fill="#e8f4ff" stroke="#6fb1fc"/>
+  <text x="98" y="247" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#0b4f86">AXI4-Lite</text>
+  <text x="98" y="269" text-anchor="middle" font-family="Arial" font-size="13" fill="#0b4f86">crossbar</text>
+  <text x="98" y="304" text-anchor="middle" font-family="Arial" font-size="12" fill="#333">CLINT address rule</text>
+  <text x="98" y="324" text-anchor="middle" font-family="Arial" font-size="12" fill="#333">0x0200_0000</text>
+
+  <rect x="230" y="225" width="175" height="90" rx="8" fill="#dae8fc" stroke="#6c8ebf"/>
+  <text x="318" y="260" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#1b4f72">addr shifter</text>
+  <text x="318" y="281" text-anchor="middle" font-family="Arial" font-size="12" fill="#1b4f72">local = addr - CLINT_BASE</text>
+
+  <rect x="455" y="55" width="330" height="470" rx="14" fill="#f0efff" stroke="#8f83f3"/>
+  <text x="620" y="89" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#312783">axi4l_clint</text>
+  <text x="620" y="111" text-anchor="middle" font-family="Arial" font-size="13" fill="#4b3bc4">single-hart Core Local Interruptor</text>
+
+  <rect x="510" y="150" width="220" height="125" rx="8" fill="#dff5ee" stroke="#5ab79d"/>
+  <text x="620" y="188" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#00665b">axi4l_clint_regif</text>
+  <text x="620" y="211" text-anchor="middle" font-family="Arial" font-size="12" fill="#00665b">MSIP, MTIMECMP, MTIME</text>
+  <text x="620" y="231" text-anchor="middle" font-family="Arial" font-size="12" fill="#00665b">AXI4-Lite register access</text>
+
+  <rect x="515" y="340" width="210" height="96" rx="8" fill="#fff2cc" stroke="#d6b656"/>
+  <text x="620" y="372" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#6b4f00">IRQ vector pack</text>
+  <text x="620" y="394" text-anchor="middle" font-family="Arial" font-size="12" fill="#6b4f00">irq[3] = MSIP</text>
+  <text x="620" y="414" text-anchor="middle" font-family="Arial" font-size="12" fill="#6b4f00">irq[7] = MTIP, irq[11] = MEIP</text>
+
+  <rect x="505" y="465" width="90" height="42" rx="8" fill="#f8f4e8" stroke="#aaa"/>
+  <text x="550" y="491" text-anchor="middle" font-family="Arial" font-size="13" fill="#333">clk_i</text>
+  <rect x="615" y="465" width="95" height="42" rx="8" fill="#f8f4e8" stroke="#aaa"/>
+  <text x="662" y="491" text-anchor="middle" font-family="Arial" font-size="13" fill="#333">arst_ni</text>
+  <rect x="375" y="90" width="95" height="42" rx="8" fill="#f8f4e8" stroke="#aaa"/>
+  <text x="422" y="116" text-anchor="middle" font-family="Arial" font-size="13" fill="#333">timer_en_i</text>
+
+  <rect x="855" y="235" width="160" height="125" rx="8" fill="#fff0eb" stroke="#e69585"/>
+  <text x="935" y="279" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#a23b2a">rv32imf core</text>
+  <text x="935" y="302" text-anchor="middle" font-family="Arial" font-size="12" fill="#a23b2a">irq_i[31:0]</text>
+  <text x="935" y="324" text-anchor="middle" font-family="Arial" font-size="12" fill="#a23b2a">machine local IRQs</text>
+
+  <rect x="845" y="85" width="170" height="58" rx="8" fill="#fff0eb" stroke="#e69585"/>
+  <text x="930" y="109" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#a23b2a">msip_irq_o</text>
+  <text x="930" y="128" text-anchor="middle" font-family="Arial" font-size="11" fill="#a23b2a">machine SW interrupt</text>
+
+  <rect x="845" y="430" width="170" height="58" rx="8" fill="#fff0eb" stroke="#e69585"/>
+  <text x="930" y="454" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#a23b2a">timer_irq_o</text>
+  <text x="930" y="473" text-anchor="middle" font-family="Arial" font-size="11" fill="#a23b2a">machine timer interrupt</text>
+  <rect x="845" y="510" width="170" height="58" rx="8" fill="#fff6e8" stroke="#d79b00"/>
+  <text x="930" y="534" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#8a5a00">ext_irq_i</text>
+  <text x="930" y="553" text-anchor="middle" font-family="Arial" font-size="11" fill="#8a5a00">machine external IRQ input</text>
+
+  <rect x="55" y="445" width="180" height="105" rx="6" fill="#fafafa" stroke="#cccccc"/>
+  <text x="74" y="472" font-family="Arial" font-size="13" fill="#333">Legend</text>
+  <path d="M75 493 L130 493" stroke="#444" fill="none" marker-end="url(#arrow)"/>
+  <text x="142" y="498" font-family="Arial" font-size="12" fill="#333">request/data</text>
+  <path d="M75 520 L130 520" stroke="#777" fill="none" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <text x="142" y="525" font-family="Arial" font-size="12" fill="#333">response/status</text>
+
+  <path d="M170 265 L228 265" stroke="#444" fill="none" marker-end="url(#arrow)"/>
+  <path d="M230 298 L172 330" stroke="#777" fill="none" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M405 270 L508 210" stroke="#444" fill="none" marker-end="url(#arrow)"/>
+  <path d="M510 245 L407 302" stroke="#777" fill="none" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M620 276 L620 338" stroke="#444" fill="none" marker-end="url(#arrow)"/>
+  <path d="M725 388 L853 296" stroke="#a23b2a" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M730 178 L844 114" stroke="#a23b2a" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M730 245 L844 455" stroke="#a23b2a" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M845 539 L726 410" stroke="#8a5a00" fill="none" marker-end="url(#arrow)"/>
+  <path d="M470 111 L510 188" stroke="#777" fill="none" marker-end="url(#arrow)"/>
+  <path d="M550 465 L550 437" stroke="#777" fill="none" marker-end="url(#arrow)"/>
+  <path d="M662 465 L662 437" stroke="#777" fill="none" marker-end="url(#arrow)"/>
+</svg>
