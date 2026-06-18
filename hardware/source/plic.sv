@@ -32,9 +32,11 @@ module plic #(
     output logic [NUM_CORES-1:0]                      ei_o     //  External Interrupt Valid
 );
 
+  // One pulse per interrupt source when a core claims that interrupt.
   logic [NUM_INTERRUPTS-1:0] irq_claim;  // TODO REG
   logic [NUM_INTERRUPTS-1:0] irq_q;
 
+  // Latch each interrupt until it is claimed or reset clears it.
   for (genvar i = 0; i < NUM_INTERRUPTS; i++) begin
     always_ff @(posedge irq_i[i] or posedge irq_claim[i] or negedge arst_ni) begin
       if (irq_claim[i] | !arst_ni) begin
@@ -94,6 +96,7 @@ module plic #(
   always_comb begin
     rerror_o = '1;
     rdata_o  = '0;
+    // Read-side register map: each case item returns one PLIC register.
     case ({
       rnsecure_i, raddr_i
     })
@@ -308,6 +311,7 @@ module plic #(
 
   always_comb begin
     werror_o = '1;
+    // Writes are only accepted for mapped registers and aligned full-word strobes.
     case ({
       wnsecure_i, waddr_i
     })
@@ -365,6 +369,7 @@ module plic #(
       core_1_threshold      <= '0;
       claim_id_core_1       <= '0;
     end else if (wenable_i & ~werror_o) begin
+      // Update the targeted register, or acknowledge a claimed interrupt.
       case (waddr_i)
         'h000004: intr_src_01_prio <= wdata_i;
         'h000008: intr_src_02_prio <= wdata_i;
@@ -405,11 +410,13 @@ module plic #(
         'h200000: core_0_threshold <= wdata_i;
         'h200004: begin
           claim_id_core_0 <= wdata_i;
+          // Claiming an interrupt clears the corresponding pending bit.
           irq_claim[wdata_i] <= '1;
         end
         'h201000: core_1_threshold <= wdata_i;
         'h201004: begin
           claim_id_core_1 <= wdata_i;
+          // Core 1 claims use the upper half of irq_claim.
           irq_claim[wdata_i+DATA_WIDTH] <= '1;
         end
       endcase
