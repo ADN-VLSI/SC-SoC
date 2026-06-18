@@ -32,9 +32,153 @@ module plic #(
     output logic [NUM_CORES-1:0]                      ei_o     //  External Interrupt Valid
 );
 
+  // Calculate the number of bits needed to represent MAX_PRIORITY
+  localparam int PRIO_BITS = $clog2(MAX_PRIORITY + 1);
+
   // One pulse per interrupt source when a core claims that interrupt.
   logic [NUM_INTERRUPTS-1:0] irq_claim;  // TODO REG
   logic [NUM_INTERRUPTS-1:0] irq_q;
+
+  logic [NUM_INTERRUPTS-1:0] enabled_irq_core_0;
+  logic [NUM_INTERRUPTS-1:0] enabled_irq_core_1;
+
+  logic [NUM_INTERRUPTS-1:0] above_threshold_irq_core_0;
+  logic [NUM_INTERRUPTS-1:0] above_threshold_irq_core_1;
+
+  logic [PRIO_BITS-1:0] intr_src_01_prio;
+  logic [PRIO_BITS-1:0] intr_src_02_prio;
+  logic [PRIO_BITS-1:0] intr_src_03_prio;
+  logic [PRIO_BITS-1:0] intr_src_04_prio;
+  logic [PRIO_BITS-1:0] intr_src_05_prio;
+  logic [PRIO_BITS-1:0] intr_src_06_prio;
+  logic [PRIO_BITS-1:0] intr_src_07_prio;
+  logic [PRIO_BITS-1:0] intr_src_08_prio;
+  logic [PRIO_BITS-1:0] intr_src_09_prio;
+  logic [PRIO_BITS-1:0] intr_src_10_prio;
+  logic [PRIO_BITS-1:0] intr_src_11_prio;
+  logic [PRIO_BITS-1:0] intr_src_12_prio;
+  logic [PRIO_BITS-1:0] intr_src_13_prio;
+  logic [PRIO_BITS-1:0] intr_src_14_prio;
+  logic [PRIO_BITS-1:0] intr_src_15_prio;
+  logic [PRIO_BITS-1:0] intr_src_16_prio;
+  logic [PRIO_BITS-1:0] intr_src_17_prio;
+  logic [PRIO_BITS-1:0] intr_src_18_prio;
+  logic [PRIO_BITS-1:0] intr_src_19_prio;
+  logic [PRIO_BITS-1:0] intr_src_20_prio;
+  logic [PRIO_BITS-1:0] intr_src_21_prio;
+  logic [PRIO_BITS-1:0] intr_src_22_prio;
+  logic [PRIO_BITS-1:0] intr_src_23_prio;
+  logic [PRIO_BITS-1:0] intr_src_24_prio;
+  logic [PRIO_BITS-1:0] intr_src_25_prio;
+  logic [PRIO_BITS-1:0] intr_src_26_prio;
+  logic [PRIO_BITS-1:0] intr_src_27_prio;
+  logic [PRIO_BITS-1:0] intr_src_28_prio;
+  logic [PRIO_BITS-1:0] intr_src_29_prio;
+  logic [PRIO_BITS-1:0] intr_src_30_prio;
+  logic [PRIO_BITS-1:0] intr_src_31_prio;
+  logic [PRIO_BITS-1:0] intr_src_32_prio;
+
+  logic [DATA_WIDTH-1:0] enable_src3100_core_0;
+  logic [DATA_WIDTH-1:0] enable_src6332_core_0;
+  logic [DATA_WIDTH-1:0] enable_src3100_core_1;
+  logic [DATA_WIDTH-1:0] enable_src6332_core_1;
+
+  logic [PRIO_BITS-1:0] core_0_threshold;
+  logic [PRIO_BITS-1:0] claim_id_core_0;
+  logic [PRIO_BITS-1:0] core_1_threshold;
+  logic [PRIO_BITS-1:0] claim_id_core_1;
+
+  always_comb enabled_irq_core_0 = irq_q & {enable_src6332_core_0, enable_src3100_core_0};
+  always_comb enabled_irq_core_1 = irq_q & {enable_src6332_core_1, enable_src3100_core_1};
+
+  always_comb above_threshold_irq_core_0[00] = '0;
+  always_comb above_threshold_irq_core_0[01] = enabled_irq_core_0 & (intr_src_01_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[02] = enabled_irq_core_0 & (intr_src_02_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[03] = enabled_irq_core_0 & (intr_src_03_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[04] = enabled_irq_core_0 & (intr_src_04_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[05] = enabled_irq_core_0 & (intr_src_05_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[06] = enabled_irq_core_0 & (intr_src_06_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[07] = enabled_irq_core_0 & (intr_src_07_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[08] = enabled_irq_core_0 & (intr_src_08_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[09] = enabled_irq_core_0 & (intr_src_09_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[10] = enabled_irq_core_0 & (intr_src_10_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[11] = enabled_irq_core_0 & (intr_src_11_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[12] = enabled_irq_core_0 & (intr_src_12_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[13] = enabled_irq_core_0 & (intr_src_13_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[14] = enabled_irq_core_0 & (intr_src_14_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[15] = enabled_irq_core_0 & (intr_src_15_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[16] = enabled_irq_core_0 & (intr_src_16_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[17] = enabled_irq_core_0 & (intr_src_17_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[18] = enabled_irq_core_0 & (intr_src_18_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[19] = enabled_irq_core_0 & (intr_src_19_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[20] = enabled_irq_core_0 & (intr_src_20_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[21] = enabled_irq_core_0 & (intr_src_21_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[22] = enabled_irq_core_0 & (intr_src_22_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[23] = enabled_irq_core_0 & (intr_src_23_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[24] = enabled_irq_core_0 & (intr_src_24_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[25] = enabled_irq_core_0 & (intr_src_25_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[26] = enabled_irq_core_0 & (intr_src_26_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[27] = enabled_irq_core_0 & (intr_src_27_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[28] = enabled_irq_core_0 & (intr_src_28_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[29] = enabled_irq_core_0 & (intr_src_29_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[30] = enabled_irq_core_0 & (intr_src_30_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[31] = enabled_irq_core_0 & (intr_src_31_prio > core_0_threshold);
+  always_comb above_threshold_irq_core_0[32] = enabled_irq_core_0 & (intr_src_32_prio > core_0_threshold);
+
+  always_comb above_threshold_irq_core_1[00] = '0;
+  always_comb above_threshold_irq_core_1[01] = enabled_irq_core_1 & (intr_src_01_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[02] = enabled_irq_core_1 & (intr_src_02_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[03] = enabled_irq_core_1 & (intr_src_03_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[04] = enabled_irq_core_1 & (intr_src_04_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[05] = enabled_irq_core_1 & (intr_src_05_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[06] = enabled_irq_core_1 & (intr_src_06_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[07] = enabled_irq_core_1 & (intr_src_07_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[08] = enabled_irq_core_1 & (intr_src_08_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[09] = enabled_irq_core_1 & (intr_src_09_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[10] = enabled_irq_core_1 & (intr_src_10_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[11] = enabled_irq_core_1 & (intr_src_11_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[12] = enabled_irq_core_1 & (intr_src_12_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[13] = enabled_irq_core_1 & (intr_src_13_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[14] = enabled_irq_core_1 & (intr_src_14_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[15] = enabled_irq_core_1 & (intr_src_15_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[16] = enabled_irq_core_1 & (intr_src_16_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[17] = enabled_irq_core_1 & (intr_src_17_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[18] = enabled_irq_core_1 & (intr_src_18_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[19] = enabled_irq_core_1 & (intr_src_19_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[20] = enabled_irq_core_1 & (intr_src_20_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[21] = enabled_irq_core_1 & (intr_src_21_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[22] = enabled_irq_core_1 & (intr_src_22_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[23] = enabled_irq_core_1 & (intr_src_23_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[24] = enabled_irq_core_1 & (intr_src_24_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[25] = enabled_irq_core_1 & (intr_src_25_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[26] = enabled_irq_core_1 & (intr_src_26_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[27] = enabled_irq_core_1 & (intr_src_27_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[28] = enabled_irq_core_1 & (intr_src_28_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[29] = enabled_irq_core_1 & (intr_src_29_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[30] = enabled_irq_core_1 & (intr_src_30_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[31] = enabled_irq_core_1 & (intr_src_31_prio > core_1_threshold);
+  always_comb above_threshold_irq_core_1[32] = enabled_irq_core_1 & (intr_src_32_prio > core_1_threshold);
+
+  always_comb begin
+    eiid_o[0] = '0;
+    for (int i = 0; i < NUM_INTERRUPTS; i++) begin
+      if (above_threshold_irq_core_0[i]) begin
+        eiid_o[0] = i;
+      end
+    end
+  end
+
+  always_comb begin
+    eiid_o[1] = '0;
+    for (int i = 0; i < NUM_INTERRUPTS; i++) begin
+      if (above_threshold_irq_core_1[i]) begin
+        eiid_o[1] = i;
+      end
+    end
+  end
+
+  always_comb ei_o[0] = |above_threshold_irq_core_0;
+  always_comb ei_o[1] = |above_threshold_irq_core_1;
 
   // Latch each interrupt until it is claimed or reset clears it.
   for (genvar i = 0; i < NUM_INTERRUPTS; i++) begin
@@ -47,52 +191,6 @@ module plic #(
     end
   end
 
-  // Calculate the number of bits needed to represent MAX_PRIORITY
-  localparam int PRIO_BITS = $clog2(MAX_PRIORITY + 1);
-
-  logic [ PRIO_BITS-1:0] intr_src_01_prio;
-  logic [ PRIO_BITS-1:0] intr_src_02_prio;
-  logic [ PRIO_BITS-1:0] intr_src_03_prio;
-  logic [ PRIO_BITS-1:0] intr_src_04_prio;
-  logic [ PRIO_BITS-1:0] intr_src_05_prio;
-  logic [ PRIO_BITS-1:0] intr_src_06_prio;
-  logic [ PRIO_BITS-1:0] intr_src_07_prio;
-  logic [ PRIO_BITS-1:0] intr_src_08_prio;
-  logic [ PRIO_BITS-1:0] intr_src_09_prio;
-  logic [ PRIO_BITS-1:0] intr_src_10_prio;
-  logic [ PRIO_BITS-1:0] intr_src_11_prio;
-  logic [ PRIO_BITS-1:0] intr_src_12_prio;
-  logic [ PRIO_BITS-1:0] intr_src_13_prio;
-  logic [ PRIO_BITS-1:0] intr_src_14_prio;
-  logic [ PRIO_BITS-1:0] intr_src_15_prio;
-  logic [ PRIO_BITS-1:0] intr_src_16_prio;
-  logic [ PRIO_BITS-1:0] intr_src_17_prio;
-  logic [ PRIO_BITS-1:0] intr_src_18_prio;
-  logic [ PRIO_BITS-1:0] intr_src_19_prio;
-  logic [ PRIO_BITS-1:0] intr_src_20_prio;
-  logic [ PRIO_BITS-1:0] intr_src_21_prio;
-  logic [ PRIO_BITS-1:0] intr_src_22_prio;
-  logic [ PRIO_BITS-1:0] intr_src_23_prio;
-  logic [ PRIO_BITS-1:0] intr_src_24_prio;
-  logic [ PRIO_BITS-1:0] intr_src_25_prio;
-  logic [ PRIO_BITS-1:0] intr_src_26_prio;
-  logic [ PRIO_BITS-1:0] intr_src_27_prio;
-  logic [ PRIO_BITS-1:0] intr_src_28_prio;
-  logic [ PRIO_BITS-1:0] intr_src_29_prio;
-  logic [ PRIO_BITS-1:0] intr_src_30_prio;
-  logic [ PRIO_BITS-1:0] intr_src_31_prio;
-  logic [ PRIO_BITS-1:0] intr_src_32_prio;
-
-  logic [DATA_WIDTH-1:0] enable_src3100_core_0;
-  logic [DATA_WIDTH-1:0] enable_src6332_core_0;
-  logic [DATA_WIDTH-1:0] enable_src3100_core_1;
-  logic [DATA_WIDTH-1:0] enable_src6332_core_1;
-
-  logic [ PRIO_BITS-1:0] core_0_threshold;
-  logic [ PRIO_BITS-1:0] claim_id_core_0;
-  logic [ PRIO_BITS-1:0] core_1_threshold;
-  logic [ PRIO_BITS-1:0] claim_id_core_1;
-
   always_comb begin
     rerror_o = '1;
     rdata_o  = '0;
@@ -101,210 +199,47 @@ module plic #(
       rnsecure_i, raddr_i
     })
 
-      'h000004: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_01_prio;
-      end
-
-      'h000008: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_02_prio;
-      end
-
-      'h00000C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_03_prio;
-      end
-
-      'h000010: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_04_prio;
-      end
-
-      'h000014: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_05_prio;
-      end
-
-      'h000018: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_06_prio;
-      end
-
-      'h00001C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_07_prio;
-      end
-
-      'h000020: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_08_prio;
-      end
-
-      'h000024: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_09_prio;
-      end
-
-      'h000028: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_10_prio;
-      end
-
-      'h00002C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_11_prio;
-      end
-
-      'h000030: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_12_prio;
-      end
-
-      'h000034: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_13_prio;
-      end
-
-      'h000038: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_14_prio;
-      end
-
-      'h00003C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_15_prio;
-      end
-
-      'h000040: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_16_prio;
-      end
-
-      'h000044: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_17_prio;
-      end
-
-      'h000048: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_18_prio;
-      end
-
-      'h00004C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_19_prio;
-      end
-
-      'h000050: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_20_prio;
-      end
-
-      'h000054: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_21_prio;
-      end
-
-      'h000058: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_22_prio;
-      end
-
-      'h00005C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_23_prio;
-      end
-
-      'h000060: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_24_prio;
-      end
-
-      'h000064: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_25_prio;
-      end
-
-      'h000068: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_26_prio;
-      end
-
-      'h00006C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_27_prio;
-      end
-
-      'h000070: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_28_prio;
-      end
-
-      'h000074: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_29_prio;
-      end
-
-      'h000078: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_30_prio;
-      end
-
-      'h00007C: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_31_prio;
-      end
-
-      'h000080: begin
-        rerror_o = '0;
-        rdata_o  = intr_src_32_prio;
-      end
-
-      'h002000: begin
-        rerror_o = '0;
-        rdata_o  = enable_src3100_core_0;
-      end
-
-      'h002004: begin
-        rerror_o = '0;
-        rdata_o  = enable_src6332_core_0;
-      end
-
-      'h002080: begin
-        rerror_o = '0;
-        rdata_o  = enable_src3100_core_1;
-      end
-
-      'h002084: begin
-        rerror_o = '0;
-        rdata_o  = enable_src6332_core_1;
-      end
-
-      'h200000: begin
-        rerror_o = '0;
-        rdata_o  = core_0_threshold;
-      end
-
-      'h200004: begin
-        rerror_o = '0;
-        rdata_o  = claim_id_core_0;
-      end
-
-      'h201000: begin
-        rerror_o = '0;
-        rdata_o  = core_1_threshold;
-      end
-
-      'h201004: begin
-        rerror_o = '0;
-        rdata_o  = claim_id_core_1;
-      end
-
-      default: begin
-        rerror_o = '1;
-        rdata_o  = '0;
-      end
+      'h000004: begin rerror_o = '0; rdata_o  = intr_src_01_prio;      end
+      'h000008: begin rerror_o = '0; rdata_o  = intr_src_02_prio;      end
+      'h00000C: begin rerror_o = '0; rdata_o  = intr_src_03_prio;      end
+      'h000010: begin rerror_o = '0; rdata_o  = intr_src_04_prio;      end
+      'h000014: begin rerror_o = '0; rdata_o  = intr_src_05_prio;      end
+      'h000018: begin rerror_o = '0; rdata_o  = intr_src_06_prio;      end
+      'h00001C: begin rerror_o = '0; rdata_o  = intr_src_07_prio;      end
+      'h000020: begin rerror_o = '0; rdata_o  = intr_src_08_prio;      end
+      'h000024: begin rerror_o = '0; rdata_o  = intr_src_09_prio;      end
+      'h000028: begin rerror_o = '0; rdata_o  = intr_src_10_prio;      end
+      'h00002C: begin rerror_o = '0; rdata_o  = intr_src_11_prio;      end
+      'h000030: begin rerror_o = '0; rdata_o  = intr_src_12_prio;      end
+      'h000034: begin rerror_o = '0; rdata_o  = intr_src_13_prio;      end
+      'h000038: begin rerror_o = '0; rdata_o  = intr_src_14_prio;      end
+      'h00003C: begin rerror_o = '0; rdata_o  = intr_src_15_prio;      end
+      'h000040: begin rerror_o = '0; rdata_o  = intr_src_16_prio;      end
+      'h000044: begin rerror_o = '0; rdata_o  = intr_src_17_prio;      end
+      'h000048: begin rerror_o = '0; rdata_o  = intr_src_18_prio;      end
+      'h00004C: begin rerror_o = '0; rdata_o  = intr_src_19_prio;      end
+      'h000050: begin rerror_o = '0; rdata_o  = intr_src_20_prio;      end
+      'h000054: begin rerror_o = '0; rdata_o  = intr_src_21_prio;      end
+      'h000058: begin rerror_o = '0; rdata_o  = intr_src_22_prio;      end
+      'h00005C: begin rerror_o = '0; rdata_o  = intr_src_23_prio;      end
+      'h000060: begin rerror_o = '0; rdata_o  = intr_src_24_prio;      end
+      'h000064: begin rerror_o = '0; rdata_o  = intr_src_25_prio;      end
+      'h000068: begin rerror_o = '0; rdata_o  = intr_src_26_prio;      end
+      'h00006C: begin rerror_o = '0; rdata_o  = intr_src_27_prio;      end
+      'h000070: begin rerror_o = '0; rdata_o  = intr_src_28_prio;      end
+      'h000074: begin rerror_o = '0; rdata_o  = intr_src_29_prio;      end
+      'h000078: begin rerror_o = '0; rdata_o  = intr_src_30_prio;      end
+      'h00007C: begin rerror_o = '0; rdata_o  = intr_src_31_prio;      end
+      'h000080: begin rerror_o = '0; rdata_o  = intr_src_32_prio;      end
+      'h002000: begin rerror_o = '0; rdata_o  = enable_src3100_core_0; end
+      'h002004: begin rerror_o = '0; rdata_o  = enable_src6332_core_0; end
+      'h002080: begin rerror_o = '0; rdata_o  = enable_src3100_core_1; end
+      'h002084: begin rerror_o = '0; rdata_o  = enable_src6332_core_1; end
+      'h200000: begin rerror_o = '0; rdata_o  = core_0_threshold;      end
+      'h200004: begin rerror_o = '0; rdata_o  = claim_id_core_0;       end
+      'h201000: begin rerror_o = '0; rdata_o  = core_1_threshold;      end
+      'h201004: begin rerror_o = '0; rdata_o  = claim_id_core_1;       end
+      default:  begin rerror_o = '1; rdata_o  = '0;                    end
     endcase
   end
 
@@ -371,43 +306,43 @@ module plic #(
     end else if (wenable_i & ~werror_o) begin
       // Update the targeted register, or acknowledge a claimed interrupt.
       case (waddr_i)
-        'h000004: intr_src_01_prio <= wdata_i;
-        'h000008: intr_src_02_prio <= wdata_i;
-        'h00000C: intr_src_03_prio <= wdata_i;
-        'h000010: intr_src_04_prio <= wdata_i;
-        'h000014: intr_src_05_prio <= wdata_i;
-        'h000018: intr_src_06_prio <= wdata_i;
-        'h00001C: intr_src_07_prio <= wdata_i;
-        'h000020: intr_src_08_prio <= wdata_i;
-        'h000024: intr_src_09_prio <= wdata_i;
-        'h000028: intr_src_10_prio <= wdata_i;
-        'h00002C: intr_src_11_prio <= wdata_i;
-        'h000030: intr_src_12_prio <= wdata_i;
-        'h000034: intr_src_13_prio <= wdata_i;
-        'h000038: intr_src_14_prio <= wdata_i;
-        'h00003C: intr_src_15_prio <= wdata_i;
-        'h000040: intr_src_16_prio <= wdata_i;
-        'h000044: intr_src_17_prio <= wdata_i;
-        'h000048: intr_src_18_prio <= wdata_i;
-        'h00004C: intr_src_19_prio <= wdata_i;
-        'h000050: intr_src_20_prio <= wdata_i;
-        'h000054: intr_src_21_prio <= wdata_i;
-        'h000058: intr_src_22_prio <= wdata_i;
-        'h00005C: intr_src_23_prio <= wdata_i;
-        'h000060: intr_src_24_prio <= wdata_i;
-        'h000064: intr_src_25_prio <= wdata_i;
-        'h000068: intr_src_26_prio <= wdata_i;
-        'h00006C: intr_src_27_prio <= wdata_i;
-        'h000070: intr_src_28_prio <= wdata_i;
-        'h000074: intr_src_29_prio <= wdata_i;
-        'h000078: intr_src_30_prio <= wdata_i;
-        'h00007C: intr_src_31_prio <= wdata_i;
-        'h000080: intr_src_32_prio <= wdata_i;
+        'h000004: intr_src_01_prio      <= wdata_i;
+        'h000008: intr_src_02_prio      <= wdata_i;
+        'h00000C: intr_src_03_prio      <= wdata_i;
+        'h000010: intr_src_04_prio      <= wdata_i;
+        'h000014: intr_src_05_prio      <= wdata_i;
+        'h000018: intr_src_06_prio      <= wdata_i;
+        'h00001C: intr_src_07_prio      <= wdata_i;
+        'h000020: intr_src_08_prio      <= wdata_i;
+        'h000024: intr_src_09_prio      <= wdata_i;
+        'h000028: intr_src_10_prio      <= wdata_i;
+        'h00002C: intr_src_11_prio      <= wdata_i;
+        'h000030: intr_src_12_prio      <= wdata_i;
+        'h000034: intr_src_13_prio      <= wdata_i;
+        'h000038: intr_src_14_prio      <= wdata_i;
+        'h00003C: intr_src_15_prio      <= wdata_i;
+        'h000040: intr_src_16_prio      <= wdata_i;
+        'h000044: intr_src_17_prio      <= wdata_i;
+        'h000048: intr_src_18_prio      <= wdata_i;
+        'h00004C: intr_src_19_prio      <= wdata_i;
+        'h000050: intr_src_20_prio      <= wdata_i;
+        'h000054: intr_src_21_prio      <= wdata_i;
+        'h000058: intr_src_22_prio      <= wdata_i;
+        'h00005C: intr_src_23_prio      <= wdata_i;
+        'h000060: intr_src_24_prio      <= wdata_i;
+        'h000064: intr_src_25_prio      <= wdata_i;
+        'h000068: intr_src_26_prio      <= wdata_i;
+        'h00006C: intr_src_27_prio      <= wdata_i;
+        'h000070: intr_src_28_prio      <= wdata_i;
+        'h000074: intr_src_29_prio      <= wdata_i;
+        'h000078: intr_src_30_prio      <= wdata_i;
+        'h00007C: intr_src_31_prio      <= wdata_i;
+        'h000080: intr_src_32_prio      <= wdata_i;
         'h002000: enable_src3100_core_0 <= wdata_i;
         'h002004: enable_src6332_core_0 <= wdata_i;
         'h002080: enable_src3100_core_1 <= wdata_i;
         'h002084: enable_src6332_core_1 <= wdata_i;
-        'h200000: core_0_threshold <= wdata_i;
+        'h200000: core_0_threshold      <= wdata_i;
         'h200004: begin
           claim_id_core_0 <= wdata_i;
           // Claiming an interrupt clears the corresponding pending bit.
