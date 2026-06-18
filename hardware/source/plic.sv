@@ -316,9 +316,103 @@ module plic #(
       'h00004C, 'h000050, 'h000054, 'h000058, 'h00005C, 'h000060, 'h000064, 'h000068, 'h00006C,
       'h000070, 'h000074, 'h000078, 'h00007C, 'h000080, 'h002000, 'h002004, 'h002080, 'h002084,
       'h200000, 'h200004, 'h201000, 'h201004:
-      werror_o = '0;
+      werror_o = (wstrb_i == '1);
       default: werror_o = '1;
     endcase
   end
 
+  always_ff @(posedge clk_i or negedge arst_ni) begin
+    irq_claim <= '0;
+    if (~arst_ni) begin
+      intr_src_01_prio      <= '0;
+      intr_src_02_prio      <= '0;
+      intr_src_03_prio      <= '0;
+      intr_src_04_prio      <= '0;
+      intr_src_05_prio      <= '0;
+      intr_src_06_prio      <= '0;
+      intr_src_07_prio      <= '0;
+      intr_src_08_prio      <= '0;
+      intr_src_09_prio      <= '0;
+      intr_src_10_prio      <= '0;
+      intr_src_11_prio      <= '0;
+      intr_src_12_prio      <= '0;
+      intr_src_13_prio      <= '0;
+      intr_src_14_prio      <= '0;
+      intr_src_15_prio      <= '0;
+      intr_src_16_prio      <= '0;
+      intr_src_17_prio      <= '0;
+      intr_src_18_prio      <= '0;
+      intr_src_19_prio      <= '0;
+      intr_src_20_prio      <= '0;
+      intr_src_21_prio      <= '0;
+      intr_src_22_prio      <= '0;
+      intr_src_23_prio      <= '0;
+      intr_src_24_prio      <= '0;
+      intr_src_25_prio      <= '0;
+      intr_src_26_prio      <= '0;
+      intr_src_27_prio      <= '0;
+      intr_src_28_prio      <= '0;
+      intr_src_29_prio      <= '0;
+      intr_src_30_prio      <= '0;
+      intr_src_31_prio      <= '0;
+      intr_src_32_prio      <= '0;
+      enable_src3100_core_0 <= '0;
+      enable_src6332_core_0 <= '0;
+      enable_src3100_core_1 <= '0;
+      enable_src6332_core_1 <= '0;
+      core_0_threshold      <= '0;
+      claim_id_core_0       <= '0;
+      core_1_threshold      <= '0;
+      claim_id_core_1       <= '0;
+    end else if (wenable_i & ~werror_o) begin
+      case (waddr_i)
+        'h000004: intr_src_01_prio <= wdata_i;
+        'h000008: intr_src_02_prio <= wdata_i;
+        'h00000C: intr_src_03_prio <= wdata_i;
+        'h000010: intr_src_04_prio <= wdata_i;
+        'h000014: intr_src_05_prio <= wdata_i;
+        'h000018: intr_src_06_prio <= wdata_i;
+        'h00001C: intr_src_07_prio <= wdata_i;
+        'h000020: intr_src_08_prio <= wdata_i;
+        'h000024: intr_src_09_prio <= wdata_i;
+        'h000028: intr_src_10_prio <= wdata_i;
+        'h00002C: intr_src_11_prio <= wdata_i;
+        'h000030: intr_src_12_prio <= wdata_i;
+        'h000034: intr_src_13_prio <= wdata_i;
+        'h000038: intr_src_14_prio <= wdata_i;
+        'h00003C: intr_src_15_prio <= wdata_i;
+        'h000040: intr_src_16_prio <= wdata_i;
+        'h000044: intr_src_17_prio <= wdata_i;
+        'h000048: intr_src_18_prio <= wdata_i;
+        'h00004C: intr_src_19_prio <= wdata_i;
+        'h000050: intr_src_20_prio <= wdata_i;
+        'h000054: intr_src_21_prio <= wdata_i;
+        'h000058: intr_src_22_prio <= wdata_i;
+        'h00005C: intr_src_23_prio <= wdata_i;
+        'h000060: intr_src_24_prio <= wdata_i;
+        'h000064: intr_src_25_prio <= wdata_i;
+        'h000068: intr_src_26_prio <= wdata_i;
+        'h00006C: intr_src_27_prio <= wdata_i;
+        'h000070: intr_src_28_prio <= wdata_i;
+        'h000074: intr_src_29_prio <= wdata_i;
+        'h000078: intr_src_30_prio <= wdata_i;
+        'h00007C: intr_src_31_prio <= wdata_i;
+        'h000080: intr_src_32_prio <= wdata_i;
+        'h002000: enable_src3100_core_0 <= wdata_i;
+        'h002004: enable_src6332_core_0 <= wdata_i;
+        'h002080: enable_src3100_core_1 <= wdata_i;
+        'h002084: enable_src6332_core_1 <= wdata_i;
+        'h200000: core_0_threshold <= wdata_i;
+        'h200004: begin
+          claim_id_core_0 <= wdata_i;
+          irq_claim[wdata_i] <= '1;
+        end
+        'h201000: core_1_threshold <= wdata_i;
+        'h201004: begin
+          claim_id_core_1 <= wdata_i;
+          irq_claim[wdata_i+DATA_WIDTH] <= '1;
+        end
+      endcase
+    end
+  end
 endmodule
