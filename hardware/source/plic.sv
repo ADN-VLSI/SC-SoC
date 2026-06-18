@@ -277,18 +277,22 @@ module plic #(
         rerror_o = '0;
         rdata_o  = enable_src6332_core_1;
       end
+
       'h200000: begin
         rerror_o = '0;
         rdata_o  = core_0_threshold;
       end
+
       'h200004: begin
         rerror_o = '0;
         rdata_o  = claim_id_core_0;
       end
+
       'h201000: begin
         rerror_o = '0;
         rdata_o  = core_1_threshold;
       end
+
       'h201004: begin
         rerror_o = '0;
         rdata_o  = claim_id_core_1;
