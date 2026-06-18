@@ -88,8 +88,8 @@ module plic #(
 
   logic [ PRIO_BITS-1:0] core_0_threshold;
   logic [ PRIO_BITS-1:0] claim_id_core_0;
-  logic [ PRIO_BITS-1:0] core_0_threshold;
-  logic [ PRIO_BITS-1:0] claim_id_core_0;
+  logic [ PRIO_BITS-1:0] core_1_threshold;
+  logic [ PRIO_BITS-1:0] claim_id_core_1;
 
   always_comb begin
     rerror_o = '1;
