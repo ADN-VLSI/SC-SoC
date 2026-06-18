@@ -97,130 +97,162 @@ module plic #(
     case ({
       rnsecure_i, raddr_i
     })
+
       'h000004: begin
         rerror_o = '0;
         rdata_o  = intr_src_01_prio;
       end
+
       'h000008: begin
         rerror_o = '0;
         rdata_o  = intr_src_02_prio;
       end
+
       'h00000C: begin
         rerror_o = '0;
         rdata_o  = intr_src_03_prio;
       end
+
       'h000010: begin
         rerror_o = '0;
         rdata_o  = intr_src_04_prio;
       end
+
       'h000014: begin
         rerror_o = '0;
         rdata_o  = intr_src_05_prio;
       end
+
       'h000018: begin
         rerror_o = '0;
         rdata_o  = intr_src_06_prio;
       end
+
       'h00001C: begin
         rerror_o = '0;
         rdata_o  = intr_src_07_prio;
       end
+
       'h000020: begin
         rerror_o = '0;
         rdata_o  = intr_src_08_prio;
       end
+
       'h000024: begin
         rerror_o = '0;
         rdata_o  = intr_src_09_prio;
       end
+
       'h000028: begin
         rerror_o = '0;
         rdata_o  = intr_src_10_prio;
       end
+
       'h00002C: begin
         rerror_o = '0;
         rdata_o  = intr_src_11_prio;
       end
+
       'h000030: begin
         rerror_o = '0;
         rdata_o  = intr_src_12_prio;
       end
+
       'h000034: begin
         rerror_o = '0;
         rdata_o  = intr_src_13_prio;
       end
+
       'h000038: begin
         rerror_o = '0;
         rdata_o  = intr_src_14_prio;
       end
+
       'h00003C: begin
         rerror_o = '0;
         rdata_o  = intr_src_15_prio;
       end
+
       'h000040: begin
         rerror_o = '0;
         rdata_o  = intr_src_16_prio;
       end
+
       'h000044: begin
         rerror_o = '0;
         rdata_o  = intr_src_17_prio;
       end
+
       'h000048: begin
         rerror_o = '0;
         rdata_o  = intr_src_18_prio;
       end
+
       'h00004C: begin
         rerror_o = '0;
         rdata_o  = intr_src_19_prio;
       end
+
       'h000050: begin
         rerror_o = '0;
         rdata_o  = intr_src_20_prio;
       end
+
       'h000054: begin
         rerror_o = '0;
         rdata_o  = intr_src_21_prio;
       end
+
       'h000058: begin
         rerror_o = '0;
         rdata_o  = intr_src_22_prio;
       end
+
       'h00005C: begin
         rerror_o = '0;
         rdata_o  = intr_src_23_prio;
       end
+
       'h000060: begin
         rerror_o = '0;
         rdata_o  = intr_src_24_prio;
       end
+
       'h000064: begin
         rerror_o = '0;
         rdata_o  = intr_src_25_prio;
       end
+
       'h000068: begin
         rerror_o = '0;
         rdata_o  = intr_src_26_prio;
       end
+
       'h00006C: begin
         rerror_o = '0;
         rdata_o  = intr_src_27_prio;
       end
+
       'h000070: begin
         rerror_o = '0;
         rdata_o  = intr_src_28_prio;
       end
+
       'h000074: begin
         rerror_o = '0;
         rdata_o  = intr_src_29_prio;
       end
+
       'h000078: begin
         rerror_o = '0;
         rdata_o  = intr_src_30_prio;
       end
+
       'h00007C: begin
         rerror_o = '0;
         rdata_o  = intr_src_31_prio;
       end
+
       'h000080: begin
         rerror_o = '0;
         rdata_o  = intr_src_32_prio;
@@ -230,14 +262,17 @@ module plic #(
         rerror_o = '0;
         rdata_o  = enable_src3100_core_0;
       end
+
       'h002004: begin
         rerror_o = '0;
         rdata_o  = enable_src6332_core_0;
       end
+
       'h002080: begin
         rerror_o = '0;
         rdata_o  = enable_src3100_core_1;
       end
+
       'h002084: begin
         rerror_o = '0;
         rdata_o  = enable_src6332_core_1;
