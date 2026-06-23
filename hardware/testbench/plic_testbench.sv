@@ -99,6 +99,8 @@ module plic_testbench;
 
   logic [NUM_CORES-1:0][PLIC_ADDR_WIDTH-1:0] eiid_o;
   logic [NUM_CORES-1:0] ei_o;
+  // Shared scratch var for tasks that don't need their error result
+  logic dummy_err;
 
   //----------------------------------------------------------------
   // DUT instantiation
@@ -676,8 +678,8 @@ module plic_testbench;
     // their actual relative priority - spec-correct behavior would need the
     // higher-priority one (or lowest ID on a tie); this encoder always picks
     // the higher INDEX.
-    force dut.above_threshold_irq_core_0[3] = 1'b1;
-    force dut.above_threshold_irq_core_0[30] = 1'b1;
+    // Set bits 3 and 30 together (33-bit vector) rather than forcing bit-selects
+    force dut.above_threshold_irq_core_0 = 33'h40000008;
     #1;
     check("TC15 eiid_o[0] with sources {3,30} both above threshold", 32'd3,
           {26'b0, eiid_o[0]}, 1'b1);  // spec: lowest-ID tie-break -> expect 3; bug gives highest ID (30)
@@ -818,10 +820,7 @@ module plic_testbench;
     end
   endtask
 
-  //----------------------------------------------------------------
-  // Shared scratch var for tasks that don't need their error result
-  //----------------------------------------------------------------
-  logic dummy_err;
+  
 
   //----------------------------------------------------------------
   // Test sequence
