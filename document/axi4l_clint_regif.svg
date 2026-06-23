@@ -1,0 +1,88 @@
+<svg host="app.diagrams.net" xmlns="http://www.w3.org/2000/svg" version="1.1" width="980px" height="620px" viewBox="0 0 980 620" content='&lt;mxfile host="app.diagrams.net"&gt;&lt;diagram name="Page-1"&gt;&lt;mxGraphModel dx="980" dy="620" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="620" math="0" shadow="0"&gt;&lt;root&gt;&lt;mxCell id="0"/&gt;&lt;mxCell id="1" parent="0"/&gt;&lt;mxCell id="axi" value="AXI4-Lite master" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#6fb1fc;" vertex="1" parent="1"&gt;&lt;mxGeometry x="20" y="180" width="140" height="230" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="fifo" value="axi4l_fifo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"&gt;&lt;mxGeometry x="220" y="190" width="150" height="80" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="memif" value="axi4l_to_memif" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"&gt;&lt;mxGeometry x="220" y="320" width="150" height="80" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="regif" value="Register decode and write policy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"&gt;&lt;mxGeometry x="430" y="240" width="190" height="100" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="msip" value="MSIP register" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"&gt;&lt;mxGeometry x="690" y="90" width="190" height="70" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="cmp" value="MTIMECMP 64-bit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"&gt;&lt;mxGeometry x="690" y="210" width="190" height="70" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="time" value="MTIME 64-bit counter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"&gt;&lt;mxGeometry x="690" y="330" width="190" height="70" as="geometry"/&gt;&lt;/mxCell&gt;&lt;mxCell id="comp" value="Comparator mtime greater-equal mtimecmp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"&gt;&lt;mxGeometry x="690" y="460" width="190" height="70" as="geometry"/&gt;&lt;/mxCell&gt;&lt;/root&gt;&lt;/mxGraphModel&gt;&lt;/diagram&gt;&lt;/mxfile&gt;'>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#444"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#a23b2a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="980" height="620" fill="#ffffff"/>
+  <rect x="20" y="185" width="135" height="225" rx="8" fill="#e8f4ff" stroke="#6fb1fc"/>
+  <text x="87" y="225" text-anchor="middle" font-family="Arial" font-size="17" font-weight="bold" fill="#0b4f86">AXI4-Lite</text>
+  <text x="87" y="248" text-anchor="middle" font-family="Arial" font-size="13" fill="#0b4f86">master</text>
+  <text x="47" y="286" font-family="Arial" font-size="13" fill="#333">AW</text>
+  <text x="47" y="312" font-family="Arial" font-size="13" fill="#333">W</text>
+  <text x="47" y="338" font-family="Arial" font-size="13" fill="#333">B</text>
+  <text x="47" y="364" font-family="Arial" font-size="13" fill="#333">AR</text>
+  <text x="47" y="390" font-family="Arial" font-size="13" fill="#333">R</text>
+
+  <rect x="195" y="60" width="570" height="510" rx="14" fill="#f0efff" stroke="#8f83f3"/>
+  <text x="480" y="92" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#312783">axi4l_clint_regif</text>
+  <text x="480" y="115" text-anchor="middle" font-family="Arial" font-size="13" fill="#4b3bc4">AXI4-Lite CLINT register interface</text>
+
+  <rect x="240" y="165" width="160" height="72" rx="8" fill="#dae8fc" stroke="#6c8ebf"/>
+  <text x="320" y="196" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#1b4f72">axi4l_fifo</text>
+  <text x="320" y="216" text-anchor="middle" font-family="Arial" font-size="12" fill="#1b4f72">channel buffering</text>
+
+  <rect x="240" y="315" width="160" height="72" rx="8" fill="#dae8fc" stroke="#6c8ebf"/>
+  <text x="320" y="346" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#1b4f72">axi4l_to_memif</text>
+  <text x="320" y="366" text-anchor="middle" font-family="Arial" font-size="12" fill="#1b4f72">local reg bus</text>
+
+  <rect x="450" y="240" width="185" height="105" rx="8" fill="#fff2cc" stroke="#d6b656"/>
+  <text x="542" y="276" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#6b4f00">register decode</text>
+  <text x="542" y="299" text-anchor="middle" font-family="Arial" font-size="12" fill="#6b4f00">offset check, wstrb policy</text>
+  <text x="542" y="319" text-anchor="middle" font-family="Arial" font-size="12" fill="#6b4f00">OKAY / SLVERR</text>
+
+  <rect x="495" y="425" width="90" height="52" rx="8" fill="#f8f4e8" stroke="#aaa"/>
+  <text x="540" y="456" text-anchor="middle" font-family="Arial" font-size="14" fill="#333">clk_i</text>
+  <rect x="610" y="425" width="95" height="52" rx="8" fill="#f8f4e8" stroke="#aaa"/>
+  <text x="657" y="456" text-anchor="middle" font-family="Arial" font-size="14" fill="#333">arst_ni</text>
+  <rect x="360" y="425" width="105" height="52" rx="8" fill="#f8f4e8" stroke="#aaa"/>
+  <text x="412" y="456" text-anchor="middle" font-family="Arial" font-size="14" fill="#333">timer_en_i</text>
+
+  <rect x="755" y="105" width="190" height="72" rx="8" fill="#dff5ee" stroke="#5ab79d"/>
+  <text x="850" y="136" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#00665b">MSIP</text>
+  <text x="850" y="156" text-anchor="middle" font-family="Arial" font-size="12" fill="#00665b">RW, bit[0] = msip</text>
+
+  <rect x="755" y="220" width="190" height="72" rx="8" fill="#dff5ee" stroke="#5ab79d"/>
+  <text x="850" y="251" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#00665b">MTIMECMP</text>
+  <text x="850" y="271" text-anchor="middle" font-family="Arial" font-size="12" fill="#00665b">64-bit compare value</text>
+
+  <rect x="755" y="335" width="190" height="72" rx="8" fill="#dff5ee" stroke="#5ab79d"/>
+  <text x="850" y="366" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#00665b">MTIME</text>
+  <text x="850" y="386" text-anchor="middle" font-family="Arial" font-size="12" fill="#00665b">64-bit free-running counter</text>
+
+  <rect x="755" y="465" width="190" height="72" rx="8" fill="#ede7f6" stroke="#9673a6"/>
+  <text x="850" y="496" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold" fill="#4a2a7a">comparator</text>
+  <text x="850" y="516" text-anchor="middle" font-family="Arial" font-size="12" fill="#4a2a7a">mtime &gt;= mtimecmp</text>
+
+  <rect x="785" y="18" width="145" height="52" rx="8" fill="#fff0eb" stroke="#e69585"/>
+  <text x="858" y="41" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#a23b2a">msip_irq_o</text>
+  <text x="858" y="58" text-anchor="middle" font-family="Arial" font-size="11" fill="#a23b2a">machine SW IRQ</text>
+
+  <rect x="785" y="555" width="145" height="52" rx="8" fill="#fff0eb" stroke="#e69585"/>
+  <text x="858" y="578" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#a23b2a">timer_irq_o</text>
+  <text x="858" y="595" text-anchor="middle" font-family="Arial" font-size="11" fill="#a23b2a">machine timer IRQ</text>
+
+  <rect x="10" y="555" width="145" height="52" rx="8" fill="#fff6e8" stroke="#d79b00"/>
+  <text x="87" y="573" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#8a5a00">ext_irq_i</text>
+  <text x="87" y="595" text-anchor="middle" font-family="Arial" font-size="11" fill="#8a5a00">machine external IRQ</text>
+
+  <path d="M155 278 L238 201" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M155 365 L238 352" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M240 223 L158 338" stroke="#777" fill="none" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M400 201 L450 270" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M400 352 L450 315" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M635 280 L755 140" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M635 292 L755 256" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M635 318 L755 371" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M850 407 L850 463" stroke="#555" fill="none" marker-end="url(#arrow)"/>
+  <path d="M850 292 L850 463" stroke="#777" fill="none" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M850 105 L858 71" stroke="#a23b2a" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M850 537 L858 554" stroke="#a23b2a" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M540 425 L540 346" stroke="#777" fill="none" marker-end="url(#arrow)"/>
+  <path d="M657 425 L657 345" stroke="#777" fill="none" marker-end="url(#arrow)"/>
+  <path d="M465 451 L755 371" stroke="#777" fill="none" marker-end="url(#arrow)"/>
+  <path d="M155 581 L450 350" stroke="#8a5a00" fill="none" marker-end="url(#arrow)"/>
+</svg>
