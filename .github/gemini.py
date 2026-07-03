@@ -172,41 +172,51 @@ def parse_args() -> argparse.Namespace:
 	return parser.parse_args()
 
 
+def enforce_min_runtime(started_at: float, min_runtime: float = DEFAULT_MIN_INTERVAL) -> None:
+	elapsed = time.monotonic() - started_at
+	if elapsed < min_runtime:
+		time.sleep(min_runtime - elapsed)
+
+
 def main() -> int:
-	args = parse_args()
-	input_path = Path(args.input_file).expanduser().resolve()
-	if not input_path.is_file():
-		print(f"Input file does not exist: {input_path}", file=sys.stderr)
-		return 1
-
-	api_key = args.api_key.strip()
-	if not api_key:
-		print("--api-key must not be empty.", file=sys.stderr)
-		return 1
-
-	if args.min_interval < 0:
-		print("--min-interval must be non-negative.", file=sys.stderr)
-		return 1
-
-	output_path = None
-	if args.output:
-		output_path = Path(args.output).expanduser().resolve()
-		output_path.parent.mkdir(parents=True, exist_ok=True)
-
+	started_at = time.monotonic()
 	try:
-		output_path, requests_made = process_file(
-			input_path,
-			api_key,
-			args.model,
-			args.min_interval,
-			output_path,
-		)
-	except Exception as exc:
-		print(str(exc), file=sys.stderr)
-		return 1
+		args = parse_args()
+		input_path = Path(args.input_file).expanduser().resolve()
+		if not input_path.is_file():
+			print(f"Input file does not exist: {input_path}", file=sys.stderr)
+			return 1
 
-	print(f"Created {output_path} using {requests_made} Gemini request(s).")
-	return 0
+		api_key = args.api_key.strip()
+		if not api_key:
+			print("--api-key must not be empty.", file=sys.stderr)
+			return 1
+
+		if args.min_interval < 0:
+			print("--min-interval must be non-negative.", file=sys.stderr)
+			return 1
+
+		output_path = None
+		if args.output:
+			output_path = Path(args.output).expanduser().resolve()
+			output_path.parent.mkdir(parents=True, exist_ok=True)
+
+		try:
+			output_path, requests_made = process_file(
+				input_path,
+				api_key,
+				args.model,
+				args.min_interval,
+				output_path,
+			)
+		except Exception as exc:
+			print(str(exc), file=sys.stderr)
+			return 1
+
+		print(f"Created {output_path} using {requests_made} Gemini request(s).")
+		return 0
+	finally:
+		enforce_min_runtime(started_at)
 
 
 if __name__ == "__main__":
