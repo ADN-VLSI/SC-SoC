@@ -1,3 +1,5 @@
+// @foez-bhai add description to this module
+
 module gpio #(
     parameter int GPIO_WIDTH = 32
 ) (

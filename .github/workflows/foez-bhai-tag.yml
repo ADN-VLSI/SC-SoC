@@ -1,0 +1,109 @@
+name: Foez Bhai is automating the tagged files
+
+on:
+  push:
+    branches-ignore:
+      - "foez-bhai-automation/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  process-tags:
+    name: Search tags and create PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.ADN_SECRET_FOEZ_PAT }}
+
+      - name: Find tagged files
+        id: tagged-files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="@foez-bhai"
+          workflow_file="./.github/workflows/foez-bhai-tag.yml"
+          mapfile -d '' files < <(
+            grep -RIlZ --exclude-dir=.git "$tag" . |
+              while IFS= read -r -d '' file; do
+                if [ "$file" != "$workflow_file" ]; then
+                  printf '%s\0' "$file"
+                fi
+              done || true
+          )
+
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No matching tags found."
+            exit 0
+          fi
+
+          printf '%s\0' "${files[@]}" > tagged-files.txt
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "count=${#files[@]}" >> "$GITHUB_OUTPUT"
+          printf 'Found %s tagged file(s).\n' "${#files[@]}"
+
+      - name: Process tagged files
+        if: steps.tagged-files.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          branch_name="foez-bhai-automation/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$branch_name"
+
+          while IFS= read -r -d '' file; do
+            python .github/gemini.py "$file" --api-key "${{ secrets.FOEZ_SECRET_API_KEY }}"
+            mv gemini."$file" "$file"
+            rm -rf __pycache__
+          done < tagged-files.txt
+
+          echo "BRANCH_NAME=$branch_name" >> "$GITHUB_ENV"
+
+      - name: Commit and push changes
+        if: steps.tagged-files.outputs.found == 'true'
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "Foez Ahmed"
+          git config user.email "foez.official@gmail.com"
+
+          rm -f tagged-files.txt
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "Process foez-bhai tagged files"
+          git push --set-upstream origin "$BRANCH_NAME"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.tagged-files.outputs.found == 'true' && steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ADN_SECRET_FOEZ_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr_url=$(gh pr create \
+            --base "${GITHUB_REF_NAME}" \
+            --head "foez.ahmed:$BRANCH_NAME" \
+            --title "Process foez-bhai tagged files" \
+            --body "This PR was created automatically after finding matching tags in the repository for each tagged file.")
+
+          if [ "${GITHUB_ACTOR}" != "foez.ahmed" ]; then
+            gh pr edit "$pr_url" --add-reviewer "${GITHUB_ACTOR}"
+          else
+            echo "Skipping reviewer assignment because the PR author and actor are the same user."
+          fi
