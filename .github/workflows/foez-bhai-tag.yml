@@ -127,7 +127,11 @@ jobs:
           rm -f gh-pr-create.err
 
           if [ "${GITHUB_ACTOR}" != "foez.ahmed" ]; then
-            gh pr edit "$pr_url" --add-reviewer "${GITHUB_ACTOR}"
+            if gh pr edit "$pr_url" --add-reviewer "${GITHUB_ACTOR}"; then
+              echo "Requested review from ${GITHUB_ACTOR}."
+            else
+              echo "Could not request review from ${GITHUB_ACTOR}; continuing without reviewer assignment."
+            fi
           else
             echo "Skipping reviewer assignment because the PR author and actor are the same user."
           fi
