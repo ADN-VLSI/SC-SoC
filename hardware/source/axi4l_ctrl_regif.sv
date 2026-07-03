@@ -1,8 +1,9 @@
-// @foez-bhai, please add comments to the code below
-
 `include "package/sc_soc_pkg.sv"
 `include "package/ctrl_pkg.sv"
 
+// Module: axi4l_ctrl_regif
+// Description: Provides an AXI4-Lite register interface for system control registers,
+// including core configuration, GPIO control, and status registers.
 module axi4l_ctrl_regif
   import ctrl_pkg::*;
 #(
@@ -38,6 +39,7 @@ module axi4l_ctrl_regif
   axil_req_t  fifo_req;
   axil_resp_t fifo_resp;
 
+  // Instantiate FIFO to buffer AXI4-Lite requests and responses
   axi4l_fifo #(
       .axi4l_req_t (axil_req_t),
       .axi4l_resp_t(axil_resp_t),
@@ -71,6 +73,7 @@ module axi4l_ctrl_regif
   (* unused = "true" *)logic              mem_rnsecure_unused;
   axil_resp_t        mem_resp;
 
+  // Bridge AXI4-Lite signals to internal memory-mapped register signals
   axi4l_to_memif #(
       .axi4l_req_t (axil_req_t),
       .axi4l_resp_t(axil_resp_t),
@@ -133,6 +136,7 @@ module axi4l_ctrl_regif
   logic [31:0] gpio_dir_q;
   logic [31:0] gpio_pull_q;
 
+  // Assign internal register state to output ports
   assign core_boot_addr_o = core_boot_addr_q;
   assign core_hart_id_o   = core_hart_id_q;
   assign core_rst_en_o    = core_clk_rst_q[0];
