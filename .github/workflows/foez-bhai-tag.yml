@@ -12,7 +12,7 @@ permissions:
 jobs:
   process-tags:
     name: Search tags and create PR
-    runs-on: ubuntu-latest
+    runs-on: [review]
 
     steps:
       - name: Check out repository
