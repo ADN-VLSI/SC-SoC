@@ -14,7 +14,7 @@ from pathlib import Path
 DEFAULT_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_MIN_INTERVAL = 172.8
 DIRECTIVE_PATTERN = re.compile(
-	r"(?m)^\s*(?://|#|--|/\*+|\*+)?\s*@gemini\b(?P<instruction>.*)$"
+	r"(?m)^\s*(?://|#|--|/\*+|\*+)?\s*@foez-bhai\b(?P<instruction>.*)$"
 )
 
 
@@ -40,11 +40,11 @@ def strip_code_fences(text: str) -> str:
 def build_prompt(file_name: str, file_text: str, instruction: str) -> str:
 	return (
 		"You are editing a source file. "
-		"Apply only the first @gemini directive described below and return only the full updated file contents. "
-		"Do not add explanations. Remove the processed @gemini line from the file. "
-		"Leave any other @gemini directives unchanged unless the requested edit must touch nearby code.\n\n"
+		"Apply only the first @foez-bhai directive described below and return only the full updated file contents. "
+		"Do not add explanations. Remove the processed @foez-bhai line from the file. "
+		"Leave any other @foez-bhai directives unchanged unless the requested edit must touch nearby code.\n\n"
 		f"File name: {file_name}\n"
-		f"Instruction from the first @gemini marker: {instruction.strip()}\n\n"
+		f"Instruction from the first @foez-bhai marker: {instruction.strip()}\n\n"
 		"Current file contents:\n"
 		"```text\n"
 		f"{file_text}"
@@ -124,7 +124,7 @@ def process_file(input_path: Path, api_key: str, model: str, min_interval: float
 
 		instruction = match.group("instruction").strip()
 		if not instruction:
-			raise RuntimeError("Found an @gemini marker without any instruction text on the same line.")
+			raise RuntimeError("Found an @foez-bhai marker without any instruction text on the same line.")
 
 		if requests_made:
 			elapsed = time.monotonic() - last_request_started
@@ -138,7 +138,7 @@ def process_file(input_path: Path, api_key: str, model: str, min_interval: float
 		requests_made += 1
 
 	if not requests_made:
-		raise RuntimeError("No @gemini directives were found in the input file.")
+		raise RuntimeError("No @foez-bhai directives were found in the input file.")
 
 	output_path.write_text(current_text, encoding="utf-8")
 	return output_path, requests_made
@@ -146,9 +146,9 @@ def process_file(input_path: Path, api_key: str, model: str, min_interval: float
 
 def parse_args() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(
-		description="Apply @gemini directives in a text file and write the result to gemini.<original-name>."
+		description="Apply @foez-bhai directives in a text file and write the result to gemini.<original-name>."
 	)
-	parser.add_argument("input_file", help="Path to the input file that contains @gemini directives.")
+	parser.add_argument("input_file", help="Path to the input file that contains @foez-bhai directives.")
 	parser.add_argument("--api-key", required=True, help="Gemini API key.")
 	parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Gemini model to use. Default: {DEFAULT_MODEL}")
 	parser.add_argument(
