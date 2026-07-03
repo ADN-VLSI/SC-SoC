@@ -96,11 +96,35 @@ jobs:
         run: |
           set -euo pipefail
 
-          pr_url=$(gh pr create \
-            --base "${GITHUB_REF_NAME}" \
-            --head "foez.ahmed:$BRANCH_NAME" \
-            --title "Process foez-bhai tagged files" \
-            --body "This PR was created automatically after finding matching tags in the repository for each tagged file.")
+          repo_owner="${GITHUB_REPOSITORY%%/*}"
+          declare -a head_candidates=(
+            "${BRANCH_NAME}"
+            "${repo_owner}:${BRANCH_NAME}"
+            "${GITHUB_ACTOR}:${BRANCH_NAME}"
+          )
+
+          pr_url=""
+          for head in "${head_candidates[@]}"; do
+            echo "Trying to create PR with head=${head} base=${GITHUB_REF_NAME}"
+            if pr_url=$(gh pr create \
+              --base "${GITHUB_REF_NAME}" \
+              --head "${head}" \
+              --title "Process foez-bhai tagged files" \
+              --body "This PR was created automatically after finding matching tags in the repository for each tagged file." 2>gh-pr-create.err); then
+              break
+            fi
+
+            echo "gh pr create failed for head=${head}"
+            sed -n '1,20p' gh-pr-create.err
+          done
+
+          if [ -z "${pr_url}" ]; then
+            echo "Failed to create PR after trying all head candidates."
+            exit 1
+          fi
+
+          echo "Created PR: ${pr_url}"
+          rm -f gh-pr-create.err
 
           if [ "${GITHUB_ACTOR}" != "foez.ahmed" ]; then
             gh pr edit "$pr_url" --add-reviewer "${GITHUB_ACTOR}"
