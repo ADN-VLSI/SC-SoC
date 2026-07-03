@@ -59,8 +59,8 @@ jobs:
           git switch -c "$branch_name"
 
           while IFS= read -r -d '' file; do
-            python .github/gemini.py "$file" --api-key "${{ secrets.FOEZ_SECRET_API_KEY }}"
-            mv gemini."$file" "$file"
+            python .github/gemini.py "$file" --api-key "${{ secrets.FOEZ_SECRET_API_KEY }}" -o output.foez
+            mv output.foez "$file"
             rm -rf __pycache__
           done < tagged-files.txt
 

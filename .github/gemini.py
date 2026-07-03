@@ -111,9 +111,16 @@ def ensure_processed_directive_removed(updated_text: str, instruction: str) -> s
 	return updated_text
 
 
-def process_file(input_path: Path, api_key: str, model: str, min_interval: float) -> tuple[Path, int]:
+def process_file(
+	input_path: Path,
+	api_key: str,
+	model: str,
+	min_interval: float,
+	output_path: Path | None = None,
+) -> tuple[Path, int]:
 	current_text = input_path.read_text(encoding="utf-8")
-	output_path = input_path.with_name(f"gemini.{input_path.name}")
+	if output_path is None:
+		output_path = input_path.with_name(f"gemini.{input_path.name}")
 	requests_made = 0
 	last_request_started = 0.0
 
@@ -149,6 +156,11 @@ def parse_args() -> argparse.Namespace:
 		description="Apply @foez-bhai directives in a text file and write the result to gemini.<original-name>."
 	)
 	parser.add_argument("input_file", help="Path to the input file that contains @foez-bhai directives.")
+	parser.add_argument(
+		"-o",
+		"--output",
+		help="Path to the output file. Defaults to gemini.<original-name> in the input file directory.",
+	)
 	parser.add_argument("--api-key", required=True, help="Gemini API key.")
 	parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Gemini model to use. Default: {DEFAULT_MODEL}")
 	parser.add_argument(
@@ -176,8 +188,19 @@ def main() -> int:
 		print("--min-interval must be non-negative.", file=sys.stderr)
 		return 1
 
+	output_path = None
+	if args.output:
+		output_path = Path(args.output).expanduser().resolve()
+		output_path.parent.mkdir(parents=True, exist_ok=True)
+
 	try:
-		output_path, requests_made = process_file(input_path, api_key, args.model, args.min_interval)
+		output_path, requests_made = process_file(
+			input_path,
+			api_key,
+			args.model,
+			args.min_interval,
+			output_path,
+		)
 	except Exception as exc:
 		print(str(exc), file=sys.stderr)
 		return 1
