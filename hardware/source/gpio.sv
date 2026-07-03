@@ -1,4 +1,5 @@
-// @foez-bhai add description to this module
+// This module implements a configurable width General Purpose Input/Output (GPIO) interface
+// using individual I/O pads for each bit, supporting direction control and pull-up/down configuration.
 
 module gpio #(
     parameter int GPIO_WIDTH = 32
