@@ -19,7 +19,7 @@ task automatic tc9(output int p, output int f);
     //--------------------------------------------------------------------
     repeat (5) begin
     @(negedge clk_i);
-    if (intf.rsp.w_ready) begin
+    if (intf.resp.w_ready) begin
         intf.req.w.data  <= W_DATA;
         intf.req.w.strb  <= {(DATA_WIDTH/8){1'b1}};
         intf.req.w_valid <= 1;
@@ -45,11 +45,11 @@ task automatic tc9(output int p, output int f);
     intf.req.aw.addr  <= WR_ADDR;
     intf.req.aw.prot  <= 3'b000;
     intf.req.aw_valid <= 1;
-    do @(posedge clk_i); while (!intf.rsp.aw_ready);
+    do @(posedge clk_i); while (!intf.resp.aw_ready);
     @(negedge clk_i);
     intf.req.aw_valid <= 0;
-    do @(posedge clk_i); while (!intf.rsp.b_valid);
-    check(intf.rsp.b.resp === 2'b00, p, f);
+    do @(posedge clk_i); while (!intf.resp.b_valid);
+    check(intf.resp.b.resp === 2'b00, p, f);
     end
 
     @(negedge clk_i);
