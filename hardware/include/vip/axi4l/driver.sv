@@ -130,7 +130,7 @@ class axi4l_driver #(
     if (IS_MASTER) begin
       vif.req_reset();
     end else begin
-      vif.rsp_reset();
+      vif.resp_reset();
     end
   endtask
 

@@ -23,10 +23,13 @@ module axi4l_fifo
     input  axi4l_resp_t mst_resp_i    // from register logic
 );
 
+    localparam int AXI_ADDR_WIDTH = $bits(slv_req_i.aw.addr);
+    localparam int AXI_DATA_WIDTH = $bits(slv_req_i.w.data);
+
   // AW FIFO — {prot[2:0], addr[31:0]} = ADDR_WIDTH+3 bits
   fifo #(
       .FIFO_SIZE        (FIFO_SIZE),
-      .DATA_WIDTH       (ADDR_WIDTH + 3),
+            .DATA_WIDTH       (AXI_ADDR_WIDTH + 3),
       .ALLOW_FALLTHROUGH(0)
   ) u_aw_fifo (
       .arst_ni         (arst_ni),
@@ -43,7 +46,7 @@ module axi4l_fifo
   // W FIFO — {strb[3:0], data[31:0]} = DATA_WIDTH+4 bits
   fifo #(
       .FIFO_SIZE        (FIFO_SIZE),
-      .DATA_WIDTH       (DATA_WIDTH + 4),
+      .DATA_WIDTH       (AXI_DATA_WIDTH + 4),
       .ALLOW_FALLTHROUGH(0)
   ) u_w_fifo (
       .arst_ni         (arst_ni),
@@ -77,7 +80,7 @@ module axi4l_fifo
   // AR FIFO — {prot[2:0], addr[31:0]} = ADDR_WIDTH+3 bits
   fifo #(
       .FIFO_SIZE        (FIFO_SIZE),
-      .DATA_WIDTH       (ADDR_WIDTH + 3),
+      .DATA_WIDTH       (AXI_ADDR_WIDTH + 3),
       .ALLOW_FALLTHROUGH(0)
   ) u_ar_fifo (
       .arst_ni         (arst_ni),
@@ -94,7 +97,7 @@ module axi4l_fifo
   // R FIFO — {resp[1:0], data[31:0]} = DATA_WIDTH+2 bits  [REVERSED: logic→CPU]
   fifo #(
       .FIFO_SIZE        (FIFO_SIZE),
-      .DATA_WIDTH       (DATA_WIDTH + 2),
+      .DATA_WIDTH       (AXI_DATA_WIDTH + 2),
       .ALLOW_FALLTHROUGH(0)
   ) u_r_fifo (
       .arst_ni         (arst_ni),
