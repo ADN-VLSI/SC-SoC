@@ -81,7 +81,7 @@ module axi4l_mem_tb;
       .arst_ni(arst_ni),
       .clk_i(clk_i),
       .axi4l_req_i(intf.req),
-      .axi4l_resp_o(intf.rsp)
+      .axi4l_resp_o(intf.resp)
   );
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
