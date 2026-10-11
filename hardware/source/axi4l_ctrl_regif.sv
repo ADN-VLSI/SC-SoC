@@ -29,7 +29,9 @@ module axi4l_ctrl_regif
     input  logic [31:0] gpio_in_i,
     output logic [31:0] gpio_out_o,
     output logic [31:0] gpio_dir_o,
-    output logic [31:0] gpio_pull_o
+    output logic [31:0] gpio_pull_o,
+    output logic [31:0] tohost_o,
+    output logic [31:0] fromhost_o
 );
 
   // ---------------------------------------------------------------------------
@@ -144,6 +146,8 @@ module axi4l_ctrl_regif
   assign gpio_out_o       = gpio_out_q;
   assign gpio_dir_o       = gpio_dir_q;
   assign gpio_pull_o      = gpio_pull_q;
+  assign tohost_o        = tohost_q;
+  assign fromhost_o      = fromhost_q;
   assign pll_fb_div_o     = CTRL_PLL_CFG_RESET[18:5];
   assign pll_ref_div_o    = CTRL_PLL_CFG_RESET[4:0];
 

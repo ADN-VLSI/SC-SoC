@@ -28,6 +28,7 @@ module fifo_tb;
     logic [DATA_WIDTH-1:0] data_o;
     logic                  data_o_valid_o;
     logic                  data_o_ready_i;
+    logic [FIFO_SIZE:0]    count_o;
 
     // Capture variable (never drive data_o directly — multi-driver error)
     logic [DATA_WIDTH-1:0] read_val;
@@ -53,12 +54,13 @@ module fifo_tb;
     ) dut (
         .clk_i          (clk),
         .arst_ni        (arst_ni),
-        .data_i         (data_i),
-        .data_i_valid_i (data_i_valid_i),
-        .data_i_ready_o (data_i_ready_o),
-        .data_o         (data_o),
-        .data_o_valid_o (data_o_valid_o),
-        .data_o_ready_i (data_o_ready_i)
+        .data_in_i         (data_i),
+        .data_in_valid_i  (data_i_valid_i),
+        .data_in_ready_o  (data_i_ready_o),
+        .data_out_o        (data_o),
+        .data_out_valid_o  (data_o_valid_o),
+        .data_out_ready_i  (data_o_ready_i),
+        .count_o           (count_o)
     );
 
     // -----------------------------------------------------------------------
@@ -73,10 +75,11 @@ module fifo_tb;
     // PUSH task
     // -----------------------------------------------------------------------
     task automatic push(input [DATA_WIDTH-1:0] val);
+        @(negedge clk);
         data_i         <= val;
         data_i_valid_i <= 1;
-        @(posedge clk);
-        while (!data_i_ready_o) @(posedge clk);
+        do @(posedge clk); while (!data_i_ready_o);
+        @(negedge clk);
         data_i_valid_i <= 0;
         data_i         <= 0;
     endtask
@@ -85,11 +88,11 @@ module fifo_tb;
     // POP task
     // -----------------------------------------------------------------------
     task automatic pop(output [DATA_WIDTH-1:0] val);
+        @(negedge clk);
         data_o_ready_i <= 1;
-        @(posedge clk);
-        while (!data_o_valid_o) @(posedge clk);
-        #1;
+        do @(posedge clk); while (!data_o_valid_o);
         val            =  data_o;
+        @(negedge clk);
         data_o_ready_i <= 0;
     endtask
 

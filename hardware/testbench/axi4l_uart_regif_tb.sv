@@ -95,20 +95,20 @@ module axi4l_uart_regif_tb;
   end
 
   always_comb begin
-    intf.rsp.aw_ready = adapter_rsp.aw_ready;
-    intf.rsp.w_ready  = adapter_rsp.w_ready;
-    intf.rsp.b_valid  = adapter_rsp.b_valid;
-    intf.rsp.b.resp   = adapter_rsp.b.resp;
-    intf.rsp.ar_ready = adapter_rsp.ar_ready;
-    intf.rsp.r_valid  = adapter_rsp.r_valid;
-    intf.rsp.r.data   = adapter_rsp.r.data;
-    intf.rsp.r.resp   = adapter_rsp.r.resp;
+    intf.resp.aw_ready = adapter_rsp.aw_ready;
+    intf.resp.w_ready  = adapter_rsp.w_ready;
+    intf.resp.b_valid  = adapter_rsp.b_valid;
+    intf.resp.b.resp   = adapter_rsp.b.resp;
+    intf.resp.ar_ready = adapter_rsp.ar_ready;
+    intf.resp.r_valid  = adapter_rsp.r_valid;
+    intf.resp.r.data   = adapter_rsp.r.data;
+    intf.resp.r.resp   = adapter_rsp.r.resp;
   end
 
   //////////////////////////////////////////////////////////////////////////////////////
   // DUT
   //////////////////////////////////////////////////////////////////////////////////////
-  axil_uart_regif u_dut (
+  axi4l_uart_regif u_dut (
     .clk_i           (clk_i),
     .arst_ni         (arst_ni),
     .req_i           (adapter_req),
