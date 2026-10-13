@@ -243,7 +243,7 @@ __COMPILE__:
 	@find ${SC_SOC}/hardware/interface -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
 	@find ${SC_SOC}/hardware/source -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
 	@find ${SC_SOC}/hardware/testbench -maxdepth 1 -name "*" -type f >> $(BUILD)/flist
-	@cd $(BUILD); $(XVLOG) -sv -f flist $(XVLOG_DEFS) -log $(LOG)/xvlog_sc_soc.log $(EW_O)
+	@cd $(BUILD); $(XVLOG) -sv -f flist $(XVLOG_DEFS) -L uvm -log $(LOG)/xvlog_sc_soc.log $(EW_O)
 	@$(SHA_FILES_CMD) > $(BUILD)/build_sha
 	@echo -e "\033[3;35mCompiled\033[0m"
 
@@ -458,3 +458,7 @@ LOGO:
 	@echo "   / _ \| |) | .\` | \__ \ _|| |\/| || | (_| (_) | .\` | |) | |_| | (__  | || (_) |   /\__ \  "
 	@echo "  /_/ \_\___/|_|\_| |___/___|_|  |_|___\___\___/|_|\_|___/ \___/ \___| |_| \___/|_|_\|___/  "
 	@echo "                                                                                            "
+
+.PHONY: dour
+dour:
+	@make -s simulate TOP=sc_soc_uvm_tb TEST=$(TEST) DEBUG=$(DEBUG) GUI=$(GUI)

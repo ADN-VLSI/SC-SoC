@@ -79,7 +79,9 @@ module ctrl_subsystem (
       .gpio_in_i(gpio_in),
       .gpio_out_o(gpio_out),
       .gpio_dir_o(gpio_dir),
-      .gpio_pull_o(gpio_pull)
+      .gpio_pull_o(gpio_pull),
+      .tohost_o(),
+      .fromhost_o()
   );
 
   pll #(
