@@ -1,6 +1,8 @@
 `ifndef __GUARD_BASE_TEST_SV__
 `define __GUARD_BASE_TEST_SV__ 0
 
+`include "sc_soc_uvm_tb/component/environment.sv"
+
 class base_test extends uvm_test;
 
   `uvm_component_utils(base_test)
@@ -14,8 +16,15 @@ class base_test extends uvm_test;
   virtual apb_if  apb_intf;
   virtual uart_if uart_intf;
 
+  environment env;
+
   virtual function automatic void build_phase(uvm_phase phase);
     super.build_phase(phase);
+    env = environment::type_id::create("env", this);
+  endfunction
+
+  virtual function automatic void connect_phase(uvm_phase phase);
+    super.connect_phase(phase);
     if (!uvm_config_db#(virtual ctrl_if)::get(
             uvm_root::get(), "*.env.glob.*", "ctrl", glob_ctrl
         )) begin

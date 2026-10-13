@@ -105,9 +105,9 @@ SOC_COMMIT = $(shell git submodule status -- $(SOC) | awk '{print $$1}')
 S1_COMMIT = $(shell git submodule status -- $(S1) | awk '{print $$1}')
 
 # Filter xvlog/xelab output to highlight only Errors and Warnings Only
-EW_O := | grep -iE "Error:|Warning:" --color=auto || true
+EW_O := | sed "/XSIM 43-4468/d" | grep -iE "Error:|Warning:" --color=auto || true
 # Filter xsim output to highlight only Errors and Warnings
-EWHL := | grep -iE "Error:|Warning:|" --color=auto
+EWHL := | sed "/XSIM 43-4468/d" | grep -iE "Error:|Warning:|" --color=auto
 
 # Preprocessor defines passed to xvlog; SIMULATION is used to gate simulation-only
 # code blocks (e.g. $display, $finish) inside RTL and testbench files

@@ -5,7 +5,7 @@ module sc_soc_uvm_tb;
 
   import uvm_pkg::*;
 
-  `include "sc_soc_uvm_tb/test/base_test.sv"
+  `include "sc_soc_uvm_tb/component/base_test.sv"
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // SIGNALS

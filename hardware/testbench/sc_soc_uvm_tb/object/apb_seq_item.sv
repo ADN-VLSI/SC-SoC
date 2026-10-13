@@ -1,0 +1,28 @@
+// Include guard to prevent multiple inclusions of this file
+`ifndef __GUARD_APB_SEQ_ITEM_SV__
+`define __GUARD_APB_SEQ_ITEM_SV__ 0
+
+`include "sc_soc_uvm_tb/object/uart_seq_item.sv"
+
+class apb_seq_item extends uvm_sequence_item;
+
+  // Request fields
+  rand bit        write; // 0: Read, 1: Write
+  rand bit [31:0] addr;  // 32-bit address
+  rand bit [31:0] data;  // 32-bit write data
+
+  // UVM object utilities for factory registration and field automation
+  `uvm_object_utils_begin(apb_seq_item)
+    `uvm_field_int(write, UVM_ALL_ON)
+    `uvm_field_int(addr, UVM_ALL_ON)
+    `uvm_field_int(data, UVM_ALL_ON)
+  `uvm_object_utils_end
+
+  // Constructor for the APB sequence item
+  function new(string name = "apb_seq_item");
+    super.new(name);
+  endfunction : new
+
+endclass
+
+`endif
