@@ -289,7 +289,7 @@ endif
 # code coverage report is also moved into the coverage_report directory.
 .PHONY: simulate
 simulate:
-	@make -s LOGO
+	@make -s depression
 	@make -s $(BUILD)
 	@make -s $(LOG)
 	@echo "$(TOP)" > $(BUILD)/top
@@ -450,14 +450,31 @@ test:
 	@${RISCV64_OBJDUMP} -d build/prog.elf > build/prog.dis
 
 
-.PHONY: LOGO
-LOGO:
-	@clear
-	@echo "     _   ___  _  _   ___ ___ __  __ ___ ___ ___  _  _ ___  _   _  ___ _____ ___  ___  ___   "
-	@echo "    /_\ |   \| \| | / __| __|  \/  |_ _/ __/ _ \| \| |   \| | | |/ __|_   _/ _ \| _ \/ __|  "
-	@echo "   / _ \| |) | .\` | \__ \ _|| |\/| || | (_| (_) | .\` | |) | |_| | (__  | || (_) |   /\__ \  "
-	@echo "  /_/ \_\___/|_|\_| |___/___|_|  |_|___\___\___/|_|\_|___/ \___/ \___| |_| \___/|_|_\|___/  "
-	@echo "                                                                                            "
+.PHONY: depression
+depression:
+	@printf '\033[1;34m >>> %s <<< \033[0m\n' \
+		"Sinking with the ship doesn't make you a brave captain; it just makes you a drowned passenger." \
+		"You are exhausting your life pouring water into a glass that has no bottom." \
+		"The hardest part of a slow death is realizing you chose the executioner." \
+		"Some doors aren't locked; they lead nowhere, and you're standing in the hallway freezing to death." \
+		"Loyalty to a delusion is just a slow, quiet form of self-destruction." \
+		"You keep bleeding on something that was never alive in the first place." \
+		"The length of time you've been making a mistake doesn't turn it into a right decision." \
+		"You aren't proving your strength by holding on; you're just proving how much pain you can tolerate before you break." \
+		"Hope, in a dead-end situation, is just a longer path to the exact same disappointment." \
+		"You are building a house out of burning wood and wondering why you keep getting burned." \
+		"No amount of effort can revive a corpse; it just makes you look desperate beside it." \
+		"The tragedy isn't that it failed; the tragedy is that you knew it would and stayed anyway." \
+		"You're drowning in shallow water simply because you refuse to stand up." \
+		"Persistence without potential is just torture with extra steps." \
+		"You are throwing your future into a pit that will never fill up." \
+		"Clinging to a wreck doesn't stop it from sinking—it just ensures you go down with it." \
+		"The worst kind of exhaustion is fighting for something that stopped existing months ago." \
+		"You're sacrificing your present for a future that was dead on arrival." \
+		"Endurance is noble only when there's a finish line. Otherwise, it's just slow suicide." \
+		"You didn't save it. You just delayed the inevitable and ruined yourself in the process." \
+		| shuf -n 1
+	@echo -e "  "
 
 .PHONY: dour
 dour:

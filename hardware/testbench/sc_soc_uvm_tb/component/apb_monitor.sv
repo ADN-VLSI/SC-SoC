@@ -1,5 +1,5 @@
-`ifndef __GUARD_UART_MONITOR_SV__
-`define __GUARD_UART_MONITOR_SV__ 0
+`ifndef __GUARD_APB_MONITOR_SV__
+`define __GUARD_APB_MONITOR_SV__ 0
 
 `include "sc_soc_uvm_tb/object/apb_rsp_item.sv"
 
@@ -61,7 +61,7 @@ class apb_monitor extends uvm_monitor;
         item.addr = intf.req.paddr;
 
         // Capture the operation type
-        item.we = intf.req.pwrite;
+        item.write = intf.req.pwrite;
 
         // Capture write data or read data
         if (intf.req.pwrite) begin

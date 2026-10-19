@@ -7,7 +7,7 @@ class uart_monitor extends uvm_monitor;
 
   `uvm_component_utils(uart_monitor)
 
-  uvm_analysis_port#(uart_transaction) ap;
+  uvm_analysis_port#(uart_rsp_item) ap;
   virtual uart_if vif;
 
   // UART configuration parameters
@@ -78,11 +78,12 @@ class uart_monitor extends uvm_monitor;
 
   // Task to retrieve UART configuration from the database
   task set_config();
-    void'(uvm_config_db#(int)::get(uvm_root::get(), "uart", "baud_rate", baud_rate));
-    void'(uvm_config_db#(bit)::get(uvm_root::get(), "uart", "parity_enable", parity_enable));
-    void'(uvm_config_db#(bit)::get(uvm_root::get(), "uart", "parity_type", parity_type));
-    void'(uvm_config_db#(bit)::get(uvm_root::get(), "uart", "second_stop_bit", second_stop_bit));
-    void'(uvm_config_db#(int)::get(uvm_root::get(), "uart", "data_bits", data_bits));
+    void'(uvm_config_db#(int)::get(this, "", "baud_rate", baud_rate));
+    void'(uvm_config_db#(bit)::get(this, "", "parity_enable", parity_enable));
+    void'(uvm_config_db#(bit)::get(this, "", "parity_type", parity_type));
+    void'(uvm_config_db#(bit)::get(this, "", "second_stop_bit", second_stop_bit));
+    void'(uvm_config_db#(int)::get(this, "", "data_bits", data_bits));
   endtask
-  endclass
+
+endclass
 `endif

@@ -23,18 +23,15 @@ class apb_driver extends uvm_driver #(apb_seq_item);
 
   virtual task run_phase(uvm_phase phase);
     int dummy_data;
-    int dummy_resp;
 
     forever begin
       seq_item_port.get_next_item(req);
 
-      intf.do_transaction(
-        req.addr,
-        req.we,
-        req.data,
-        dummy_data,
-        dummy_resp
-      );
+      if (req.write) begin
+        intf.apb_write(req.addr, req.data);
+      end else begin
+        intf.apb_read(req.addr, dummy_data);
+      end
 
       seq_item_port.item_done();
     end

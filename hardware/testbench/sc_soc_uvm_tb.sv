@@ -118,6 +118,12 @@ module sc_soc_uvm_tb;
 
     uvm_config_db#(virtual uart_if)::set(uvm_root::get(), "*.env.uart.*", "intf", uart_intf);
 
+    uvm_config_db#(int)::set(uvm_root::get(), "*.env.uart.*", "baud_rate", 115200);
+    uvm_config_db#(bit)::set(uvm_root::get(), "*.env.uart.*", "parity_enable", 0);
+    uvm_config_db#(bit)::set(uvm_root::get(), "*.env.uart.*", "parity_type", 0);
+    uvm_config_db#(bit)::set(uvm_root::get(), "*.env.uart.*", "second_stop_bit", 0);
+    uvm_config_db#(int)::set(uvm_root::get(), "*.env.uart.*", "data_bits", 8);
+
     run_test(test_name);
 
   end

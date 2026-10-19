@@ -1,6 +1,7 @@
 `ifndef __GUARD_APB_AGENT_SV__
 `define __GUARD_APB_AGENT_SV__ 0
 
+`include "sc_soc_uvm_tb/object/apb_seq_item.sv"
 `include "sc_soc_uvm_tb/object/apb_rsp_item.sv"
 `include "sc_soc_uvm_tb/component/apb_monitor.sv"
 `include "sc_soc_uvm_tb/component/apb_driver.sv"
@@ -15,7 +16,7 @@ class apb_agent extends uvm_agent;
 
   uvm_analysis_port #(apb_rsp_item) ap;
 
-  uvm_sequencer #(apb_rsp_item) sqr; 
+  uvm_sequencer #(apb_seq_item) sqr; 
   apb_driver                    dvr;
   apb_monitor                   mon;
   
